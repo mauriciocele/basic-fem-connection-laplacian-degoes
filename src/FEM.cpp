@@ -190,9 +190,9 @@ Nabla Psi_j(X(P))  = grad (K_j(P)) @ (X_1 e_1, X_2 e_2)
 Nabla Psi_j(X(P))  = [ grad (K_j(P)) @ (e_1, e_2) ] X
 
 
-(grad_i  Kronecker  X) =    grad_1  * e_1     grad_1  * e_2       X_1         =  grad_1  * (e_1, e_2)  X
-                                             grad_2 * e_1     grad_2 * e_2      X_2             grad_2 * (e_1, e_2)  X
-2x1                           1x2       2x2                                                  2x1            2x1
+(grad_i  Kronecker  X) =    grad_1 * e_1     grad_1 * e_2      X_1         =  grad_1 * (e_1, e_2)  X
+                            grad_2 * e_1     grad_2 * e_2      X_2            grad_2 * (e_1, e_2)  X
+2x1                           1x2            2x2               2x1            2x1
 
 
 Abstracting the X we get:
@@ -287,8 +287,8 @@ Nabla V_i(x,y) = Nabla Psi_i(x,y)
 Plugging into: Nabla(V) : Nabla(U) 
  
 Nabla(V) : Nabla(U)  = < Nabla Psi_i(x,y), sum_i U_i Nabla Psi_i(x,y)>
-                                    = sum_j < Nabla Psi_i(x,y), U_j Nabla Psi_j(x,y)> 
-                                    = sum_j U_j < Nabla Psi_i(x,y), Nabla Psi_j(x,y)> 
+                     = sum_j < Nabla Psi_i(x,y), U_j Nabla Psi_j(x,y)> 
+                     = sum_j U_j < Nabla Psi_i(x,y), Nabla Psi_j(x,y)> 
 
 < Nabla V, Nabla U>_i = sum_j U_j <Nabla Psi_j, Nabla Psi_i>    (one equation with many unknowns U_j for each test function i)
 
@@ -313,7 +313,12 @@ M U = F
 COVARIANT DERIVATIVE Nabla Psi_i 
 
 We use the Cartan’s moving frames formalism. Moving frames are orthonormal frames attached to each point of surface. Those 
-frames lie in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames don’t form a holonomic basis i.e., those are not vector fields associated to a directional derivative or partial derivative operator. Moving frames are not continuous over the surface and its length is always 1 (holonomic basis can have different lengths, thus their dot product defines the metric tensor). For this reason the Crhistoffel Symbols is a concept associated to differentiation of holonomic basis while Connection Form is a concept associated with “differentiation” of moving frames. However in the flat space under cartesian coordinates the Christoffel Symbols and Connection Form are the same.
+frames lie in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames 
+don’t form a holonomic basis i.e., those are not vector fields associated to a directional derivative or partial derivative 
+operator. Moving frames are not continuous over the surface and its length is always 1 (holonomic basis can have different lengths, 
+thus their dot product defines the metric tensor). For this reason the Crhistoffel Symbols is a concept associated to differentiation 
+of holonomic basis while Connection Form is a concept associated with “differentiation” of moving frames. However in the flat space 
+under cartesian coordinates the Christoffel Symbols and Connection Form are the same.
 
 First recap definition of covariant derivative of a vector field U in direction of vector field w (https://en.wikipedia.org/wiki/Connection_form#Example:_the_Levi-Civita_connection):
 
@@ -322,14 +327,14 @@ U = U_1 e_1 + U_2 e_2      // vector field expressed in moving frames as sum_i U
 w = w_1 e_1 + w_2 e_2      // vector field expressed in moving frames as sum_i w_i e_i  
 
 W_ij(e_k)  =  W_11(e_k)        W_12(e_k)         // Matrix of 1-forms    a.k.a. connection form
-                      W_21(e_k)       W_22(e_k)
+              W_21(e_k)       W_22(e_k)
 
 Grad U_i = gradient of scalar component U_i which is a vector (a, b) = a e_1 + b e_2.  Where a = d/de_1 U_i   and   b= d/de_2 U_i
 
 Nabla(U, w) = w_1 Nabla(U, e_1) + w_2 Nabla(U, e_2)       // Nabla(U, w) = <Nabla(U), w>
 
-Nabla(U_i, e_j) = <Grad U_1, e_j> e_1  + ( W_11(e_j)  U_1 + W_12(e_j)  U_2 ) e_1
-                              <Grad U_2, e_j>e_2 + ( W_21(e_j) U_1 + W_22(e_j) U_2 ) e_2
+Nabla(U_i, e_j) = <Grad U_1, e_j> e_1 + ( W_11(e_j) U_1 + W_12(e_j) U_2 ) e_1
+                  <Grad U_2, e_j> e_2 + ( W_21(e_j) U_1 + W_22(e_j) U_2 ) e_2
                                                                 
 Nabla(U, e_j) = <Grad U, e_j> E  + <W(e_j) U,  E>
 
@@ -392,14 +397,14 @@ To clarify the use of tensor “dyadic” product to express Jacobian matrix che
 K_j(X) V = | K_j(X) Vx,      K_j(X) Vy | 
 
 d/X K_j(X) V = | d/x K_j(X) Vx,      d/x K_j(X) Vy |
-                         | d/y K_j(X) Vx,      d/y K_j(X) Vy |
-                     = | d/x K_j(X), d/y K_j(X) | @ | Vx, Vy | 
-                     = Grad_X K(X) @ V
+               | d/y K_j(X) Vx,      d/y K_j(X) Vy |
+             = | d/x K_j(X), d/y K_j(X) | @ | Vx, Vy | 
+             = Grad_X K(X) @ V
 
 Expressing this in matrix notation we get:
 
 Nabla Psi_i  = grad K_j(P) * Phi_i(X)^T
-2x2                             2x1              1x2
+2x2            2x1              1x2
 
 It is convenient to abstract the argument X from above equation. For that we express it in tensor form as:
 
@@ -411,14 +416,14 @@ G_ijk = (grad_i @ R_jk)    // we get an rank-3 tensor
 
 It is known that the contraction of a rank-3 tensor with a rank-1 tensor can be expressed in matrix form using the Kronecker product as:
 
-(grad_i  Kronecker R_jk) =  grad_1  * R_ik     X_1         =  grad_1  * R X
-                                               grad_2 * R_ik     X_2            grad_2 * R X
-2x1                          2x2         4x2                     2x1               4x1
+(grad_i  Kronecker R_jk) =  grad_1 * R_ik     X_1         =  grad_1 * R X
+                            grad_2 * R_ik     X_2            grad_2 * R X
+2x1                 2x2          4x2          2x1               4x1
 
 Where the resulting 4x1 vector (a b c d)^T is isomorphic to the 2x2 matrix:
 
  (a b c d)^T     isomorphic to      a b
-                                                      c d
+                                    c d
 
 We will call G (covariant gradient) the 4x2 matrix:
 
@@ -431,8 +436,8 @@ So the inner product of G_i with G_j gives the following 2x2 matrix:
 
 We we can check:
 
-grad_1 R^T  grad_2 R^T    grad_1 R    =   (grad_1*grad_1 + grad_2*grad_2) R^T R
-                                             grad_2 R      
+grad_1 R^T  grad_2 R^T    grad_1 R    = (grad_1*grad_1 + grad_2*grad_2) R^T R
+                                        grad_2 R      
 
 
 Later on we will use the above to define the Gaussian Quadrature of the shape function as:
