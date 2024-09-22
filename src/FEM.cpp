@@ -16,16 +16,21 @@ The ConnectionLaplacian is defined in terms of the “covariant derivative” Na
 
 ConnectionLaplacian( U(x,y) ) = Nabla^* Nabla ( U(x,y) )
 
-Where Nabla^* is the Adjoint of Nabla (covariant derivative), U(x,y) is a tangent vector field on the 3D surface (2D manifold embedded in R^3). F(x,y) is a vector field resulting of applying the ConnectionLaplacian and G(x,y) the vector boundary conditions.
+Where Nabla^* is the Adjoint of Nabla (covariant derivative), U(x,y) is a tangent vector field on the 3D surface 
+(2D manifold embedded in R^3). F(x,y) is a vector field resulting of applying the ConnectionLaplacian and G(x,y) 
+the vector boundary conditions.
 
-Nabla(U, w) is an operator that has two arguments: U(x,y) and w(x,y). U(x,y) is a vector field which is differentiated and w(x,y) is a vector field telling the direction in which directional derivatives are taken. And returns a vector field as a result which is a measure of relative change of U w.r.t to w. 
+Nabla(U, w) is an operator that has two arguments: U(x,y) and w(x,y). U(x,y) is a vector field which is differentiated 
+and w(x,y) is a vector field telling the direction in which directional derivatives are taken. And returns a vector field as a 
+result which is a measure of relative change of U w.r.t to w. 
 
-Usually one can omit the vector field w and just talk about Nabla U which is a 2-tensor (i.e., a matrix). For example in flat space R^3 the vector field represented as U = [u_x, u_y, u_z]^T the operator Nabla U would be:
+Usually one can omit the vector field w and just talk about Nabla U which is a 2-tensor (i.e., a matrix). For example in flat 
+space R^3 the vector field represented as U = [u_x, u_y, u_z]^T the operator Nabla U would be:
 
 
 Nabla U =  d/dx    u_x  u_y  u_z   =   d/dx u_x    d/dy u_x      d/dz u_x
-                   d/dy                                   d/dx u_y    d/dy u_y      d/dz u_y
-                   d/dz                                   d/dx u_z    d/dy u_z      d/dz u_z
+           d/dy                        d/dx u_y    d/dy u_y      d/dz u_y
+           d/dz                        d/dx u_z    d/dy u_z      d/dz u_z
 
 Nabla U = Grad Operator  @  U = Jacobian (U)
 
@@ -37,7 +42,8 @@ The “scalar product” of rank-2 tensors X and Y is denoted as X : Y and is de
 
 X : Y = Trace(X^T Y)
 
-The Adjoint of Nabla is defined by “integration by parts” (see wikipedia https://en.wikipedia.org/wiki/Vector_calculus_identities) over surface D:
+The Adjoint of Nabla is defined by “integration by parts” (see wikipedia https://en.wikipedia.org/wiki/Vector_calculus_identities) 
+over surface D:
 
 Integral_D Nabla U : X dx = Integral_D <U, Nabla^* X> dx + Integral_#D <U, X(N)> dA    (1)
 
@@ -78,15 +84,20 @@ Which gives:
 
 DISCRETISATION in 2D
 
-The domain D has to be discretised in N nodes and T triangles. For linear elements the Nodes coincide with vertices, but for quadratic elements there will Nodes defined on the mid-point of edges of triangles, so there will be more Nodes than vertices.
+The domain D has to be discretised in N nodes and T triangles. For linear elements the Nodes coincide with vertices, but for 
+quadratic elements there will Nodes defined on the mid-point of edges of triangles, so there will be more Nodes than vertices.
 
-We define a test function Phi_i per node N_i which will be used to linearly interpolate tangent vectors located at nodes to all triangles incident to the node N_i. 
+We define a test function Phi_i per node N_i which will be used to linearly interpolate tangent vectors located at nodes to all 
+triangles incident to the node N_i. 
 
-Since we are in 2D, the tangent space at node N_i is the same as any other tangent space everywhere in the domain. Therefore parallel transport is just the identify function or “teleportation”. 
+Since we are in 2D, the tangent space at node N_i is the same as any other tangent space everywhere in the domain. Therefore 
+parallel transport is just the identify function or “teleportation”. 
 
-The local basis for N_i is defined as T_v = (e_1, e_2), which is an orthonormal frame. The local basis at triangle T_f = (e_1, e_2), the connection R_i^f = Identity. The vectors at U(x,y) are expressed in terms of “global basis” (e_1, e_2)
+The local basis for N_i is defined as T_v = (e_1, e_2), which is an orthonormal frame. The local basis at triangle T_f = (e_1, e_2), 
+the connection R_i^f = Identity. The vectors at U(x,y) are expressed in terms of “global basis” (e_1, e_2)
 
-The connection that parallel transport vectors from node N_i to triangle f: Phi_i^f(X) is the identity function: Phi_i^f(X)  =  R_i^f X  =  X.  So It can be omitted.
+The connection that parallel transport vectors from node N_i to triangle f: Phi_i^f(X) is the identity function: 
+Phi_i^f(X)  =  R_i^f X  =  X.  So It can be omitted.
 
 We define scalar tests functions with compact support K_i(x, y) for every node N_i to be equal to 0 or 1 and linear everywhere else:
 
@@ -108,7 +119,8 @@ We discretise the test functions V(x, y) = Psi_j(x,y) for every node N.
 
 In this case the test function is the same as the shape function Psi_j, when that happens this is the so called Galerkin FEM. 
 
-Replacing first the test function V(x,y) with Psi_j(x,y) we get a system of integral equations, one equation per Node/test function Psi_j(x,y):
+Replacing first the test function V(x,y) with Psi_j(x,y) we get a system of integral equations, one equation per Node/test 
+function Psi_j(x,y):
 
 Integral_Di Nabla(Psi_i(x,y)) : Nabla(U(x,y) dx = Integral_D <F(x,y), Psi_j(x,y)> dA
 
@@ -122,8 +134,8 @@ Nabla V_i(x,y) = Nabla Psi_i(x,y)
 Plugging into: Nabla(V) : Nabla(U) 
  
 Nabla(V) : Nabla(U)  = < Nabla Psi_i(x,y), sum_i U_i Nabla Psi_i(x,y)>
-                                    = sum_j < Nabla Psi_i(x,y), U_j Nabla Psi_j(x,y)> 
-                                    = sum_j U_j < Nabla Psi_i(x,y), Nabla Psi_j(x,y)> 
+                     = sum_j < Nabla Psi_i(x,y), U_j Nabla Psi_j(x,y)> 
+                	 = sum_j U_j < Nabla Psi_i(x,y), Nabla Psi_j(x,y)> 
 
 < Nabla V, Nabla U>_i = sum_j U_j <Nabla Psi_j, Nabla Psi_i>    (one equation with many unknowns U_j for each test function i)
 
@@ -140,7 +152,8 @@ F_i   = Integral_Di ( F Psi_i dA)
 
 M_ij U_i = F_i
 
-Which can be assemble to form a global matrix system (we choose to have shape functions Psi_i = test functions so we have same number of equations than unknowns)
+Which can be assemble to form a global matrix system (we choose to have shape functions Psi_i = test functions so we 
+have same number of equations than unknowns)
 
 M U = F
 
@@ -212,17 +225,22 @@ Where w_ij is symmetric I.e., w_ij == w_ji
 
 DISCRETISATION in 3D
 
-The domain D has to be discretised in N nodes and T triangles. For linear elements the Nodes coincide with vertices, but for quadratic elements there will Nodes defined on the mid-point of edges of triangles, so there will be more Nodes than vertices.
+The domain D has to be discretised in N nodes and T triangles. For linear elements the Nodes coincide with vertices, but for 
+quadratic elements there will Nodes defined on the mid-point of edges of triangles, so there will be more Nodes than vertices.
 
-We define a test function Phi_i per node N_i which will be used to linearly interpolate tangent vectors located at nodes to all triangles incident to the node N_i. 
+We define a test function Phi_i per node N_i which will be used to linearly interpolate tangent vectors located at nodes to 
+all triangles incident to the node N_i. 
 
-First we define a local basis of tangent T_v space per node N_i in which tangent vector of U(x,y) will reside. We will also need to define a local basis per triangle T_f which will be used to interpolate vectors inside triangles. Finally we need a “connection” R_i^f which parallel transport a vector in tangent space at node N_i basis to a triangle local basis:
+First we define a local basis of tangent T_v space per node N_i in which tangent vector of U(x,y) will reside. We will also 
+need to define a local basis per triangle T_f which will be used to interpolate vectors inside triangles. Finally we need a 
+“connection” R_i^f which parallel transport a vector in tangent space at node N_i basis to a triangle local basis:
 
 R_i^f = T_f^T    Q_vf      T_v
-             2x3        3x3        3x2
+      2x3        3x3        3x2
 where:
 
-R_i^f = is the connection at node N_i restricted to triangle f (2x2 matrix). Parallel transport a vector in tangent space at node N_i basis to a triangle local basis
+R_i^f = is the connection at node N_i restricted to triangle f (2x2 matrix). Parallel transport a vector in tangent space 
+at node N_i basis to a triangle local basis
 T_f  = is the 3x2 local basis for triangle f : T_f = [e_i, e_j]^T
 Q_vf = is the 3x3 rotation matrix aligning node N_i tangent plane with face f plane.
 T_v = is the 3x2 local basis for tangent space at node N_i: T_v = [e_i, e_j]^T
@@ -243,7 +261,8 @@ We use those K_j to define the basis function Psi_i^f:
 
 Psi_i^f(P) = K_j(P) Phi_i^f(X) = K_j(P) R_i^f X
 
-Where P is node’s position or any position inside triangle and X(P) is tangent vector at position P. Note that while P can vary inside a triangle, X(P) is constant inside a triangle.
+Where P is node’s position or any position inside triangle and X(P) is tangent vector at position P. Note that while P can vary 
+inside a triangle, X(P) is constant inside a triangle.
 
 Now we discretise the solution U(x,y) to be a finite sum:
 
@@ -253,7 +272,8 @@ We discretise the test functions V(x, y) = Psi_j(x,y) for every node N.
 
 In this case the test function is the same as the shape function Psi_j, when that happens this is the so called Galerkin FEM. 
 
-Replacing first the test function V(x,y) with Psi_j(x,y) we get a system of integral equations, one equation per Node/test function Psi_j(x,y):
+Replacing first the test function V(x,y) with Psi_j(x,y) we get a system of integral equations, one equation per Node/test 
+function Psi_j(x,y):
 
 Integral_Di Nabla(Psi_i(x,y)) : Nabla(U(x,y) dx = Integral_D <F(x,y), Psi_j(x,y)> dA
 
@@ -285,17 +305,19 @@ F_i   = Integral_Di ( F Psi_i dA)
 
 M_ij U_i = F_i
 
-Which can be assemble to form a global matrix system (we choose to have shape functions Psi_i = test functions so we have same number of equations than unknowns)
+Which can be assemble to form a global matrix system (we choose to have shape functions Psi_i = test functions so we have 
+same number of equations than unknowns)
 
 M U = F
 
 COVARIANT DERIVATIVE Nabla Psi_i 
 
-We use the Cartan’s moving frames formalism. Moving frames are orthonormal frames attached to each point of surface. Those frames lie in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames don’t form a holonomic basis i.e., those are not vector fields associated to a directional derivative or partial derivative operator. Moving frames are not continuous over the surface and its length is always 1 (holonomic basis can have different lengths, thus their dot product defines the metric tensor). For this reason the Crhistoffel Symbols is a concept associated to differentiation of holonomic basis while Connection Form is a concept associated with “differentiation” of moving frames. However in the flat space under cartesian coordinates the Christoffel Symbols and Connection Form are the same.
+We use the Cartan’s moving frames formalism. Moving frames are orthonormal frames attached to each point of surface. Those 
+frames lie in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames don’t form a holonomic basis i.e., those are not vector fields associated to a directional derivative or partial derivative operator. Moving frames are not continuous over the surface and its length is always 1 (holonomic basis can have different lengths, thus their dot product defines the metric tensor). For this reason the Crhistoffel Symbols is a concept associated to differentiation of holonomic basis while Connection Form is a concept associated with “differentiation” of moving frames. However in the flat space under cartesian coordinates the Christoffel Symbols and Connection Form are the same.
 
 First recap definition of covariant derivative of a vector field U in direction of vector field w (https://en.wikipedia.org/wiki/Connection_form#Example:_the_Levi-Civita_connection):
 
-E = (e_1, e_2)                     // local frame field I.e., moving frame seen as a vector
+E = (e_1, e_2)             // local frame field I.e., moving frame seen as a vector
 U = U_1 e_1 + U_2 e_2      // vector field expressed in moving frames as sum_i U_i e_i 
 w = w_1 e_1 + w_2 e_2      // vector field expressed in moving frames as sum_i w_i e_i  
 
@@ -315,7 +337,8 @@ Putting back w = w_1 e_1 + w_2 e_2
 
 Nabla(U, w) = <Jacobian(U) w, E>  + <W(w) U,  E>
 
-The above expression coincides with definition in Liu, Tong, De Goes, Desbrun “Discrete Connection and Covariant Derivative for Vector Field Analysis and Design”. 
+The above expression coincides with definition in Liu, Tong, De Goes, Desbrun “Discrete Connection and Covariant 
+Derivative for Vector Field Analysis and Design”. 
 
 <Jacobian(U) w, E>= The multiplication of Jacobian(U) with w is giving the directional derivative.
 <W(w) U,  E> = The multiplication of W(w) with U is parallel transporting U to the tip of w
@@ -346,11 +369,12 @@ Nabla(R_i^f X) = Jacobian(R_i^f X) + T_ijk (R_i^f X)_k = 0
 
 Nabla(R_i^f X) = 0 because:
 Jacobian(R_i^f X) = 0 as R_i^f X is constant function inside triangle (constant vector field on flat triangle)
-T_ijk (R_i^f X)_k = 0 as Connection Forms T_ijk are zero for orthonormal euclidean coordinates in flat space, and this is flat space since R_i^f X is a tangent vector in the face plane where vector fields are constant parallel vector fields.
+T_ijk (R_i^f X)_k = 0 as Connection Forms T_ijk are zero for orthonormal euclidean coordinates in flat space, and this 
+is flat space since R_i^f X is a tangent vector in the face plane where vector fields are constant parallel vector fields.
 
 
 Nabla Psi_i = Nabla K_j(P) Phi_i (X)
-                    = Grad K_j(P) @ Phi_i (X) + K_j(P) * Nabla_X Phi_i (X)
+            = Grad K_j(P) @ Phi_i (X) + K_j(P) * Nabla_X Phi_i (X)
 
 
 Nabla Psi_i = Grad K_j(P) @ Phi_i (X)       //since  Nabla_X Phi_i (X) = 0
@@ -421,9 +445,11 @@ Definition of Shape Functions and Test Functions on Elements
 
 Assembly
 
-The process of creating the matrix M_ij is called assembly. It consist of creating the matrix M^e_ij for each element (triangle) and then add it to the global M_ij matrix. 
+The process of creating the matrix M_ij is called assembly. It consist of creating the matrix M^e_ij for each element 
+(triangle) and then add it to the global M_ij matrix. 
 
-The global matrix M_ij is 2Nx2N where N is number of mesh nodes. In theory the matrix M^e_ij is a super-sparse version of M_ij just with a few non-zero entries which corresponds to a single element. So
+The global matrix M_ij is 2Nx2N where N is number of mesh nodes. In theory the matrix M^e_ij is a super-sparse version 
+of M_ij just with a few non-zero entries which corresponds to a single element. So
 
 M_ij = sum_e M^e_ij
 
@@ -431,7 +457,8 @@ In practice the M^e_ij is not super-sparse matrix of size 2Nx2N, but it is only 
 
 But there is a map from indices from the 6x6 matrix to the 2Nx2N matrix as follows.
 
-Each triangle is defined as having three nodes, let’s say triangle T_44 is made of nodes N_14, N_25 and N_31 of the mesh. Then we establish a local indexing of triangle with fixed nodes n_1, n_2 and n_3 and mapping 
+Each triangle is defined as having three nodes, let’s say triangle T_44 is made of nodes N_14, N_25 and N_31 of the mesh. 
+Then we establish a local indexing of triangle with fixed nodes n_1, n_2 and n_3 and mapping 
 
 n_1 = N_14
 n_2 = N_25
@@ -472,7 +499,8 @@ M_{2*31+1, 2*31+1} = M^e_(5, 5)
 
 Reference Elements
 
-One of the novelties of FEM is to be able to compute the integrals per individual elements on an easy and generic way by using so called Reference Elements.
+One of the novelties of FEM is to be able to compute the integrals per individual elements on an easy and generic way by 
+using so called Reference Elements.
 
 For triangle elements we just need a single reference triangle
 
@@ -559,7 +587,8 @@ I^k_ij(X) = <Grad N^k_i(P) tensor Phi_i(X(P)), Grad N^k_j(P) tensor Phi_j(X(P))>
 
 w_ij = area K / 3 ( I^k_ij(X_1) +  I^k_ij(X_2) +  I^k_ij(X_3))
 
-Which is an exact quadrature formula for linear function on a triangle. Since grad N^k_i(P) does not depend on P I.e., it is constant, and also Phi_i(X(P)) basis function is constant per triangle the quadrature expression reduces to:
+Which is an exact quadrature formula for linear function on a triangle. Since grad N^k_i(P) does not depend on P I.e., it is 
+constant, and also Phi_i(X(P)) basis function is constant per triangle the quadrature expression reduces to:
 
 w_ij = area K <Grad N^k_i(P) tensor Phi_i(X(P)), Grad N^k_j(P) tensor Phi_j(X(P))>
 
@@ -567,7 +596,8 @@ We can define this as:
 
 w_ij = area_k * <grad_i(P), grad_j(P)> R_i^T R_j
 
-Where R_i and R_j are the connection matrices of nodes N_i and N_j respectively which “parallel transport” tangent vectors from nodes to the triangle and allows to work with a “flat” constant metric inside triangle induced by R^3 metric.
+Where R_i and R_j are the connection matrices of nodes N_i and N_j respectively which “parallel transport” tangent vectors from 
+nodes to the triangle and allows to work with a “flat” constant metric inside triangle induced by R^3 metric.
  */
 #ifdef WIN32
 #define NOMINMAX
