@@ -27,7 +27,8 @@
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{caption}
-
+\usepackage{tikz}
+\usepackage{hyperref}
 \begin{document}
 
 %-------------------------------------------------------------------------
@@ -60,8 +61,8 @@
 %
 
 
-\title[Linear-Time Estimation of Smooth Rotations in ARAP Deformation]
- {Linear-Time \\Estimation of Smooth Rotations in \\ARAP Surface Deformation}
+\title[Parallel Transport of Vectors on 3D Mesh by the Vector Heat Method using FEM]
+ {Parallel Transport of Vectors on 3D Mesh by the Vector Heat Method using FEM}
 
 %----------Author 1
 \author[Mauricio Cele Lopez Belon]{Mauricio Cele Lopez Belon}
@@ -73,14 +74,14 @@
 
 \keywords{Geometric Algebra, Quaternion Estimation, Mesh Deformation}
 
-\date{October 21, 2019}
+\date{October 21, 2024}
 %----------additions
 %\dedicatory{To my wife}
 %%% ----------------------------------------------------------------------
 
 \begin{abstract}
 
-In recent years the As-Rigid-As-Possible with Smooth Rotations (SR-ARAP \cite{Levi2015}) technique has gained popularity in applications where an isommetric-type of surface mapping is needed. The advantage of SR-ARAP is that quality of deformation results is comparable to more costly volumetric techniques operating on tetrahedral meshes. The SR-ARAP relies on local/global optimization approach to minimize the non-linear least squares energy. The power of this technique resides on the local step. The local step estimates the local rotation of a small surface region, or cell, with respect of its neighboring cells, so a local change in one cell's rotation affect the neighboring cell's rotations and viceversa. The main drawback of this technique is that the local step requires a global convergence of rotation changes. Currently the local step is solved in an iterative fashion, where the number of iterations needed to reach convergence can be prohibitively large and so, in practice, only a fixed number of iterations is possible. This trade-off is, in some sense, defeating the goal of SR-ARAP. We propose a linear-time closed-form solution for estimating the codependent rotations of the local step by solving a sparse linear system of equations. Our method is more efficient than state-of-the-art since no iterations are needed and optimized sparse linear solvers can be leveraged to solve this step in linear time. It is also more accurate since this is a closed-form solution. We apply our method to generate interactive surface deformation, we also show how a multirresolution optimization can be applied to achieve real-time animation of large surfaces. 
+Compute the parallel transport of tangent vectors defined on a 3D mesh by the Vector Heat Method using Finite Element Method (FEM).
 
 \end{abstract}
 
@@ -90,247 +91,721 @@ In recent years the As-Rigid-As-Possible with Smooth Rotations (SR-ARAP \cite{Le
 %\tableofcontents
 \section{Introduction}
 
-\indent Quatily of surface deformation aims to preserve local properties of shapes as much as possible, removing distortion in the form of shear and stretch. As-Rigid-As-Possible with Smooth Rotations (SR-ARAP) \cite{Levi2015} aims to create a surface mapping that minimize the deviation from rigid behavior on the local scale. It also makes rigid transformations smoothly vary on local neighborhoods distributing the distortions  uniformly over the surface. The resulting deformations not only preserves the shape at small scale but also at large scale significantly increasing the quality of the final result.
+This follows the method described in \cite{Sayas2015} and \cite{Langtangen2014}.
 
-There are two main disadvangates on the current SR-ARAP method. First is the local step, which looks for best rotations of corresponding surface cells while keeping neighbor rotations similar to each other. It needs to reach global convergence for the whole mesh. Currently the local step is solved with a relaxation method i.e., optimizing rotations for individual cells keeping cell's neighbor rotations fixed and also optimizing neighbor rotations in the same manner repeating that process until convergence. Although the cost per relaxation iteration can be reduced considerably by avoiding SVD calculations (\cite{Ligare2020}) usually a fixed number of iterations is used in order to bound the solver time. That compromises the quality of results since a fixed number of iterations (usually two or three) is not enough to reach optimal rotations across the surface. Second is the high computational cost, that increases drastically when the number of vertices grows. The SR-ARAP is a non-linear technique that requires several iterations of local/global optmimization to converge.
+Solve the following Heat Equation PDE with Dirichlet boundary conditions (boundary value problem):
 
-In this paper we address both drawbacks of SR-ARAP, first we propose a method to solve the local step as a single linear system of equations, avoiding the need of iteratively solve a series of SVD problems which are codependant to each other. Second we propose a simple multiresolution method based on solving the non-linear system on a simplified surface mesh first and then use harmonic interpolation of rotations to transfer the optimized rotations to the full resolution mesh, leveraging the Laplacian matrix needed to solve the global step of the optimization.
-
-
-\section{Related Work}
-
-Since the focus of this paper is on As-Rigid-As-Possible (ARAP) surface deformation methods we will only review previous works on ARAP deformation. The ARAP Surface Modeling was introduced by Sorkine and Alexa \cite{Sorkine2007} to produce robust and physically plausible deformation by minimizing the local rigid transformation of the laplacian coordinates associated to every vertex. Although results on low resolution meshes looks close to physical deformations the method fails to achieve satisfactory results  on high resolution meshes. The reason is that the ARAP energy is minimized by preserving rigidity on large parts of the mesh at the expense of concentrating all the distortion on small parts of the mesh. This problem has been solved in the Smooth Rotation enhanced ARAP method (SR-ARAP) of Levi and Gotsman \cite{Levi2015} where the deformation energy is extended with a further factor that penalizes too different rotations of close vertices, significantly increasing the quality of the final result. Chao \emph{et al} \cite{Chao2010} derives the ARAP enegry from the elastic energy of continuum mechanics showing a consistent discretization for volumetric ARAP with tetrahedron cells and for 2D ARAP with triangle cells in 2D. However the ARAP energy doesn't have a consistent discretization for triangle surfaces in 3D. The SR-ARAP method  \cite{Levi2015} also address this issue providing an energy with a consistent discretization for surfaces in 3D. Further enhancements have been proposed to the SR-ARAP deformation technique addressing performance issues on large meshes \cite{Morsucci2018, Ligare2020}, making it able to adjust physical stiffness \cite{Chen2017, LeVaou2020} and Introducing local scaling to the rotation i.e., turning rigid transforms into a similarity transforms \cite{Jiang2017}.
-
-
-
-\section{As-Rigid-As-Possible Shape Deformation with Smooth Rotations}
-
-Given two meshes $Q$ and $P$ consisting of vertices $q_i$ and $p_i$ respectively, and directed edges $p_{ij} = p_j - p_i$ and $q_{ij} = q_j - q_i$ , the discrete As-Rigid-As-Possible with Smooth Rotations (SR-ARAP) energy is defined as:
-\begin{equation}
-E(Q, P) = \sum_{i=1}^m { (\sum_{j \in N(i)} { c_{ij} \|R_i (q_j - q_i) \tilde R_i - (p_j - p_i)  \|^2 } \nonumber \\
-+ \alpha A \sum_{j \in N(i)} {w_{ij} \| R_j - R_i \|^2} )}\nonumber
-\end{equation}
-where $R_1, ..., R_m \in \mathbb{H}$ are local quaternions, $N(i)$ denote the set of $1$-ring neighbors of vertex at position $i$, $c_{ij}$ are weighting coefficients such that $\sum_j^n{c_{ij}} = 1$, typically the familiar cotangent weights, $w_{ij}$ are positive weighting coefficients such that $\sum_j^n{w_{ij}} = 1$, $A$ is the mesh area used to make the energy scale invariant and $\alpha$ is a positive scalar parameter.
-
-The main idea of this method is breaking the surface into overlapping cells and seek for keeping the cells transformations as rigid as possible in the least squares sense. Overlap of the cells is necessary to avoid surface stretching or shearing at the boundary of the cells. 
-The first term is a membrane energy which penalizes stretching and shearing of a cell and the second term is the bending energy which penalizes the difference between a cell's rotation and the rotations of its neighboring cells. 
-The objective of the membrane term is to lower the distortion of a cell by keeping the map differential close to rigid. 
-The objective of the bending term is to keep the variation in the rotations in a cell neighborhood low, such that the neighborhood would transform as a unit, as much as possible. 
-
-The vertices of mesh $Q$ are in original position while vertices of mesh $P$ are the deformed vertices and the quaternion $R_i$ is the best rigid transformation, in the least squares sense, relating the original and the deformed vertices.
-This is a non-linear optimization problem that is tipically solved by a iterative local/global method that solves two linear sub-problems on each iteration. 
-
-The first step, so called local step, is to consider the vertices of $P$ constant and obtain the best rigid transformation $R_i$ for each cell. The second step, so called global step, is to consider the rotations $R_i$ constant and computing the optimal deformed vertices $p_i$ in the least squares sense. 
-
-\section{Global Step}
-
-The global step is computing the optimal vertices $\{p_i\} \in P$.
-\begin{eqnarray*}
-E(P) = \min_{p_1,...,p_m \in \mathbb R^3} \sum_{i=1}^m  (  \sum_{j \in N(i)} { c_{ij} \|R_i q_{ij} \tilde R_i -  p_{ij}\|^2 } \\
-+ \alpha A \sum_{j \in N(i)} { w_{ij} \|R_i - R_j\|^2 } )
-\end{eqnarray*}
-Taking the partial derivatives of $E(P)$ w.r.t. $p_i$ and equating the result to zero lead us to obtain the linear system of Equation~(\ref{eq:ls_for_p_ga}) (\cite{Lopez2013}):
-\begin{eqnarray}
-\label{eq:ls_for_p_ga}
-\sum_{j \in N(i)} { c_{ij} (p_j - p_i) } = \sum_{j \in N(i)} { \frac{c_{ij}}{2} (R_i q_{ij} \tilde  R_i + R_j q_{ij} \tilde R_j) }
-\end{eqnarray}
-which can be expressed in matrix form as $\mathrm L \; \mathrm P = \mathrm C$, where $\mathrm L$ is the discrete Laplace-Beltrami operator, $\mathrm P$ is the column of target positions and $\mathrm C$ a column vector whose $i$th row is the right hand side of equation (\ref{eq:ls_for_p_ga}). Constraints of the form $p_i = p^{const}_i$ are incorporated into the system by substituting the corresponding variables i.e., erasing respective rows and columns from $\mathrm L$ and updating the right-hand side of equation (\ref{eq:ls_for_p_ga}) with the values $p^{const}_i$. The system is then solved in the least squares sense:
-\begin{eqnarray}
-(\mathrm L^T \mathrm L) \; \mathrm P = \mathrm L^T \ \mathrm C
-\end{eqnarray}
-
-\section{Local Step}
-
-As described in a previous sections, the rotations matching cell's are codependent to each other over the whole mesh. The current approach is to optimize the rotations with a relaxation method in which the rotation of each cell is independently computed, while keeping the neighbor rotations fixed, repeating it until global convergence is reached. At least two relaxation iterations must be done per each global iteration. In this section we show how the local step can be solved in closed form as a single sparse linear system eliminating entirely the need of relaxation iterations.
-
-\subsection{Closed Form of Local Step}
-
-We attempt to minimize the SR-ARAP energy function:
-\begin{eqnarray}
-E(R) = \min_{R_1,...,R_m \in \mathbb H} \sum_{i=1}^m  (  \sum_{j \in N(i)} { c_{ij} \|R_i q_{ij} \tilde R_i -  p_{ij}\|^2 } \\
-+ \alpha A \sum_{j \in N(i)} { w_{ij} \|R_i - R_j\|^2 } )
-\end{eqnarray}
-
-Ignoring temporarily the sum over all vertices, the energy to minimize in the neighborhood of a point $p_i$ is $E_i(R_i)$:
+\begin{tabular}{l l}
+	Solve $\nabla^2 U(\vec X, t) = \frac{ \partial U(\vec X, t)}{\partial t}$ & in region $\Omega$ \\
+	s.t. $U(\vec X, t) = G(\vec X)$  &  on the region boundary $\partial \Omega$ for all times \\
+	$U(\vec X, 0) = U_0(\vec X)$  &  initial condition at time t = 0 \\
+\end{tabular}
+where $U(\vec X, t)$ is a vector field and $\nabla^2$ is the ``Connection Laplacian'' which produces another
+vector field ans is defined in terms of the covariant derivative $\nabla$ as:
 
 \begin{eqnarray}
-E_i(R_i) =  \sum_{j \in N(i)} { c_{ij} \|R_i q_{ij} \tilde R_i - p_{ij}  \|^2 } + \alpha A \sum_{j \in N(i)} {w_{ij} \| R_j - R_i \|^2} \nonumber
+	\label{eqn:connection_laplacian}
+	\nabla^2 U(\vec X) = \nabla^* \nabla U(\vec X) 
 \end{eqnarray}
-Notice that the first term $\sum_{j \in N(i)} { c_{ij} \|R_i q_{ij} \tilde R_i - p_{ij}  \|^2 } $ can be written in matrix language as the quadratic form $R_i^T M_i R_i$ where $M_i$ is a $4\times4$ matrix constructed from vectors $q_{ij}$ and $p_{ji}$ (see Section \ref{section:the_form_of_arap_matrix}):
-\begin{eqnarray}
-		E_i(R_i) = R_i^T M_i R_i + \alpha A \sum_{j \in N(i)} {w_{ij} \| R_j - R_i \|^2  }\\ \nonumber
-\end{eqnarray}
+where $\nabla^*$ is the adjoint of the covariant derivative $\nabla$, $U(\vec X)$ is a tangent vector field on the 3D surface 
+(2D manifold embedded in $\mathbb R^3$). $G(\vec X)$ the vector boundary conditions and $U_0(\vec X)$ is a vector field at time 0.
 
-Differentiating with respect to $R_i$ we get:
-\begin{eqnarray}
-	\label{eqn:max_energy}
-	\frac{\partial E_i(R_i)}{\partial R_i}  = 2 M_i R_i + 2 \alpha A \sum_{j \in N(i)} {w_{ij} (R_i - R_j) }\\
-	= M_i R_i + \alpha A R_i - \alpha A \sum_{j \in N(i)} {w_{ij} R_j } 
-\end{eqnarray}
+The covariante derivative $\nabla(U, w)$ is a ``directional derivative'' operator that has two vector field arguments:
+$U(\vec X)$ and $w(\vec X)$. Where $U(\vec X)$ is the vector field which is differentiated and $w(\vec X)$ is a vector field 
+telling the direction in which directional derivatives are taken. It returns a vector field as which is a measure of 
+relative change of $U$ w.r.t to $w$. 
 
-Setting the partial derivatives to zero $\frac{\partial E_i(R_i)}{\partial R_i}  = 0$
-
-\begin{eqnarray}
-	\label{eqn:local_solution}
-	(M_i + \alpha A I)R_i  = \alpha A \sum_{j \in N(i)} {w_{ij} R_j }\\ \nonumber
-\end{eqnarray}
-
-Which is a linear system of equations. The system (\ref{eqn:local_solution}) can be solved for all quaternions in closed form. Writing (\ref{eqn:local_solution}) in matrix form we get:
+Usually one can omit the vector field $w$ in which case we talk about a total derivative $\nabla U$ which is a 2-tensor 
+(i.e., a matrix). For example in flat space $\mathbb R^3$ the vector field represented as $U = \left[u_x, u_y, u_z\right]^T$ 
+the operator $\nabla U$ would be:
 
 \begin{eqnarray}
-	\label{eqn:local_solution_closed_form}
-	\mathrm M \; \mathrm R = \mathrm W \; \mathrm R\\
-	(\mathrm M - \mathrm W) \mathrm R = \mathrm 0
-\end{eqnarray}
-
-Where $\mathrm M$ is a symmetric sparse  matrix  with dimensions $4n\times 4n$ which is stacking $M_i$ at its diagonal, $\mathrm W$ is a discrete Laplacian matrix with dimensions $4n\times 4n$ derived from RHS of (\ref{eqn:local_solution}) i.e., $\sum_{j \in N(i)} {\alpha A w_{ij} R_j }$ holding the coefficients $\alpha A w_{ij}$. $\mathrm R$ is column matrix of dimensions $1\times 4n$ stacking the coefficients of quaternions $R_i$.
-
-The sparse linear system of (\ref{eqn:local_solution_closed_form}) can be solved by imposing quaternion constraints $R^{const}_i$ which corresponds to best rotation of constrained points $p^{const}_i$:
-\begin{eqnarray}
-	\label{eqn:local_solution_closed_form_const}
-	(\mathrm M - \mathrm W) \mathrm R = \mathrm 0\\
-	s.t. \ R_i = R^{const}_i \nonumber
-\end{eqnarray}
-
-Constraints of the form $R_i = R^{const}_i$ are incorporated into the system by substituting the corresponding variables i.e., erasing respective rows and columns from $(\mathrm M - \mathrm W)$ and updating the right-hand side of (\ref{eqn:local_solution_closed_form_const}) with the values $R^{const}_i$. The system is then solved in the least squares sense.
-
-Since the constraint $R_i^T R_i = 1$ is not honored by the linear system the quaternion $R_i$ given as solution must be normalized. As shown in \cite{Ligare2020} the solution of (\ref{eqn:local_solution}) gives a linear approximate solution to the optimal quaternion in the least squares sense. Our results confirm that the proposed linearization is accurate for the SR-ARAP rotations and it is not affecting accuracy in any significant way.
-
-\subsection{Rotation constraints $R^{const}_i$}
-
-The rotation constraints $R^{const}_i$ in (\ref{eqn:local_solution_closed_form_const}) have to be computed directly from equation (\ref{eqn:local_solution}) for each constrained point $p^{const}_i$:
-\begin{equation}
-	R^{const}_i  = (M_i + \alpha A I)^{-1}  \sum_{j \in N(i)} {\alpha A w_{ij} R^{prev}_j } \nonumber
-\end{equation}
-where neighbor rotations $R^{prev}_j$ are known from previous iteration. So computing constraint quaternionss amounts to solve a small $4\times4$ linear system. The resulting quaternion $R^{const}_i$ must be normalized.
-
- \subsection{Rotation's Feedback}
- 
-The linear system of (\ref{eqn:local_solution_closed_form_const}) find quaternions from scratch i.e., it doesn't take into account the previous state of the quaternions i.e., the temporal coherence. That might lead to undesired results in an animation sequence. In particular, the sense of the rotations found by (\ref{eqn:local_solution_closed_form_const}) for some animation step are not always respecting the sense of rotations from previous time. The abrupt change in the sense of rotation cause animation artifacts specially for large rotations.
-
-The equation (\ref{eqn:local_solution_closed_form_const}) allow us to introduce \emph{feedback} quaternions to the RHS which acts as \emph{hints} to find quaternions close to the ones in previous iteration. Given the quaternion $R^{prev}_i$ and a positive small scalar value $\epsilon_i$ we augment equation (\ref{eqn:local_solution}) in the following way:
-
-\begin{eqnarray}
-	\label{eqn:local_solution_feedback}
-	(M_i + \alpha A I)R_i  = \alpha A \sum_{j \in N(i)} {w_{ij} R_j} + \epsilon R^{prev}_i
-\end{eqnarray}
-where  $\sum_{j \in N(i)} {w_{ij}} = 1-\epsilon$. Our intention is to make $R_i$ a neighbor of itself, in some sense. The strength of feedback is given by $\epsilon$. So the global system is changed as follows: 
-\begin{eqnarray}	\label{eqn:local_solution_closed_form_const_feedback}
-	(\mathrm M - \mathrm W) \mathrm R = \epsilon \mathrm R^{prev}\\
-	s.t. \ R_i = R^{const}_i \nonumber
-\end{eqnarray}
-where $\mathrm R^{prev}$ is a $1\times4n$ column vector stacking all the unconstrained quaternions $R^{prev}_i$ from previous iteration.
-
-\section{Multiresolution Optimization}
-
-For achieving real-time performance we optimize the SR-ARAP energy in a low resolution version of the input mesh and then we transfer that solution to the full resolution mesh. To obtain the low resolution mesh we simplify the mesh using \emph{half edge collapses} (i.e., the simplified mesh is a triangulation of a subset of the original vertices) while minimizing the Quadrics error metric.
-After we obtained the optimal deformed shape on the simplified mesh we transfer the optimized rotations to the full resolution mesh using Harmonic Interpolation of quaternions (see Section \ref{section:harmonic_interpolation_rotors}) and then solve the following linear system using the optimized vertices of the low resolution mesh as positional constraints:
-\begin{eqnarray*}
-\sum_{j \in N(i)} { c_{ij} (p_j - p_i) } = \sum_{j \in N(i)} { \frac{c_{ij}}{2} (R_i q_{ij} \tilde  R_i + R_j q_{ij} \tilde R_j) }
-\end{eqnarray*}
-
-\subsection{Harmonic Interpolation of Quaternions}
-\label{section:harmonic_interpolation_rotors}
-
-The seminal work of Pinkall and Polthier \cite{Pinkall1993} shows how to interpolate given data over a discrete domain using harmonic maps. Harmonic maps are critical points of the Dirichlet energy (stretching energy) $\int_{\Omega}{ |\nabla f|^2 dA }$, which generates minimal surfaces. 
-The \emph{discrete harmonic energy} of a map $f$ defined on mesh vertices $\{p_i\}$ has the form:
-\begin{equation}
-E(f) = \sum_{i,j}{c_{ij} \| f(p_j) - f(p_i) \|^2 }
-\end{equation}
-where $w_{ij}$ are the (symmetric) cotangent weights \cite{Pinkall1993} defined on triangle edges going from $p_i$ to $p_j$. The discrete Laplacian operator can be identified in that energy as:
-\begin{equation}
-\Delta f = \sum_{j \in N_i} { c_{ij} ( f(p_j) - f(p_i) ) }
-\end{equation}
-where $N_i$ is the set of indices of the neighbors of vertex $p_i$. It is known that harmonic energy minimizes angular distortions. That means that harmonic functions smoothly blend boundary conditions over the domain. Harmonic functions are intrinsic to surfaces and independent of the discretization used to produce meshes. In spirit similar to \cite{Zayer2005}, we propose the interpolation of quaternions over a mesh using harmonic functions. The harmonic quaternion interpolation over a surface mesh can be formulated as the solution to the following discrete harmonic equation:
-\begin{eqnarray}
-\label{eq:harmonic_rotor}
-   \sum_{j \in N(i)} { c_{ij} ( R_j - R_i ) } = 0
-\end{eqnarray}
-subject to Dirichlet boundary conditions $R_k = R^{const}_k$, where $\{R^{const}_k\}$ are the optimized quaternions from the lower resolution mesh and $\{c_{ij}\}$ are the cotangent weights. This leads to the solution of a sparse linear matrix system. This interpolation produces a smooth field of quaternions by ``averaging'' the boundary conditions gradually over the surface. This is in effect equivalent to a linear interpolation of boundary conditions across the surface. It can be written in matrix form as:
-\begin{eqnarray}
-	\mathrm L \; \mathrm R = 0\\
-	s.t. \ R_k = R^{const}_k \nonumber
-\end{eqnarray}
-where $\mathrm L$ is discrete Laplacian operator used to solve the global step. Note that interpolated quaternons are not of unit length and must be normalized afterwards. Despite the simplicity of this approach, it works surprisingly well, it is extremely efficient, and it provides a natural propagation at no extra cost.
-
- \section{The form of $M_i$}
- \label{section:the_form_of_arap_matrix}
-
-Notice that the membrane term $\sum_j \|R_i q_{ij} \tilde R_i - p_{ij} \|^2$ is equivalent to $\sum_j  \|R_i q_{ij} - p_{ij} R_i\|^2$ under the L2 norm. Also notice that  $R_i q_{ij} - p_{ij} R_i$ can be rewriten as $(w_i + B_i) q_{ij}  - p_{ij} (w_i + B_i)$ for some a scalar $w_i$ and pure quaternion $B_i$ such that $R_i = w_i + B_i$. Expanding the quaternion product in terms of the inner product and the cross product we get:
-\begin{eqnarray}
-     (q_{ij} - p_{ij}) w_i - (q_{ij} - p_{ij}) \cdot B_i - (q_{ij} + p_{ij}) \times B_i
-\end{eqnarray}
-The expression above can be written in matrix form to get the matrix system $M_{ij} R_i$:
-\begin{eqnarray}
-	M_{ij} R_i =
-	\left[\begin{array}{cc}
-		0        &       -d_{ij}^T \\
-		d_{ij}  &   \left[ s_{ij} \right]^T_\times \\
-	\end{array}\right]
-	\left[\begin{array}{c} 
-		w_i \\
-		B_i
-	\end{array}\right] = 
+	\nabla U =  
 	\left[\begin{array}{c}
-		-d_{ij}^T B_i \\
-		w_i d_{ij} - s_{ij} \times B_i 
-	\end{array}\right]\\
-	d_{ij} = q_{ij} - p_{ij} \ \ s_{ij} = p_{ij} + q_{ij}  \nonumber
+		\frac{\partial}{\partial x} \\
+		\frac{\partial}{\partial y} \\
+		\frac{\partial}{\partial z} 
+	\end{array}\right] 
+	\left[\begin{array}{ccc}
+		u_x &  u_y  & u_z 
+	\end{array}\right] 
+    =
+	\left[\begin{array}{ccc}
+		\frac{\partial}{\partial x} u_x  &  \frac{\partial}{\partial y} u_x   &   \frac{\partial}{\partial z} u_x \\
+		\frac{\partial}{\partial x} u_y  &  \frac{\partial}{\partial y} u_y   &   \frac{\partial}{\partial z} u_y \\
+		\frac{\partial}{\partial x} u_z  &  \frac{\partial}{\partial y} u_z   &   \frac{\partial}{\partial z} u_z 
+	\end{array}\right] \nonumber
 \end{eqnarray}
-where $d_{ij}$ and $s_{ij}$ are $3 \times 1$ column vectors holding pure quaternion coefficients, $M_{ij}$ is a skew-symmetric $4\times 4$ real matrix, so that $M_{ij}^T = -M_{ij}$. The quaternion $R_i$ is represented as $4 \times 1$ column vector made of the scalar $w_i$ and the $3 \times 1$ column vector $B_i$ holding the pure quaternion components. The $3\times 3$ matrix $\left[ s_{ij} \right]_\times$ is representing the skew-symmetric cross-product matrix as usually defined for vectors in $\mathbb R^3$.
 
-We can express $\sum_j \|R_i q_{ij} - p_{ji} R_i\|^2$ as the quadratic form $R_i^T M_i R_i$ where $M_i = \sum_j^n { c_{ij} M_{ij}^T M_{ij}}$. Note that since $M_{ij}$ is skew-symmetric, the product $M_{ij}^T M_{ij}$ is symmetric and positive semi-definite.
-Consequently the matrix $M_i$ is also symmetric positive semi-definite. It follows that all eigenvalues of $M_i$ are real and $\lambda_i \geq 0$.
+In more compact notation
 \begin{eqnarray}
-	M_{ij}^T M_{ij} = 
-	\left[\begin{array}{cc}
-		\| d_{ij} \|^2       &         (s_{ij} \times d_{ij})^T \\
-		s_{ij} \times d_{ij}  &    d_{ij} d_{ij}^T - \left[ s_{ij} \right]^2_\times \\
-	\end{array}\right]\\
-	d_{ij} = q_{ij} - p_{ij} \ \ s_{ij} = p_{ij} + q_{ij}  \nonumber
+	\nabla U = \partial \otimes U = J(U)
 \end{eqnarray}
 
+where $\otimes$ is the ``tensor product'', $J(U)$ is the Jacobian matrix of $U$ (or the differential) and 
+$\partial$ is the ``grandient operator''. 
 
- \subsection{Efficient Computation of $M_i$}
+In a curved manifold the above definition would need to be adjusted to cope with curvature with the aid of a ``connection''.
 
-The symmetric matrix $M_{ij}^T M_{ij}$ has a simple form:
+The adjoint of $\nabla$ can be defined by ``integration by parts'' 
+(see  \href{https://en.wikipedia.org/wiki/Vector_calculus_identities}{wikipedia}) 
+over surface $\Omega$:
 
-\begin{eqnarray*}
-	M_{ij}^T M_{ij} = 
-	\left[\begin{array}{cc}
-		\| d_{ij} \|^2        &         (s_{ij} \times d_{ij})^T \\
-		s_{ij} \times d_{ij}  &    d_{ij} d_{ij}^T - s_{ij} s_{ij}^T + \| s_{ij} \|^2 I_{3\times3} \\
-	\end{array}\right]\\
-     d_{ij} = q_{ij} - p_{ij} \ \ s_{ij} = p_{ij} + q_{ij}  \nonumber
-\end{eqnarray*}
+Recall adjoint operator is defined as an inner product:
+\begin{eqnarray}
+	\left\langle f , \nabla^* g \right\rangle = \left\langle \nabla f , g \right\rangle \nonumber\\
+	\int { f \ \nabla^* g \ dx }  = \int { \nabla f \ g \ dx } \nonumber
+\end{eqnarray}
+recall intergation by parts formula:
+\begin{eqnarray}
+	\int_{\Omega} { f'(x) g(x) \ dx }  = \int_{\partial \Omega} { f(x) g(x) \ dx } - \int_{\Omega} { f(x) g'(x) \ dx } \nonumber
+\end{eqnarray}
+doing integration by parts on $\int { \nabla_x f \ g \ dx }$ we get:
+\begin{eqnarray}
+	\int_{\Omega} { \nabla_X f \ g \ dx }  = \int_{\partial \Omega} { f \ g \ dx } - \int_{\Omega} { f \ \nabla_X^* g \ dx } \nonumber
+\end{eqnarray}
+where $\nabla_X$ is the directional derivative such that $\nabla_X f = X \cdot \nabla f$
 
-Writing it in terms of $p_{ij}$ and $q_{ij}$ we get:
+Applying the above to the vector field valued functions $F$ and $G$
+\begin{eqnarray}
+	\label{eqn:integration_by_parts_adjoint}
+	\int_{\Omega}{ \nabla_X F \cdot G \ dx } = \int_{\Omega}{ F \cdot \nabla_X^* G \ dx } + \int_{\partial \Omega}{ F \cdot G(N) \ dS}
+\end{eqnarray}
+where $\nabla_X F$ and $\nabla_X^* G$ are vector fields and the $(\cdot)$ is inner product.
+$N$ is unit normal at boundary $\partial \Omega$. For details check 
+\href{https://ddg.math.uni-goettingen.de/pub/vector-dirichlet.pdf}{A Simple Discretization of the Vector Dirichlet Energy}
+For identities in flat space check \href{https://thatsmaths.com/2020/01/23/adjoints-of-vector-operators/}{adjoints of vector operators}
+
+Going back to the original goal it is to compute the parallel transported vector field $U$ from vector fields
+given at boundary. The Vector Heat Method works as follows: solves the Vector Heat Equation 
+PDE $\frac{\partial U}{\partial t} = \nabla^2 U$ with dirichlet boundary conditions using Finite Element Method (FEM)
+
+\begin{tabular}{l l}
+	Solve $\bigtriangleup U(\vec X, t) = \frac{ \partial U(\vec X, t)}{\partial t}$ & in region $\Omega$ \\
+	s.t. $U(\vec X, t) = G(\vec X)$  &  on the region boundary $\partial \Omega$ for all times \\
+	$U(\vec X, 0) = U_0(\vec X)$  &  initial condition at time t = 0 \\
+\end{tabular}
+
+\subsection{The Vector Heat PDE}
+
+Since $\frac{ \partial U(\vec X, t)}{\partial t}$ is a time derivative we discretize the time using Backguard Euler
+\begin{eqnarray}
+	\frac{ \partial U(\vec X, t)}{\partial t} = \frac{U(\vec X, t + \Delta t) - U(\vec X, t)}{\Delta t}
+\end{eqnarray}
+
+Replacing on original PDE for backguard euler:
+\begin{eqnarray}
+	\frac{U(\vec X, t + \Delta t) - U(\vec X, t)}{\Delta t} = \nabla^2 U(\vec X, t + \Delta t)
+\end{eqnarray}
+
+Re-arranging:
+\begin{eqnarray}
+ 	U(\vec X, t + \Delta t) - \Delta t  \nabla^2 U(\vec X, t + \Delta t) = U(\vec X, t)
+\end{eqnarray}
+
+or better:
+\begin{eqnarray} 
+	U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) = U(\vec X, t_{i-1})
+\end{eqnarray}
+
+The integral form (notice $\int_{\Omega}$ is a double integral) is integrating each vector component separately.
+\begin{eqnarray} 
+	\int_{\Omega}{ U(\vec X, t_i) \ dA} - \Delta t \int_{\Omega}{ \nabla^2 U(\vec X, t_i) \ dA } = \int_{\Omega} { U(\vec X, t_{i-1}) \ dA }
+\end{eqnarray}
+
+\section{Weak Form}
+
+
+The weak form comes from the ``variational method''. Here one tries to get a solution to the 
+PDE by translating it into a minimization problem. That's done by definig an energy function that is a 
+linear functional on a function space $\Omega$. The linear functional is artificial i.e., pure 
+mathematical device to enable optimization. In consequence, solving the variational problem may 
+require less continuity than that of the actual solution (hence the name WEAK form).
+ 
+Consider the test function $\vartheta (x,y)$ (a.k.a. test function) with compact support defined on $\Omega$.
+The ``Galerkin'' variational method states that the inner product of $\vartheta(x,y)$ with a residual function $R(x,y)$ should be zero.
+Note that in this case $\vartheta$ have to be a vector field of the form 
+$\vartheta(\vec X) = \left[\varphi_i(\vec X), \varphi_j(\vec X)\right]$ which is 
+a vector with a scalar test functions with compact support as components.
 
 \begin{eqnarray}
-   \label{eqn:matrix_fast}
-   	M_{ij}^T M_{ij} 
-   	= 2
-	\left[\begin{array}{cc}
-		q_{ij}^T p_{ij}       &         (q_{ij} \times p_{ij})^T \\
-		q_{ij} \times p_{ij}  &    q_{ij} p_{ij}^T + p_{ij} q_{ij}^T - q_{ij}^T p_{ij} I_{3\times3} \\
-	\end{array}\right]\\ \nonumber
-    + (\| p_{ij} \|^2 + \| q_{ij} \|^2) I_{4\times4}
+	\int_{\Omega} { \vartheta(\vec X) \cdot R(\vec X) \ dA } = 0 \nonumber
 \end{eqnarray}
-All terms of \ref{eqn:matrix_fast} can be derived from the dyadic tensor $q_{ij} p_{ij}^T$ plus the quantity $\|p_{ij} \|^2 + \| q_{ij} \|^2$. Since matrix $q_{ij} p_{ij}^T$ is of $3\times3$ its computation is efficient. 
+ where the $(\cdot)$ is inner product and $R(x,y)$ is the residual or error of the function i.e., 
+\begin{eqnarray}
+	R(x,y) = U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) - U(\vec X, t_{i-1}) \nonumber
+\end{eqnarray}
+
+The weak form of the PDE is:
+\begin{eqnarray}
+	\vartheta(\vec X) \cdot R(\vec X) = 0 \nonumber\\
+	\vartheta(\vec X) \cdot (U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) - U(\vec X, t_{i-1})) = 0 \nonumber\\
+	U(\vec X, t_i) \cdot \vartheta(\vec X) - \Delta t \vartheta(\vec X) \cdot \nabla^2 U(\vec X, t_i) = U(\vec X, t_{i-1}) \cdot \vartheta(\vec X) \nonumber
+\end{eqnarray}
+ and the integral (variational) form of the PDE is
+\begin{eqnarray}
+	\label{eqn:original_weak_form}
+	\int_{\Omega}{ U_t \cdot \vartheta \ dA } - \Delta t \int_{\Omega}{ \vartheta \cdot \nabla^2 U_t \ dA} = \int_{\Omega} { U_{t-1} \cdot \vartheta \ dA }
+\end{eqnarray}
+NOTE on inner products: The integral form is more important since integral of
+of a ``vector field'' function $f(x,y)$ times test function $\vartheta(x,y)$ is the ``inner product'' 
+$\int_{\Omega}{ f(x,y) \cdot \vartheta(x,y) \ dA }$ where the $(\cdot)$ is inner product of vectors.
+If function $\vartheta(x,y)$ is a ``test function" which is a vector field with separate scalar test function with compact 
+support as components then the inner product is way to ``measure'' the 
+function $f(x,y)$ on location where $\vartheta(x,y)$ is defined.
+
+Replacing $F = \vartheta$ and $G = \nabla U$ in (\ref{eqn:integration_by_parts_adjoint}) we get:
+
+\begin{eqnarray}
+	\label{eqn:covariant_derivative_adjoint}
+	\int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } = \int_{\Omega}{ \vartheta \cdot \nabla^* \nabla U \ dx } + \int_{\partial \Omega}{ \vartheta \cdot \nabla U(N) \ dS} \nonumber\\
+	\int_{\Omega}{ \vartheta \cdot \nabla^* \nabla U \ dx } = \int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } - \int_{\partial \Omega}{ \vartheta \cdot \nabla_N U \ dS} \nonumber\\
+	\int_{\Omega}{ \vartheta \cdot \nabla^2 U \ dx } = \int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } - \int_{\partial \Omega}{ \vartheta \cdot \nabla_N U \ dS}
+\end{eqnarray}
+where $\nabla U$ and $\nabla \vartheta$ are rank-2 tensor fields by virtue of the covariant derivative. 
+Setting $\vartheta = 0$ at the boundary and replacing (\ref{eqn:covariant_derivative_adjoint}) in (\ref{eqn:original_weak_form})
+
+\begin{eqnarray}
+	\label{eqn:weak_form}
+	\int_{\Omega}{ U_t \cdot \vartheta \ dA } - \Delta t \int_{\Omega}{ \nabla \vartheta : \nabla U_t \ dA } = \int_{\Omega} { U_{t-1} \cdot \vartheta \ dA }
+\end{eqnarray}
+
+
+\section{Discretization in Flat Space $\mathbb R^2$}
+\label{sec:discretization} 
+
+The domain $\Omega$ has to be meshed in $N$ nodes and $T$ triangles. For linear elements the nodes coincides with 
+mesh vertices (but for quadratic elements there will be nodes defined on the triangle's edge mid-points, 
+so there can be more nodes than vertices).
+
+The ``test function'' is a function that allows us to linearly interpolate local orthonormal frames 
+located at mesh nodes to the triangle-set sorrounding the node. Those local orthonormal frames 
+located at mesh nodes are ``tangent spaces'' of the nodes. In the flat space of $\mathbb R^2$ all
+tangent spaces are equal, so the interpolation of them is simple. However the key point to understand 
+is that test functions represent linear interpolation (and atenuation) of ``local frames''. 
+We define a test function $\varphi_i$ per node $N_i$ which will be used to linearly interpolate tangent vectors
+defined in terms of local frames localted at nodes to all triangles incident to the node $N_i$. 
+
+
+Since we are in flat space $\mathbb R^2$, the tangent space at node $N_i$ is the same as any other tangent space everywhere else 
+in the domain $\Omega$. Therefore parallel transport is just the identify function or ``teleportation'', 
+and the covariant derivative $\nabla_X U$ coincides with the directional derivative $X \cdot \nabla U$.
+
+The ``local basis'' for tanget space at $N_v$ is defined as $T_v = (e_1, e_2)$, which is an orthonormal frame. 
+The ``local basis'' for tanget space at triangle is $T_f = (e_1, e_2)$, the connection 1-form $\omega_i^f = I$ where $I$ is 
+the identity matrix. Therefore the vectors at $U(x,y)$ are expressed in terms of the ``global basis``'' $(e_1, e_2)$
+
+As usual, we define a set of scalar tests functions with compact support $\phi_i(x, y)$ 
+for every node $N_i$ to be equal to $0$ or $1$ and linear everywhere else:
+\begin{eqnarray}
+	\phi_j(\vec N_j) = 1 \ \ \  \forall j = i \nonumber\\
+	\phi_j(\vec N_j) = 0 \ \ \  \forall j \neq i \nonumber\\
+	\phi_j(\vec X) = \text{linear in} \ \Omega_i \nonumber
+\end{eqnarray}
+
+We use those $\phi_j$ to define the vector-valued basis function $\varphi_i$ (see 
+\href{https://math.stackexchange.com/questions/1320672/system-of-equations-for-vector-valued-functions-problems}{ref1}, 
+\href{https://www.dealii.org/developer/doxygen/deal.II/group__vector__valued.html}{ref2}, 
+\href{https://www.dealii.org/developer/doxygen/deal.II/step_8.htmls}{ref3},
+\href{https://scicomp.stackexchange.com/questions/40735/fem-for-vector-valued-problems-reference-request}{ref4}):
+
+\begin{eqnarray}
+	\varphi_i(\vec X) = \vec \phi_i(\vec X) T_j \nonumber\\
+	\varphi_i(\vec X) = 
+		\left[\begin{array}{c}
+			\phi_i(\vec X) \\
+			\phi_i(\vec X)
+		\end{array}\right]^T (e_1, e_2)
+\end{eqnarray}
+Where $T_j = (e_1, e_2)$ is the ``local basis'' ($2 \times 2$ matrix) for tanget space at $N_j$, 
+$\vec X$ is vector expressed also in basis $(e_1, e_2)$.
+
+Now we discretise the solution $U(x,y)$ to be a finite sum:
+\begin{eqnarray}
+	U(x,y) = \sum_j^N{ \varphi_j(x,y)^T
+	\left[\begin{array}{cc}
+		U^{e_1}_j & 0\\
+		0 & U^{e_2}_j
+	\end{array}\right]}
+\end{eqnarray} 
+where $\odot$ is the component-wise product of vectors 
+(a.k.a., \href{https://en.wikipedia.org/wiki/Hadamard_product_%28matrices%29}{Hadamard product})
+and $U_j$ is a vector ($2 \times 1$ column).
+
+Now we discretise $\nabla U(x,y)$ which is a rank-2 tensor field
+\begin{eqnarray}
+	\nabla U(x,y) = \sum_j^N{ \nabla \varphi_j(x,y) U_j } \nonumber\\
+	\nabla U(x,y) = \sum_j^N{ 
+	\left[\begin{array}{c}
+		\nabla \phi_j(\vec X) \\
+		\nabla \phi_j(\vec X)
+	\end{array}\right]^T 
+	\left[\begin{array}{cc}
+		U^{e_1}_j & 0\\
+		0 & U^{e_2}_j
+	\end{array}\right] }
+\end{eqnarray} 
+where $\nabla \varphi_j$ is a $2 \times 2$ matrix.
+
+Given $\vartheta(x,y) = \left[\phi_i(x,y), \phi_i(x,y)\right]^T$ ,
+we discretise the test function $\nabla \vartheta(x,y)$ in a the following manner:
+\begin{eqnarray}
+	\nabla \vartheta(x,y) = \sum_j^N{ \nabla \psi_j(x,y) }  \nonumber\\
+	\nabla \vartheta(x,y) = \sum_j^N{ 
+	\left[\begin{array}{c}
+		\nabla \phi_j(\vec X) \\
+		\nabla \phi_j(\vec X)
+	\end{array}\right] }
+\end{eqnarray} 
+
+We discretise the $\nabla \vartheta : \nabla U$:
+\begin{eqnarray}
+	\nabla \vartheta : \nabla U = \left( \sum_i{ \nabla \psi_i }\right) : \left( \sum_j{ \nabla \varphi_j U_j } \right) \\
+	\nabla \vartheta : \nabla U = \sum_{ij}{ \left( \nabla \psi_i : \nabla \varphi_j \right) U_j } \nonumber\\
+	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr\left( 
+		\left[\begin{array}{cc}
+			\nabla_{e_1} \phi_i(\vec X) & \nabla_{e_2} \phi_i(\vec X)\\
+			\nabla_{e_1} \phi_i(\vec X) & \nabla_{e_2} \phi_i(\vec X)
+		\end{array}\right]^T
+		\left[\begin{array}{cc}
+			\nabla_{e_1} \phi_j(\vec X) & \nabla_{e_2} \phi_j(\vec X)\\
+			\nabla_{e_1} \phi_j(\vec X) & \nabla_{e_2} \phi_j(\vec X)
+		\end{array}\right] U_j
+		\right) } \nonumber\\
+	\nabla \vartheta : \nabla U = \sum_k \sum_{ij}{ \left( \nabla \phi_i(\vec X) \cdot \nabla \phi_j(\vec X)\right) U^{e_k}_j } \nonumber
+\end{eqnarray}
+where the contraction of the two rank-2 tensors is another rank-2 tensor e.g., $G_i \cdot G_j = G_i^T G_j$ or in tensor notation
+$G_{ij} \ G_{jk} = G_{ik}$. The integrals are now much smaller i.e., per triangle-set $\Omega_i$ around nodes 
+$\vec N_i$ or tent function $\varphi_i(\vec X)$
+
+The stiffness matrix for triangle $T$ is:
+\begin{eqnarray}
+	M_k(i,j) = I_{2 \times 2} \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }
+\end{eqnarray}
+
+So we can form the linear system:
+\begin{eqnarray}
+	\sum_{ij}{ I_{2 \times 2} \left( \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }\right) U_j }
+\end{eqnarray}
+where $U_j$ is $2 \times 1$ column vector and $I_{2 \times 2}$ is identity matrix.
+
+
+\section{Assembly}
+
+
+The process of creating the stiffness matrix $M$ is called assembly. It consist of creating the matrix $M_k$ for each 
+triangle $T_k$ and then add it to the global $M$ matrix. 
+ 
+The global matrix $M$ is $2 N \times 2 N$  where $N$ is number of mesh nodes. In previous section~\ref{sec:discretization}
+the matrix $M_k$ is a $2 N \times 2 N$ a super-sparse block matrix where each entry is $2 \times 2$ block matrix just with
+a few non-zero entries which corresponds to a single triangle contribution.
+ \begin{eqnarray} 
+	M = \sum_k M_k
+\end{eqnarray}
+ 
+In practice the $M_k$ matrix is not $2 N \times 2 N$ super-sparse, but a $6 \times 6$ matrix (in case of linear triangle elements).
+There is a map from indices of the $6 \times 6$ matrix to the $2 N \times 2 N$ matrix as follows.
+ 
+Each triangle's nodes has a global index assigned in the mesh, we also establish a local indexing of triangle
+like $1$, $2$ and $3$. We define a trivial bijective map between global and local indices.
+
+
+\section{Discretization in 3D curved space e.g., 3D surface}
+
+The 3D curved domain $\Omega$ has to be discretised in $N$ nodes and $T$ triangles. 
+For linear elements the nodes coincides with vertices, but for 
+quadratic elements there will nodes defined on the mid-point of edges of triangles, so there will be more nodes than vertices.
+
+We define a test function $\Phi_i$ per node $N_i$ which will be used to linearly interpolate basis tangent vectors located at
+mesh nodes to all triangles incident to the node $N_i$. 
+
+First we define a local basis for tangent space $T_v$ per node $N_i$ in which tangent vector of $U(x,y)$ will reside. We will also 
+need to define a local tangent space basis per each triangle $T_f$, which not coincide with $T_v$, that will be used to 
+interpolate basis tanegt vectors within triangles. Finally we need a ``connection'' $R_i^f$ which parallel transports a basis 
+of tangent vectors $T_v$ at node $N_i$ to a basis of tangent vectors $T_f$ at triangle $T_f$ incident to node $N_i$:
+
+\begin{eqnarray}
+	\begin{array}{cccc}
+		R_i^f =   & T_f^T     &  Q_{vf}    &   T_v       \\
+		2\times2  & 2\times3  &  3\times3  &   3\times2		 
+	\end{array}
+\end{eqnarray}
+where:
+
+\begin{tabular}{p{0.05\linewidth} p{0.80\linewidth}}
+	$R_i^f$ & is $2\times2$ matrix connecting 2 tangent spaces: the local tangent space at node $N_i$ to a local tangent space 
+	at triangle $T_f$. The tangent spaces are connected in such a way that a tangent vector is ``parallel transported'' from
+	one tangent space to the next \\
+	$T_f$ & is the $3\times2$ local tangent space basis for triangle $f$: $T_f = \left[e_i, e_j\right]^T$ \\
+	$Q_{vf}$ & is the $3\times3$ rotation matrix aligning node $N_i$ tangent plane with face $T_f$ plane. \\
+	$T_v$ & is the $3\times2$ local tangent space basis for tangent space at node $N_i$: $T_v = \left[e_i, e_j\right]^T$
+\end{tabular}
+
+The connection $R_i^f$ defines the mapping $\Phi_i^f$ at node $N_i$ restricted to triangle $f$:
+\begin{eqnarray}
+	\Phi_i^f(\vec X) = R_i^f \vec X
+\end{eqnarray}
+which parallel transport a tangent vector $\vec X$ in tangent space basis at node $N_i$ to a triangle $T_f$ local basis.
+
+We also define scalar ``tests'' functions with compact support $\phi_i(x, y)$ for every node $N_i$ to be equal to $0$ or $1$
+and linear everywhere else:
+\begin{eqnarray}
+	\phi_j(\vec N_j) = 1 \ \ \  \forall j = i \nonumber\\
+	\phi_j(\vec N_j) = 0 \ \ \  \forall j \neq i \nonumber\\
+	\phi_j(\vec X) = \text{linear in} \ \Omega_i \nonumber
+\end{eqnarray}
+
+We use those $\phi_j$ to define the vector-valued basis function $\Psi_i^f$:
+\begin{eqnarray}
+	\Psi_i^f(x,y)(\vec X) = \phi_j(x,y) \Phi_i^f \vec X \nonumber\\
+	\Psi_i^f(x,y)(\vec X) = \phi_j(x,y) R_i^f \vec X
+\end{eqnarray}
+
+Now we discretise the solution $U(x,y)$ on triangle $T_f$ to be a finite sum:
+\begin{eqnarray}
+	U(x,y) = \sum_j{ \Psi_j(x,y) U_j } \nonumber\\
+	U(x,y) = \sum_j{ \phi_j(x,y) R_j^f U_j }
+\end{eqnarray}
+and the covariant derivative $\nabla U(x,y)$:
+\begin{eqnarray}
+	\nabla U(x,y) = \sum_j{ \nabla \Psi_j(x,y) U_j } \nonumber\\
+	\nabla U(x,y) = \sum_j{ \nabla \phi_j(x,y) \otimes R_j^f U_j } \nonumber\\
+\end{eqnarray}
+or in matrix form:
+\begin{eqnarray}
+	\nabla U(x,y) = \sum_j{ R_j^f 
+	\left[\begin{array}{cc}
+		U^{e_1}_j & 0\\
+		0 & U^{e_2}_j
+	\end{array}\right]
+	\left[\begin{array}{c}
+		\nabla \phi_j(x,y) \\
+		\nabla \phi_j(x,y)
+	\end{array}\right]}
+\end{eqnarray}
+which is a $2\times2$ matrix.
+
+We discretise the test function $\vartheta(x, y)$ on triangle $T_f$ as:
+\begin{eqnarray}
+	\vartheta(x, y) = \sum_j{ R_j^f \psi_j(x,y) } \nonumber\\
+	\vartheta(x, y) = \sum_j{ R_j^f \left[\phi_j(x,y), \phi_j(x,y)\right]^T }
+\end{eqnarray}
+where $\psi_j(x,y) = \left[\phi_j(x,y), \phi_j(x,y)\right]^T$ and its covariant derivative $\nabla \vartheta(x, y)$ as:
+\begin{eqnarray}
+	\nabla \vartheta(x, y) = \sum_j{ R_j^f \nabla \psi_j(x,y) } \nonumber\\
+	\nabla \vartheta(x, y) = \sum_j{ R_j^f \left[\nabla \phi_j(x,y), \nabla \phi_j(x,y)\right]^T }
+\end{eqnarray}
+
+We discretise the $\nabla \vartheta : \nabla U$ for each element $T_f$ on the triangle-set around node $N_i$ 
+as contribution of nodes $N_j$. Using the fact that $A : B = Tr(A^T B)$ and the cyclic property of the trace we get:
+\begin{eqnarray}
+	\nabla \vartheta : \nabla U = \left(\sum_i{ R_i \nabla \psi_i } \right) : \left( \sum_j{ \nabla \phi_j \otimes R_j U_j } \right) \nonumber\\
+	\nabla \vartheta : \nabla U = \sum_{ij}{ R_i \nabla \psi_i : \nabla \phi_j \otimes R_j U_j } \nonumber\\
+	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr(\nabla \psi_i^T R_i^T R_j [U_j] \nabla \psi_j) } \nonumber\\
+	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr( \nabla \psi_j \nabla \psi_i^T R_i^T R_j [U_j] ) }
+\end{eqnarray}
+Where $[U_j] = 	\left[\begin{array}{cc}
+	U^{e_1}_j & 0\\
+	0 & U^{e_2}_j
+\end{array}\right]$. Noting that 
+$Tr(\nabla \psi_j \nabla \psi_i^T) = Tr(\nabla \psi_i^T \nabla \psi_j) = \nabla \phi_i \cdot \nabla \phi_j$:
+\begin{eqnarray}
+	\nabla \vartheta : \nabla U = \sum_k \sum_{ij}{ \left(\nabla \phi_i \cdot \nabla \phi_j\right) (R_i^T R_j U_j) \cdot e_k }
+\end{eqnarray}
+
+The stiffness matrix for triangle $T$ is a $6\times6$ matrix:
+\begin{eqnarray}
+	M_k(i,j) = R_i^T R_j \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }
+\end{eqnarray}
+
+So we can form the linear system:
+\begin{eqnarray}
+	\sum_{ij}{ \left( \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }\right) R_i^T R_j U_j }
+\end{eqnarray}
+where $U_j$ is $2 \times 1$ column vector and $R_i^T R_j$ is the discrete connection $2\times 2$ matrix.
+
+\section{The Covariant Derivative $\nabla \Psi$}
+
+We use the Cartan's moving frames formalism. Moving frames are orthonormal frames attached to each point on the surface. Those 
+frames lies in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames 
+don't form a ``holonomic'' basis i.e., those are not vector fields associated to a directional derivative or partial derivative 
+operator. In particular, moving frames are not continuous over the surface and its length is always $1$ (in contrast, holonomic 
+basis can have different lengths, thus their inner product defines the metric tensor). For this reason the Crhistoffel Symbols 
+is a concept associated to differentiation of holonomic basis while ``Connection Forms'' is a concept associated with 
+``exterior differentiation'' of moving frames. However in the flat space $\mathbb R^n$ under cartesian coordinates the 
+Christoffel Symbols and Connection Forms are the same.
+
+First recap definition of covariant derivative of a vector field $U$ in direction of vector field $w$ 
+(see \href{https://en.wikipedia.org/wiki/Connection_form#Example:_the_Levi-Civita_connection}{the Levi-Civita connection}):
+
+\begin{tabular}{p{0.25\linewidth} p{0.65\linewidth}}
+	$E = (e_1, e_2)$ & local frame field i.e., moving frame seen as pair of tangent vectors $e_1$ and $e_2$ \\
+	$U = U_1 e_1 + U_2 e_2$ & vector field expressed in moving frames as $\sum_i U_i e_i$  \\
+	$w = w_1 e_1 + w_2 e_2$ & vector field expressed in moving frames as $\sum_i w_i e_i$  \\
+\end{tabular}
+\begin{eqnarray}
+	\omega(e_k) = \left[\begin{array}{cc}
+		\omega_{11}(e_k) & \omega_{12}(e_k) \\
+		\omega_{21}(e_k) & \omega_{22}(e_k)
+	\end{array}\right] \text{Matrix of 1-forms a.k.a. connection form} \nonumber
+\end{eqnarray}
+
+We denote $\partial U_i$ the gradient of scalar component $U_i$ which is a vector 
+$\partial U_i = \left[\frac{\partial}{\partial e_1} U_i, \frac{\partial}{\partial e_2} U_i\right]^T$. 
+And $\partial U$ the Jacobian matrix of $U$
+\begin{eqnarray}
+	\partial U = \left[\partial U_1, \partial U_2\right]^T \nonumber\\
+	\partial U =\left[\begin{array}{cc}
+		\frac{\partial}{\partial e_1} U_1 & \frac{\partial}{\partial e_2} U_1 \\
+		\frac{\partial}{\partial e_1} U_2 & \frac{\partial}{\partial e_2} U_2
+	\end{array}\right]
+\end{eqnarray}
+
+The covariant derivative $\nabla_w U$ of a vector field $U$ in direction of vector field $w$ is defined as
+\begin{eqnarray}
+	\nabla_w U = w \cdot \nabla U \nonumber\\
+	\nabla_w U = w_1 \nabla_{e_1} U + w_2 \nabla_{e_2} U 
+\end{eqnarray}
+
+Now we need to expand $\nabla_{e_i} U$:
+\begin{eqnarray}
+	\nabla_{e_j} U = \partial U e_j + \omega(e_j) U \nonumber\\
+	\nabla_{e_j} U =
+	\left[\begin{array}{c}
+		\partial U_1 \cdot e_j + \omega_{11}(e_j) U_1 + \omega_{12}(e_j) U_2 \\
+		\partial U_2 \cdot e_j + \omega_{21}(e_j) U_1 + \omega_{22}(e_j) U_2
+	\end{array}\right] 
+\end{eqnarray}
+ Putting back $w = w_1 e_1 + w_2 e_2$ we get:
+
+\begin{eqnarray}
+	\nabla_w U = \partial U w  + \omega(w) U
+\end{eqnarray}
+
+The above expression coincides with definition in Liu, Tong, De Goes, Desbrun ``Discrete Connection and Covariant 
+Derivative for Vector Field Analysis and Design'' where
+$\partial U w$ is the multiplication of the Jacobian of $U$ with $w$ which is giving the directional derivative
+in flat space.
+$\omega(w) U$ is the multiplication of the connection form $\omega(w)$ with $U$ which is parallel transporting
+$U$ to the tip of $w$.
+
+We can define $\nabla U$ just in terms of $U$ without a particular direction $w$ as argument
+(see \href{https://math.stackexchange.com/questions/3468914/covariant-derivative-of-a-vector-field}{covariant derivative of a vector field}).
+\begin{eqnarray}
+	\nabla_w U = \partial_{e_k} U_i w_k  + \omega_{ij}^k w_k U_i \nonumber\\
+	\nabla_w U = (\partial_{e_k} U_i  + \omega_{ij}^k U_i) w_k \nonumber\\
+	\nabla U = \partial_{e_k} U_i  + \omega_{ij}^k U_i
+\end{eqnarray}
+which can also be written as:
+\begin{eqnarray}
+	\nabla U = \partial U + \omega_{ij}^k U_i
+\end{eqnarray}
+
+With the above representation we can contract $\nabla U$ with vector $w$ to get the classic 
+Levi-Civita connection:
+\begin{eqnarray}
+	\nabla_w U = w \cdot \nabla U
+\end{eqnarray}
+
+Recall the definition of $\Psi(x,y)$ basis function which is defined for every point $(x, y)$ on triangle $T_f$ 
+applied to a tangent vector $\vec X_i$ which is defined at node $N_i$:
+\begin{eqnarray}
+	\Psi_i(x,y)(\vec X_i) = \phi_i(x,y) R_i^f \vec X_i
+\end{eqnarray}
+The basis function $\Psi$ does a parallel transport of vectors from tanget space at $N_i$ to a flat tangent space at triangle
+$T_f$ by using a discrete connection $R_i^f$. The discrete connection $R_i^f$ is in essence the Connection Form $\omega(\vec X_i)$.
+The covariant derivative $\nabla \Psi$ is simply:
+\begin{eqnarray}
+	\nabla \Psi_i(x,y)(\vec X_i) = \nabla \phi_i(x,y) \otimes R_i^f \vec X_i + \phi_i(x,y) \nabla (R_i^f \vec X_i) \nonumber\\
+	\nabla \Psi_i(x,y)(\vec X_i) = \partial \phi_i(x,y) \otimes R_i^f \vec X_i
+\end{eqnarray}
+where $\partial \phi_i(x,y)$ is the grandient of a scalar valued function $\phi_i(x,y)$, which is a vector and $\otimes$ is the tensor
+(or dyadic) product of vectors. $\nabla (R_i^f \vec X_i) = \partial (R_i^f \vec X_i) = 0$ as $R_i^f \vec X_i$ is constant vector field 
+inside triangle tangent space (triangle is flat $\mathbb R^2$ space).
+
+
+\section{Reference Elements}
+
+One of the novelties of FEM is to be able to compute the integrals per individual elements on an easy and generic 
+way by using so called Reference Elements.
+ 
+For triangle elements we just need a single reference triangle
+ 
+\begin{center}
+	\begin{tikzpicture}
+		\draw (0,0) node[anchor=south]{$P_3$}
+		-- (0,-3) node[anchor=north]{$P_1$}
+		-- (3,-3) node[anchor=north]{$P_2$}
+		-- cycle;
+	\end{tikzpicture}		
+\end{center}
+\begin{eqnarray} 
+	P_1 = (0,0) \nonumber\\
+	P_2 = (1,0) \nonumber\\
+	P_3 = (0,1) \nonumber
+\end{eqnarray}
+
+The P1 (linear) 2D Lagrange shape functions $\psi(u,v)$ has the form 
+\begin{eqnarray} 
+	\psi(u,v) = A u + B u + C \nonumber
+\end{eqnarray}
+
+For the reference trignale defined above the $\psi(u,v)$ takes the simple form:
+\begin{eqnarray} 
+	\psi_1(u,v) = 1 - u - v \nonumber\\
+	\psi_2(u,v) = u \nonumber\\
+	\psi_3(u,v) = v \nonumber
+\end{eqnarray}
+
+We can check that $\psi_i \cdot \psi_j = \delta_{ij}$
+\begin{eqnarray} 
+\psi_1(P_1) = 1 \ \  \psi_1(P_2) = 0  \ \  \psi_1(P_3) = 0 \nonumber\\
+\psi_2(P_1) = 0 \ \  \psi_2(P_2) = 1  \ \  \psi_2(P_3) = 0 \nonumber\\
+\psi_3(P_1) = 0 \ \  \psi_3(P_2) = 0  \ \  \psi_3(P_3) = 1 \nonumber
+\end{eqnarray}
+
+We define a function $F(\vec U)$, a.k.a., \emph{pushforward}, that maps reference 2D triangle to "physical" 2D triangle on the mesh
+(the inverse $F^{-1}(\vec X)$ , a.k.a., \emph{pullback}, maps triangle from physical to reference frame).
+\begin{eqnarray}
+	\left[\begin{array}{c}
+		x \\
+		y
+	\end{array}\right] = 
+	\left[\begin{array}{cc}
+		x_2 - x_1 &  x_3 - x_1 \\
+		y_2 - y_1 &  y_3 - y_1
+	\end{array}\right] 
+	\left[\begin{array}{c}
+		u \\
+		v
+	\end{array}\right] +
+	\left[\begin{array}{c}
+		x_1 \\
+		y_1
+	\end{array}\right] \nonumber
+\end{eqnarray}
+
+Which cab be expressed in vector form
+\begin{eqnarray} 
+	F(\vec U) =  B \vec U + \vec X_1 \nonumber\\
+	F^{-1}(\vec X)  = B^{-1} (\vec X - \vec X_1) \nonumber
+\end{eqnarray}
+
+
+We denote $\psi^k_i$ the function $\psi_i$ defined on physical triangle $K$.
+
+\begin{eqnarray} 
+	\psi^k_i(\vec X) = \psi_i \circ  F^{-1}(\vec X) \nonumber\\
+	\psi^k_i(\vec X) = \psi_i( F^{-1}(\vec X) ) \nonumber
+\end{eqnarray}
+
+The gradient of $\psi^k_i(\vec X)$ in physical triangle is:
+
+\begin{eqnarray} 
+	\nabla_{\vec X} \psi^k_i(\vec X) = \nabla_{\vec X} \psi_i( F^{-1}(\vec X) ) \nonumber\\
+    = \nabla_{\vec U} \psi_i( \vec U ) \cdot \nabla_{\vec X} F^{-1}(\vec X) \nonumber\\
+    = B^{-T} \nabla_{\vec U} \psi_i( \vec U) \nonumber
+\end{eqnarray}
+where we used $\vec U = F^{-1}(\vec X)$ and $\nabla_{\vec X} F^{-1}(\vec X) = B^{-T}$.
+
+The gradient of $\psi_i(\vec U)$ in reference triangle is:
+
+\begin{eqnarray} 
+	\nabla \psi_1 = (-1, -1) \nonumber\\
+	\nabla \psi_2 = (1, 0) \nonumber\\
+	\nabla \psi_3 = (0, 1) \nonumber
+\end{eqnarray}
+
+So the gradient of $\psi^k_i(\vec X)$ in physical triangle $k$ is ``constant'':
+ 
+\begin{eqnarray} 
+	\nabla \psi^k_1 = B^{-T} (-1, -1) \nonumber\\
+	\nabla \psi^k_2 = B^{-T} (1, 0) \nonumber\\
+	\nabla \psi^k_3 = B^{-T} (0, 1) \nonumber
+\end{eqnarray}
+
+\subsection{For 3D Triangles}
+
+For 3D triangles the map function $F$ changes as follows:
+\begin{eqnarray}
+	\left[\begin{array}{c}
+		x \\
+		y \\
+		z
+	\end{array}\right] = 
+	\left[\begin{array}{cc}
+		x_2 - x_1 &  x_3 - x_1 \\
+		y_2 - y_1 &  y_3 - y_1 \\
+		z_2 - z_1 &  z_3 - z_1
+	\end{array}\right] 
+	\left[\begin{array}{c}
+		u \\
+		v
+	\end{array}\right] +
+	\left[\begin{array}{c}
+		x_1 \\
+		y_1 \\
+		z_1
+	\end{array}\right] \nonumber
+\end{eqnarray}
+
+In matrix algebra it can be expressed as:
+
+\begin{eqnarray}
+	F(\vec U) = B \vec U + \vec X_1 \nonumber\\
+	F^{-1}(\vec X) = (B^T B)^{-1} B^T (\vec X - \vec X_1)  \nonumber
+\end{eqnarray}
+or
+\begin{eqnarray}
+	F^{-1}(\vec X) = B^{-*} (\vec X - \vec X_1) \nonumber
+\end{eqnarray}
+where $B^{-*} = (B^T B)^{-1} B^T$ is the Moore-Penrose pseudo-inverse of $B$.
+
+The same analysis as before holds so the gradient in ``physical'' trignale $k$ is:
+
+\begin{eqnarray} 
+	\nabla \psi^k_1 = B^{-*T} (-1, -1) \nonumber\\
+	\nabla \psi^k_2 = B^{-*T} (1, 0) \nonumber\\
+	\nabla \psi^k_3 = B^{-*T} (0, 1) \nonumber
+\end{eqnarray}
+ 
+\section{Numerical Quadrature}
+
+The entries of the matrix $M_T^k$ are the following double integrals:
+
+\begin{eqnarray} 
+	M_T^k(i,j) = \int_{T^k}{ \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \ dA} \nonumber
+\end{eqnarray}
+inidices $(i,j)$ run for all nodes of triangle $T$.
+ 
+Let define the inner product of basis functions as  
+
+\begin{eqnarray} 
+	I^k_{ij}(\vec X) = \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \nonumber
+\end{eqnarray}
+
+The 3-point Gauss quadrature rule for the linear triangle is:
+\begin{eqnarray} 
+	M_T^k(i,j) = \frac{area(T^k)}{3} ( I^k_{ij}(P_1) +  I^k_{ij}(P_2) +  I^k_{ij}(P_3))
+\end{eqnarray}
+evaluated at the vertices of the triangle $P_1$, $P_2$ and $P_3$. Which is an exact quadrature formula 
+for linear function on a triangle. However since $\nabla \psi^k_i(\vec X)$ does not depends on $\vec X$ the quadrature 
+expression reduces to:
+\begin{eqnarray} 
+	M_T^k(i,j) = area(T^k) \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \nonumber
+\end{eqnarray}
+
 
 \section{Implementation}
 
-The author's source code is publicly available at github \cite{GALinearizedArap}.
+Implementation can be found in \cite{Basic2DHeatEquationFEM}
 
-\section{Results}
+\iffalse
 
-\section{Conclusion}
-
-
-
+\fi
 
 \bibliographystyle{abbrv}
-\bibliography{linealizedrotations}
+\bibliography{fembasic2d}
 
 % ------------------------------------------------------------------------
 \end{document}
