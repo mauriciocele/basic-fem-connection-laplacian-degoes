@@ -1,0 +1,11 @@
+\begin{tikzpicture}[scale=1.8]
+  \draw[->, gray] (0,0) -- (1.35,0) node[right] {$\xi_1$};
+  \draw[->, gray] (0,0) -- (0,1.35) node[above] {$\xi_2$};
+  \filldraw[draw=black, fill=gray!12, thick] (0,0) -- (1,0) -- (0,1) -- cycle;
+  \fill (0,0) circle (0.8pt) node[below left] {$\hat P_1$};
+  \fill (1,0) circle (0.8pt) node[below] {$\hat P_2$};
+  \fill (0,1) circle (0.8pt) node[left] {$\hat P_3$};
+  \draw[-{Stealth[length=2mm]}, very thick, blue!70!black] (0,0) -- (1,0) node[midway, below] {$\hat e_1$};
+  \draw[-{Stealth[length=2mm]}, very thick, blue!70!black] (0,0) -- (0,1) node[midway, left] {$\hat e_2$};
+  \draw[-{Stealth[length=3mm]}, thick] (1.25,0.6) to[bend left=20] node[above] {$F(\xi) = x_1 + B\xi$} (2.4,0.6);
+\end{tikzpicture}

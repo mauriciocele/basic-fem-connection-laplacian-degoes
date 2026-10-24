@@ -1,0 +1,17 @@
+% angle error and magnitude against geodesic distance from the source, on the sphere
+\begin{tikzpicture}
+  \begin{axis}[width=0.47\textwidth, height=4.6cm, xlabel={geodesic distance from the source}, ylabel={angle to exact transport ($^\circ$)},
+      xmin=0, xmax=3.1416, ymin=0, ymax=1, restrict y to domain=0:1, tick label style={font=\scriptsize}, label style={font=\footnotesize},
+      xtick={0,0.7854,1.5708,2.3562,3.1416}, xticklabels={$0$,$\frac{\pi}{4}$,$\frac{\pi}{2}$,$\frac{3\pi}{4}$,$\pi$}]
+    \addplot[only marks, mark=*, mark size=0.5pt, red!70!black] table[x=distance, y=error_deg, col sep=comma] {data/sphere_vectors.csv};
+    \draw[gray, dashed] (axis cs:2.3562,0) -- (axis cs:2.3562,1);
+    \node[font=\scriptsize, align=center, gray!40!black] at (axis cs:2.85,0.75) {antipode:\\undefined};
+  \end{axis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+  \begin{semilogyaxis}[width=0.47\textwidth, height=4.6cm, xlabel={geodesic distance from the source}, ylabel={$|u_i|$},
+      xmin=0, xmax=3.1416, tick label style={font=\scriptsize}, label style={font=\footnotesize},
+      xtick={0,0.7854,1.5708,2.3562,3.1416}, xticklabels={$0$,$\frac{\pi}{4}$,$\frac{\pi}{2}$,$\frac{3\pi}{4}$,$\pi$}]
+    \addplot[only marks, mark=*, mark size=0.5pt, blue!70!black] table[x=distance, y=magnitude, col sep=comma] {data/sphere_vectors.csv};
+  \end{semilogyaxis}
+\end{tikzpicture}

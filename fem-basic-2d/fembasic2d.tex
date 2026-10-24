@@ -1,812 +1,1043 @@
 % ------------------------------------------------------------------------
-% bjourdoc.tex for birkjour.cls*******************************************
+% fembasic2d.tex: from the vector heat equation to the code of FEM.cpp
 % ------------------------------------------------------------------------
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \documentclass{birkjour}
-%
-%
-% THEOREM Environments (Examples)-----------------------------------------
-%
- \newtheorem{thm}{Theorem}[section]
-% \newtheorem{cor}[thm]{Corollary}
-% \newtheorem{lem}[thm]{Lemma}
-% \newtheorem{prop}[thm]{Proposition}
-% \theoremstyle{definition}
- \newtheorem{defn}[thm]{Definition}
-% \theoremstyle{remark}
-% \newtheorem{rem}[thm]{Remark}
-% \newtheorem*{ex}{Example}
- \numberwithin{equation}{section}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{rem}[thm]{Remark}
+\newtheorem{example}[thm]{Worked example}
+\numberwithin{equation}{section}
 
 \usepackage[noadjust]{cite}
 \usepackage{amsfonts}
-\usepackage{listings}
+\usepackage{amssymb}
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{caption}
 \usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta, calc, angles, quotes, decorations.pathreplacing}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{adjustbox}
+\lstset{language=C++, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{blue!60!black}, commentstyle=\color{green!40!black}\itshape, columns=fullflexible, frame=single, framerule=0.3pt, rulecolor=\color{gray!50}, tabsize=4, numbers=left, numberstyle=\tiny\color{gray}, breaklines=true, xleftmargin=1.5em}
 \usepackage{hyperref}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Ge}{\mathbb{G}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\inner}[2]{\langle #1, #2 \rangle}
+\setlength{\emergencystretch}{3em}
+
 \begin{document}
 
-%-------------------------------------------------------------------------
-% editorial commands: to be inserted by the editorial office
-%
-%\firstpage{1} \volume{228} \Copyrightyear{2004} \DOI{003-0001}
-%
-%
-%\seriesextra{Just an add-on}
-%\seriesextraline{This is the Concrete Title of this Book\br H.E. R and S.T.C. W, Eds.}
-%
-% for journals:
-%
-%\firstpage{1}
-%\issuenumber{1}
-%\Volumeandyear{1 (2004)}
-%\Copyrightyear{2004}
-%\DOI{003-xxxx-y}
-%\Signet
-%\commby{inhouse}
-%\submitted{March 14, 2003}
-%\received{March 16, 2000}
-%\revised{June 1, 2000}
-%\accepted{July 22, 2000}
-%
-%
-%
-%---------------------------------------------------------------------------
-%Insert here the title, affiliations and abstract:
-%
+\title[From the Vector Heat Equation to Code]
+ {Parallel Transport of Tangent Vectors on Triangle Meshes:\\ from the Vector Heat Equation to Code, with Finite Elements}
 
-
-\title[Parallel Transport of Vectors on 3D Mesh by the Vector Heat Method using FEM]
- {Parallel Transport of Vectors on 3D Mesh by the Vector Heat Method using FEM}
-
-%----------Author 1
 \author[Mauricio Cele Lopez Belon]{Mauricio Cele Lopez Belon}
 \address{Madrid, Spain}
 \email{mclopez@outlook.com}
 
-%----------classification, keywords, date
-\subjclass{Parallel algorithms 68W10; Clifford algebras, spinors 15A66}
-
-\keywords{Geometric Algebra, Quaternion Estimation, Mesh Deformation}
-
-\date{October 21, 2024}
-%----------additions
-%\dedicatory{To my wife}
-%%% ----------------------------------------------------------------------
+\subjclass{65N30 Finite element methods; 53A05 Surfaces in Euclidean space; 65F05 Direct methods for linear systems}
+\keywords{Finite Element Method, Connection Laplacian, Levi-Civita Connection, Parallel Transport, Vector Heat Method}
+\date{October 25, 2026}
 
 \begin{abstract}
-
-Compute the parallel transport of tangent vectors defined on a 3D mesh by the Vector Heat Method using Finite Element Method (FEM).
-
+We derive, step by step, a program that spreads a tangent vector given at one point of a triangle mesh to every other point, so that the result at each point is the parallel transport of the given vector. The method is the vector heat method: diffuse the vector by the heat equation for tangent vector fields, whose operator is the connection Laplacian, and keep only the direction of the result. We start from the partial differential equation and go all the way down to the linear system that the code solves: the covariant derivative and the Levi-Civita connection of a surface, Green's identity for tangent fields, the backward Euler step, the weak form, the finite element space of piecewise linear tangent fields, the discrete parallel transport that makes that space possible, the gradients of the shape functions on a triangle embedded in space, the element stiffness and mass matrices, their assembly, the boundary condition, and the solution. Every step is motivated, every formula is derived, and every formula that the code evaluates is matched with the function that evaluates it, so that the text can be read side by side with the implementation \cite{ConnectionLaplacianFEM}. A second part derives the same method in geometric algebra, where the tangent plane is a bivector, coordinates are complex numbers of that plane, parallel transport is a rolling rotor and the connection Laplacian becomes a complex Hermitian matrix, and it clarifies which parts of the computation are intrinsic to the curved surface.
 \end{abstract}
 
-%%% ----------------------------------------------------------------------
 \maketitle
+
 %%% ----------------------------------------------------------------------
-%\tableofcontents
 \section{Introduction}
-
-This follows the method described in \cite{Sayas2015} and \cite{Langtangen2014}.
-
-Solve the following Heat Equation PDE with Dirichlet boundary conditions (boundary value problem):
-
-\begin{tabular}{l l}
-	Solve $\nabla^2 U(\vec X, t) = \frac{ \partial U(\vec X, t)}{\partial t}$ & in region $\Omega$ \\
-	s.t. $U(\vec X, t) = G(\vec X)$  &  on the region boundary $\partial \Omega$ for all times \\
-	$U(\vec X, 0) = U_0(\vec X)$  &  initial condition at time t = 0 \\
-\end{tabular}
-where $U(\vec X, t)$ is a vector field and $\nabla^2$ is the ``Connection Laplacian'' which produces another
-vector field ans is defined in terms of the covariant derivative $\nabla$ as:
-
-\begin{eqnarray}
-	\label{eqn:connection_laplacian}
-	\nabla^2 U(\vec X) = \nabla^* \nabla U(\vec X) 
-\end{eqnarray}
-where $\nabla^*$ is the adjoint of the covariant derivative $\nabla$, $U(\vec X)$ is a tangent vector field on the 3D surface 
-(2D manifold embedded in $\mathbb R^3$). $G(\vec X)$ the vector boundary conditions and $U_0(\vec X)$ is a vector field at time 0.
-
-The covariante derivative $\nabla(U, w)$ is a ``directional derivative'' operator that has two vector field arguments:
-$U(\vec X)$ and $w(\vec X)$. Where $U(\vec X)$ is the vector field which is differentiated and $w(\vec X)$ is a vector field 
-telling the direction in which directional derivatives are taken. It returns a vector field as which is a measure of 
-relative change of $U$ w.r.t to $w$. 
-
-Usually one can omit the vector field $w$ in which case we talk about a total derivative $\nabla U$ which is a 2-tensor 
-(i.e., a matrix). For example in flat space $\mathbb R^3$ the vector field represented as $U = \left[u_x, u_y, u_z\right]^T$ 
-the operator $\nabla U$ would be:
-
-\begin{eqnarray}
-	\nabla U =  
-	\left[\begin{array}{c}
-		\frac{\partial}{\partial x} \\
-		\frac{\partial}{\partial y} \\
-		\frac{\partial}{\partial z} 
-	\end{array}\right] 
-	\left[\begin{array}{ccc}
-		u_x &  u_y  & u_z 
-	\end{array}\right] 
-    =
-	\left[\begin{array}{ccc}
-		\frac{\partial}{\partial x} u_x  &  \frac{\partial}{\partial y} u_x   &   \frac{\partial}{\partial z} u_x \\
-		\frac{\partial}{\partial x} u_y  &  \frac{\partial}{\partial y} u_y   &   \frac{\partial}{\partial z} u_y \\
-		\frac{\partial}{\partial x} u_z  &  \frac{\partial}{\partial y} u_z   &   \frac{\partial}{\partial z} u_z 
-	\end{array}\right] \nonumber
-\end{eqnarray}
-
-In more compact notation
-\begin{eqnarray}
-	\nabla U = \partial \otimes U = J(U)
-\end{eqnarray}
-
-where $\otimes$ is the ``tensor product'', $J(U)$ is the Jacobian matrix of $U$ (or the differential) and 
-$\partial$ is the ``grandient operator''. 
-
-In a curved manifold the above definition would need to be adjusted to cope with curvature with the aid of a ``connection''.
-
-The adjoint of $\nabla$ can be defined by ``integration by parts'' 
-(see  \href{https://en.wikipedia.org/wiki/Vector_calculus_identities}{wikipedia}) 
-over surface $\Omega$:
-
-Recall adjoint operator is defined as an inner product:
-\begin{eqnarray}
-	\left\langle f , \nabla^* g \right\rangle = \left\langle \nabla f , g \right\rangle \nonumber\\
-	\int { f \ \nabla^* g \ dx }  = \int { \nabla f \ g \ dx } \nonumber
-\end{eqnarray}
-recall intergation by parts formula:
-\begin{eqnarray}
-	\int_{\Omega} { f'(x) g(x) \ dx }  = \int_{\partial \Omega} { f(x) g(x) \ dx } - \int_{\Omega} { f(x) g'(x) \ dx } \nonumber
-\end{eqnarray}
-doing integration by parts on $\int { \nabla_x f \ g \ dx }$ we get:
-\begin{eqnarray}
-	\int_{\Omega} { \nabla_X f \ g \ dx }  = \int_{\partial \Omega} { f \ g \ dx } - \int_{\Omega} { f \ \nabla_X^* g \ dx } \nonumber
-\end{eqnarray}
-where $\nabla_X$ is the directional derivative such that $\nabla_X f = X \cdot \nabla f$
-
-Applying the above to the vector field valued functions $F$ and $G$
-\begin{eqnarray}
-	\label{eqn:integration_by_parts_adjoint}
-	\int_{\Omega}{ \nabla_X F \cdot G \ dx } = \int_{\Omega}{ F \cdot \nabla_X^* G \ dx } + \int_{\partial \Omega}{ F \cdot G(N) \ dS}
-\end{eqnarray}
-where $\nabla_X F$ and $\nabla_X^* G$ are vector fields and the $(\cdot)$ is inner product.
-$N$ is unit normal at boundary $\partial \Omega$. For details check 
-\href{https://ddg.math.uni-goettingen.de/pub/vector-dirichlet.pdf}{A Simple Discretization of the Vector Dirichlet Energy}
-For identities in flat space check \href{https://thatsmaths.com/2020/01/23/adjoints-of-vector-operators/}{adjoints of vector operators}
-
-Going back to the original goal it is to compute the parallel transported vector field $U$ from vector fields
-given at boundary. The Vector Heat Method works as follows: solves the Vector Heat Equation 
-PDE $\frac{\partial U}{\partial t} = \nabla^2 U$ with dirichlet boundary conditions using Finite Element Method (FEM)
-
-\begin{tabular}{l l}
-	Solve $\bigtriangleup U(\vec X, t) = \frac{ \partial U(\vec X, t)}{\partial t}$ & in region $\Omega$ \\
-	s.t. $U(\vec X, t) = G(\vec X)$  &  on the region boundary $\partial \Omega$ for all times \\
-	$U(\vec X, 0) = U_0(\vec X)$  &  initial condition at time t = 0 \\
-\end{tabular}
-
-\subsection{The Vector Heat PDE}
-
-Since $\frac{ \partial U(\vec X, t)}{\partial t}$ is a time derivative we discretize the time using Backguard Euler
-\begin{eqnarray}
-	\frac{ \partial U(\vec X, t)}{\partial t} = \frac{U(\vec X, t + \Delta t) - U(\vec X, t)}{\Delta t}
-\end{eqnarray}
-
-Replacing on original PDE for backguard euler:
-\begin{eqnarray}
-	\frac{U(\vec X, t + \Delta t) - U(\vec X, t)}{\Delta t} = \nabla^2 U(\vec X, t + \Delta t)
-\end{eqnarray}
-
-Re-arranging:
-\begin{eqnarray}
- 	U(\vec X, t + \Delta t) - \Delta t  \nabla^2 U(\vec X, t + \Delta t) = U(\vec X, t)
-\end{eqnarray}
-
-or better:
-\begin{eqnarray} 
-	U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) = U(\vec X, t_{i-1})
-\end{eqnarray}
-
-The integral form (notice $\int_{\Omega}$ is a double integral) is integrating each vector component separately.
-\begin{eqnarray} 
-	\int_{\Omega}{ U(\vec X, t_i) \ dA} - \Delta t \int_{\Omega}{ \nabla^2 U(\vec X, t_i) \ dA } = \int_{\Omega} { U(\vec X, t_{i-1}) \ dA }
-\end{eqnarray}
-
-\section{Weak Form}
-
-
-The weak form comes from the ``variational method''. Here one tries to get a solution to the 
-PDE by translating it into a minimization problem. That's done by definig an energy function that is a 
-linear functional on a function space $\Omega$. The linear functional is artificial i.e., pure 
-mathematical device to enable optimization. In consequence, solving the variational problem may 
-require less continuity than that of the actual solution (hence the name WEAK form).
- 
-Consider the test function $\vartheta (x,y)$ (a.k.a. test function) with compact support defined on $\Omega$.
-The ``Galerkin'' variational method states that the inner product of $\vartheta(x,y)$ with a residual function $R(x,y)$ should be zero.
-Note that in this case $\vartheta$ have to be a vector field of the form 
-$\vartheta(\vec X) = \left[\varphi_i(\vec X), \varphi_j(\vec X)\right]$ which is 
-a vector with a scalar test functions with compact support as components.
-
-\begin{eqnarray}
-	\int_{\Omega} { \vartheta(\vec X) \cdot R(\vec X) \ dA } = 0 \nonumber
-\end{eqnarray}
- where the $(\cdot)$ is inner product and $R(x,y)$ is the residual or error of the function i.e., 
-\begin{eqnarray}
-	R(x,y) = U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) - U(\vec X, t_{i-1}) \nonumber
-\end{eqnarray}
-
-The weak form of the PDE is:
-\begin{eqnarray}
-	\vartheta(\vec X) \cdot R(\vec X) = 0 \nonumber\\
-	\vartheta(\vec X) \cdot (U(\vec X, t_i) - \Delta t \nabla^2 U(\vec X, t_i) - U(\vec X, t_{i-1})) = 0 \nonumber\\
-	U(\vec X, t_i) \cdot \vartheta(\vec X) - \Delta t \vartheta(\vec X) \cdot \nabla^2 U(\vec X, t_i) = U(\vec X, t_{i-1}) \cdot \vartheta(\vec X) \nonumber
-\end{eqnarray}
- and the integral (variational) form of the PDE is
-\begin{eqnarray}
-	\label{eqn:original_weak_form}
-	\int_{\Omega}{ U_t \cdot \vartheta \ dA } - \Delta t \int_{\Omega}{ \vartheta \cdot \nabla^2 U_t \ dA} = \int_{\Omega} { U_{t-1} \cdot \vartheta \ dA }
-\end{eqnarray}
-NOTE on inner products: The integral form is more important since integral of
-of a ``vector field'' function $f(x,y)$ times test function $\vartheta(x,y)$ is the ``inner product'' 
-$\int_{\Omega}{ f(x,y) \cdot \vartheta(x,y) \ dA }$ where the $(\cdot)$ is inner product of vectors.
-If function $\vartheta(x,y)$ is a ``test function" which is a vector field with separate scalar test function with compact 
-support as components then the inner product is way to ``measure'' the 
-function $f(x,y)$ on location where $\vartheta(x,y)$ is defined.
-
-Replacing $F = \vartheta$ and $G = \nabla U$ in (\ref{eqn:integration_by_parts_adjoint}) we get:
-
-\begin{eqnarray}
-	\label{eqn:covariant_derivative_adjoint}
-	\int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } = \int_{\Omega}{ \vartheta \cdot \nabla^* \nabla U \ dx } + \int_{\partial \Omega}{ \vartheta \cdot \nabla U(N) \ dS} \nonumber\\
-	\int_{\Omega}{ \vartheta \cdot \nabla^* \nabla U \ dx } = \int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } - \int_{\partial \Omega}{ \vartheta \cdot \nabla_N U \ dS} \nonumber\\
-	\int_{\Omega}{ \vartheta \cdot \nabla^2 U \ dx } = \int_{\Omega}{ \nabla \vartheta : \nabla U \ dx } - \int_{\partial \Omega}{ \vartheta \cdot \nabla_N U \ dS}
-\end{eqnarray}
-where $\nabla U$ and $\nabla \vartheta$ are rank-2 tensor fields by virtue of the covariant derivative. 
-Setting $\vartheta = 0$ at the boundary and replacing (\ref{eqn:covariant_derivative_adjoint}) in (\ref{eqn:original_weak_form})
-
-\begin{eqnarray}
-	\label{eqn:weak_form}
-	\int_{\Omega}{ U_t \cdot \vartheta \ dA } - \Delta t \int_{\Omega}{ \nabla \vartheta : \nabla U_t \ dA } = \int_{\Omega} { U_{t-1} \cdot \vartheta \ dA }
-\end{eqnarray}
-
-
-\section{Discretization in Flat Space $\mathbb R^2$}
-\label{sec:discretization} 
-
-The domain $\Omega$ has to be meshed in $N$ nodes and $T$ triangles. For linear elements the nodes coincides with 
-mesh vertices (but for quadratic elements there will be nodes defined on the triangle's edge mid-points, 
-so there can be more nodes than vertices).
-
-The ``test function'' is a function that allows us to linearly interpolate local orthonormal frames 
-located at mesh nodes to the triangle-set sorrounding the node. Those local orthonormal frames 
-located at mesh nodes are ``tangent spaces'' of the nodes. In the flat space of $\mathbb R^2$ all
-tangent spaces are equal, so the interpolation of them is simple. However the key point to understand 
-is that test functions represent linear interpolation (and atenuation) of ``local frames''. 
-We define a test function $\varphi_i$ per node $N_i$ which will be used to linearly interpolate tangent vectors
-defined in terms of local frames localted at nodes to all triangles incident to the node $N_i$. 
-
-
-Since we are in flat space $\mathbb R^2$, the tangent space at node $N_i$ is the same as any other tangent space everywhere else 
-in the domain $\Omega$. Therefore parallel transport is just the identify function or ``teleportation'', 
-and the covariant derivative $\nabla_X U$ coincides with the directional derivative $X \cdot \nabla U$.
-
-The ``local basis'' for tanget space at $N_v$ is defined as $T_v = (e_1, e_2)$, which is an orthonormal frame. 
-The ``local basis'' for tanget space at triangle is $T_f = (e_1, e_2)$, the connection 1-form $\omega_i^f = I$ where $I$ is 
-the identity matrix. Therefore the vectors at $U(x,y)$ are expressed in terms of the ``global basis``'' $(e_1, e_2)$
-
-As usual, we define a set of scalar tests functions with compact support $\phi_i(x, y)$ 
-for every node $N_i$ to be equal to $0$ or $1$ and linear everywhere else:
-\begin{eqnarray}
-	\phi_j(\vec N_j) = 1 \ \ \  \forall j = i \nonumber\\
-	\phi_j(\vec N_j) = 0 \ \ \  \forall j \neq i \nonumber\\
-	\phi_j(\vec X) = \text{linear in} \ \Omega_i \nonumber
-\end{eqnarray}
-
-We use those $\phi_j$ to define the vector-valued basis function $\varphi_i$ (see 
-\href{https://math.stackexchange.com/questions/1320672/system-of-equations-for-vector-valued-functions-problems}{ref1}, 
-\href{https://www.dealii.org/developer/doxygen/deal.II/group__vector__valued.html}{ref2}, 
-\href{https://www.dealii.org/developer/doxygen/deal.II/step_8.htmls}{ref3},
-\href{https://scicomp.stackexchange.com/questions/40735/fem-for-vector-valued-problems-reference-request}{ref4}):
-
-\begin{eqnarray}
-	\varphi_i(\vec X) = \vec \phi_i(\vec X) T_j \nonumber\\
-	\varphi_i(\vec X) = 
-		\left[\begin{array}{c}
-			\phi_i(\vec X) \\
-			\phi_i(\vec X)
-		\end{array}\right]^T (e_1, e_2)
-\end{eqnarray}
-Where $T_j = (e_1, e_2)$ is the ``local basis'' ($2 \times 2$ matrix) for tanget space at $N_j$, 
-$\vec X$ is vector expressed also in basis $(e_1, e_2)$.
-
-Now we discretise the solution $U(x,y)$ to be a finite sum:
-\begin{eqnarray}
-	U(x,y) = \sum_j^N{ \varphi_j(x,y)^T
-	\left[\begin{array}{cc}
-		U^{e_1}_j & 0\\
-		0 & U^{e_2}_j
-	\end{array}\right]}
-\end{eqnarray} 
-where $\odot$ is the component-wise product of vectors 
-(a.k.a., \href{https://en.wikipedia.org/wiki/Hadamard_product_%28matrices%29}{Hadamard product})
-and $U_j$ is a vector ($2 \times 1$ column).
-
-Now we discretise $\nabla U(x,y)$ which is a rank-2 tensor field
-\begin{eqnarray}
-	\nabla U(x,y) = \sum_j^N{ \nabla \varphi_j(x,y) U_j } \nonumber\\
-	\nabla U(x,y) = \sum_j^N{ 
-	\left[\begin{array}{c}
-		\nabla \phi_j(\vec X) \\
-		\nabla \phi_j(\vec X)
-	\end{array}\right]^T 
-	\left[\begin{array}{cc}
-		U^{e_1}_j & 0\\
-		0 & U^{e_2}_j
-	\end{array}\right] }
-\end{eqnarray} 
-where $\nabla \varphi_j$ is a $2 \times 2$ matrix.
-
-Given $\vartheta(x,y) = \left[\phi_i(x,y), \phi_i(x,y)\right]^T$ ,
-we discretise the test function $\nabla \vartheta(x,y)$ in a the following manner:
-\begin{eqnarray}
-	\nabla \vartheta(x,y) = \sum_j^N{ \nabla \psi_j(x,y) }  \nonumber\\
-	\nabla \vartheta(x,y) = \sum_j^N{ 
-	\left[\begin{array}{c}
-		\nabla \phi_j(\vec X) \\
-		\nabla \phi_j(\vec X)
-	\end{array}\right] }
-\end{eqnarray} 
-
-We discretise the $\nabla \vartheta : \nabla U$:
-\begin{eqnarray}
-	\nabla \vartheta : \nabla U = \left( \sum_i{ \nabla \psi_i }\right) : \left( \sum_j{ \nabla \varphi_j U_j } \right) \\
-	\nabla \vartheta : \nabla U = \sum_{ij}{ \left( \nabla \psi_i : \nabla \varphi_j \right) U_j } \nonumber\\
-	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr\left( 
-		\left[\begin{array}{cc}
-			\nabla_{e_1} \phi_i(\vec X) & \nabla_{e_2} \phi_i(\vec X)\\
-			\nabla_{e_1} \phi_i(\vec X) & \nabla_{e_2} \phi_i(\vec X)
-		\end{array}\right]^T
-		\left[\begin{array}{cc}
-			\nabla_{e_1} \phi_j(\vec X) & \nabla_{e_2} \phi_j(\vec X)\\
-			\nabla_{e_1} \phi_j(\vec X) & \nabla_{e_2} \phi_j(\vec X)
-		\end{array}\right] U_j
-		\right) } \nonumber\\
-	\nabla \vartheta : \nabla U = \sum_k \sum_{ij}{ \left( \nabla \phi_i(\vec X) \cdot \nabla \phi_j(\vec X)\right) U^{e_k}_j } \nonumber
-\end{eqnarray}
-where the contraction of the two rank-2 tensors is another rank-2 tensor e.g., $G_i \cdot G_j = G_i^T G_j$ or in tensor notation
-$G_{ij} \ G_{jk} = G_{ik}$. The integrals are now much smaller i.e., per triangle-set $\Omega_i$ around nodes 
-$\vec N_i$ or tent function $\varphi_i(\vec X)$
-
-The stiffness matrix for triangle $T$ is:
-\begin{eqnarray}
-	M_k(i,j) = I_{2 \times 2} \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }
-\end{eqnarray}
-
-So we can form the linear system:
-\begin{eqnarray}
-	\sum_{ij}{ I_{2 \times 2} \left( \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }\right) U_j }
-\end{eqnarray}
-where $U_j$ is $2 \times 1$ column vector and $I_{2 \times 2}$ is identity matrix.
-
-
-\section{Assembly}
-
-
-The process of creating the stiffness matrix $M$ is called assembly. It consist of creating the matrix $M_k$ for each 
-triangle $T_k$ and then add it to the global $M$ matrix. 
- 
-The global matrix $M$ is $2 N \times 2 N$  where $N$ is number of mesh nodes. In previous section~\ref{sec:discretization}
-the matrix $M_k$ is a $2 N \times 2 N$ a super-sparse block matrix where each entry is $2 \times 2$ block matrix just with
-a few non-zero entries which corresponds to a single triangle contribution.
- \begin{eqnarray} 
-	M = \sum_k M_k
-\end{eqnarray}
- 
-In practice the $M_k$ matrix is not $2 N \times 2 N$ super-sparse, but a $6 \times 6$ matrix (in case of linear triangle elements).
-There is a map from indices of the $6 \times 6$ matrix to the $2 N \times 2 N$ matrix as follows.
- 
-Each triangle's nodes has a global index assigned in the mesh, we also establish a local indexing of triangle
-like $1$, $2$ and $3$. We define a trivial bijective map between global and local indices.
-
-
-\section{Discretization in 3D curved space e.g., 3D surface}
-
-The 3D curved domain $\Omega$ has to be discretised in $N$ nodes and $T$ triangles. 
-For linear elements the nodes coincides with vertices, but for 
-quadratic elements there will nodes defined on the mid-point of edges of triangles, so there will be more nodes than vertices.
-
-We define a test function $\Phi_i$ per node $N_i$ which will be used to linearly interpolate basis tangent vectors located at
-mesh nodes to all triangles incident to the node $N_i$. 
-
-First we define a local basis for tangent space $T_v$ per node $N_i$ in which tangent vector of $U(x,y)$ will reside. We will also 
-need to define a local tangent space basis per each triangle $T_f$, which not coincide with $T_v$, that will be used to 
-interpolate basis tanegt vectors within triangles. Finally we need a ``connection'' $R_i^f$ which parallel transports a basis 
-of tangent vectors $T_v$ at node $N_i$ to a basis of tangent vectors $T_f$ at triangle $T_f$ incident to node $N_i$:
-
-\begin{eqnarray}
-	\begin{array}{cccc}
-		R_i^f =   & T_f^T     &  Q_{vf}    &   T_v       \\
-		2\times2  & 2\times3  &  3\times3  &   3\times2		 
-	\end{array}
-\end{eqnarray}
-where:
-
-\begin{tabular}{p{0.05\linewidth} p{0.80\linewidth}}
-	$R_i^f$ & is $2\times2$ matrix connecting 2 tangent spaces: the local tangent space at node $N_i$ to a local tangent space 
-	at triangle $T_f$. The tangent spaces are connected in such a way that a tangent vector is ``parallel transported'' from
-	one tangent space to the next \\
-	$T_f$ & is the $3\times2$ local tangent space basis for triangle $f$: $T_f = \left[e_i, e_j\right]^T$ \\
-	$Q_{vf}$ & is the $3\times3$ rotation matrix aligning node $N_i$ tangent plane with face $T_f$ plane. \\
-	$T_v$ & is the $3\times2$ local tangent space basis for tangent space at node $N_i$: $T_v = \left[e_i, e_j\right]^T$
-\end{tabular}
-
-The connection $R_i^f$ defines the mapping $\Phi_i^f$ at node $N_i$ restricted to triangle $f$:
-\begin{eqnarray}
-	\Phi_i^f(\vec X) = R_i^f \vec X
-\end{eqnarray}
-which parallel transport a tangent vector $\vec X$ in tangent space basis at node $N_i$ to a triangle $T_f$ local basis.
-
-We also define scalar ``tests'' functions with compact support $\phi_i(x, y)$ for every node $N_i$ to be equal to $0$ or $1$
-and linear everywhere else:
-\begin{eqnarray}
-	\phi_j(\vec N_j) = 1 \ \ \  \forall j = i \nonumber\\
-	\phi_j(\vec N_j) = 0 \ \ \  \forall j \neq i \nonumber\\
-	\phi_j(\vec X) = \text{linear in} \ \Omega_i \nonumber
-\end{eqnarray}
-
-We use those $\phi_j$ to define the vector-valued basis function $\Psi_i^f$:
-\begin{eqnarray}
-	\Psi_i^f(x,y)(\vec X) = \phi_j(x,y) \Phi_i^f \vec X \nonumber\\
-	\Psi_i^f(x,y)(\vec X) = \phi_j(x,y) R_i^f \vec X
-\end{eqnarray}
-
-Now we discretise the solution $U(x,y)$ on triangle $T_f$ to be a finite sum:
-\begin{eqnarray}
-	U(x,y) = \sum_j{ \Psi_j(x,y) U_j } \nonumber\\
-	U(x,y) = \sum_j{ \phi_j(x,y) R_j^f U_j }
-\end{eqnarray}
-and the covariant derivative $\nabla U(x,y)$:
-\begin{eqnarray}
-	\nabla U(x,y) = \sum_j{ \nabla \Psi_j(x,y) U_j } \nonumber\\
-	\nabla U(x,y) = \sum_j{ \nabla \phi_j(x,y) \otimes R_j^f U_j } \nonumber\\
-\end{eqnarray}
-or in matrix form:
-\begin{eqnarray}
-	\nabla U(x,y) = \sum_j{ R_j^f 
-	\left[\begin{array}{cc}
-		U^{e_1}_j & 0\\
-		0 & U^{e_2}_j
-	\end{array}\right]
-	\left[\begin{array}{c}
-		\nabla \phi_j(x,y) \\
-		\nabla \phi_j(x,y)
-	\end{array}\right]}
-\end{eqnarray}
-which is a $2\times2$ matrix.
-
-We discretise the test function $\vartheta(x, y)$ on triangle $T_f$ as:
-\begin{eqnarray}
-	\vartheta(x, y) = \sum_j{ R_j^f \psi_j(x,y) } \nonumber\\
-	\vartheta(x, y) = \sum_j{ R_j^f \left[\phi_j(x,y), \phi_j(x,y)\right]^T }
-\end{eqnarray}
-where $\psi_j(x,y) = \left[\phi_j(x,y), \phi_j(x,y)\right]^T$ and its covariant derivative $\nabla \vartheta(x, y)$ as:
-\begin{eqnarray}
-	\nabla \vartheta(x, y) = \sum_j{ R_j^f \nabla \psi_j(x,y) } \nonumber\\
-	\nabla \vartheta(x, y) = \sum_j{ R_j^f \left[\nabla \phi_j(x,y), \nabla \phi_j(x,y)\right]^T }
-\end{eqnarray}
-
-We discretise the $\nabla \vartheta : \nabla U$ for each element $T_f$ on the triangle-set around node $N_i$ 
-as contribution of nodes $N_j$. Using the fact that $A : B = Tr(A^T B)$ and the cyclic property of the trace we get:
-\begin{eqnarray}
-	\nabla \vartheta : \nabla U = \left(\sum_i{ R_i \nabla \psi_i } \right) : \left( \sum_j{ \nabla \phi_j \otimes R_j U_j } \right) \nonumber\\
-	\nabla \vartheta : \nabla U = \sum_{ij}{ R_i \nabla \psi_i : \nabla \phi_j \otimes R_j U_j } \nonumber\\
-	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr(\nabla \psi_i^T R_i^T R_j [U_j] \nabla \psi_j) } \nonumber\\
-	\nabla \vartheta : \nabla U = \sum_{ij}{ Tr( \nabla \psi_j \nabla \psi_i^T R_i^T R_j [U_j] ) }
-\end{eqnarray}
-Where $[U_j] = 	\left[\begin{array}{cc}
-	U^{e_1}_j & 0\\
-	0 & U^{e_2}_j
-\end{array}\right]$. Noting that 
-$Tr(\nabla \psi_j \nabla \psi_i^T) = Tr(\nabla \psi_i^T \nabla \psi_j) = \nabla \phi_i \cdot \nabla \phi_j$:
-\begin{eqnarray}
-	\nabla \vartheta : \nabla U = \sum_k \sum_{ij}{ \left(\nabla \phi_i \cdot \nabla \phi_j\right) (R_i^T R_j U_j) \cdot e_k }
-\end{eqnarray}
-
-The stiffness matrix for triangle $T$ is a $6\times6$ matrix:
-\begin{eqnarray}
-	M_k(i,j) = R_i^T R_j \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }
-\end{eqnarray}
-
-So we can form the linear system:
-\begin{eqnarray}
-	\sum_{ij}{ \left( \int_{\Omega}{ \nabla \phi_i \cdot \nabla \phi_j \ dA }\right) R_i^T R_j U_j }
-\end{eqnarray}
-where $U_j$ is $2 \times 1$ column vector and $R_i^T R_j$ is the discrete connection $2\times 2$ matrix.
-
-\section{The Covariant Derivative $\nabla \Psi$}
-
-We use the Cartan's moving frames formalism. Moving frames are orthonormal frames attached to each point on the surface. Those 
-frames lies in the tangent space associated to each point, thus the frames are orthogonal unit tangent vectors. Those frames 
-don't form a ``holonomic'' basis i.e., those are not vector fields associated to a directional derivative or partial derivative 
-operator. In particular, moving frames are not continuous over the surface and its length is always $1$ (in contrast, holonomic 
-basis can have different lengths, thus their inner product defines the metric tensor). For this reason the Crhistoffel Symbols 
-is a concept associated to differentiation of holonomic basis while ``Connection Forms'' is a concept associated with 
-``exterior differentiation'' of moving frames. However in the flat space $\mathbb R^n$ under cartesian coordinates the 
-Christoffel Symbols and Connection Forms are the same.
-
-First recap definition of covariant derivative of a vector field $U$ in direction of vector field $w$ 
-(see \href{https://en.wikipedia.org/wiki/Connection_form#Example:_the_Levi-Civita_connection}{the Levi-Civita connection}):
-
-\begin{tabular}{p{0.25\linewidth} p{0.65\linewidth}}
-	$E = (e_1, e_2)$ & local frame field i.e., moving frame seen as pair of tangent vectors $e_1$ and $e_2$ \\
-	$U = U_1 e_1 + U_2 e_2$ & vector field expressed in moving frames as $\sum_i U_i e_i$  \\
-	$w = w_1 e_1 + w_2 e_2$ & vector field expressed in moving frames as $\sum_i w_i e_i$  \\
-\end{tabular}
-\begin{eqnarray}
-	\omega(e_k) = \left[\begin{array}{cc}
-		\omega_{11}(e_k) & \omega_{12}(e_k) \\
-		\omega_{21}(e_k) & \omega_{22}(e_k)
-	\end{array}\right] \text{Matrix of 1-forms a.k.a. connection form} \nonumber
-\end{eqnarray}
-
-We denote $\partial U_i$ the gradient of scalar component $U_i$ which is a vector 
-$\partial U_i = \left[\frac{\partial}{\partial e_1} U_i, \frac{\partial}{\partial e_2} U_i\right]^T$. 
-And $\partial U$ the Jacobian matrix of $U$
-\begin{eqnarray}
-	\partial U = \left[\partial U_1, \partial U_2\right]^T \nonumber\\
-	\partial U =\left[\begin{array}{cc}
-		\frac{\partial}{\partial e_1} U_1 & \frac{\partial}{\partial e_2} U_1 \\
-		\frac{\partial}{\partial e_1} U_2 & \frac{\partial}{\partial e_2} U_2
-	\end{array}\right]
-\end{eqnarray}
-
-The covariant derivative $\nabla_w U$ of a vector field $U$ in direction of vector field $w$ is defined as
-\begin{eqnarray}
-	\nabla_w U = w \cdot \nabla U \nonumber\\
-	\nabla_w U = w_1 \nabla_{e_1} U + w_2 \nabla_{e_2} U 
-\end{eqnarray}
-
-Now we need to expand $\nabla_{e_i} U$:
-\begin{eqnarray}
-	\nabla_{e_j} U = \partial U e_j + \omega(e_j) U \nonumber\\
-	\nabla_{e_j} U =
-	\left[\begin{array}{c}
-		\partial U_1 \cdot e_j + \omega_{11}(e_j) U_1 + \omega_{12}(e_j) U_2 \\
-		\partial U_2 \cdot e_j + \omega_{21}(e_j) U_1 + \omega_{22}(e_j) U_2
-	\end{array}\right] 
-\end{eqnarray}
- Putting back $w = w_1 e_1 + w_2 e_2$ we get:
-
-\begin{eqnarray}
-	\nabla_w U = \partial U w  + \omega(w) U
-\end{eqnarray}
-
-The above expression coincides with definition in Liu, Tong, De Goes, Desbrun ``Discrete Connection and Covariant 
-Derivative for Vector Field Analysis and Design'' where
-$\partial U w$ is the multiplication of the Jacobian of $U$ with $w$ which is giving the directional derivative
-in flat space.
-$\omega(w) U$ is the multiplication of the connection form $\omega(w)$ with $U$ which is parallel transporting
-$U$ to the tip of $w$.
-
-We can define $\nabla U$ just in terms of $U$ without a particular direction $w$ as argument
-(see \href{https://math.stackexchange.com/questions/3468914/covariant-derivative-of-a-vector-field}{covariant derivative of a vector field}).
-\begin{eqnarray}
-	\nabla_w U = \partial_{e_k} U_i w_k  + \omega_{ij}^k w_k U_i \nonumber\\
-	\nabla_w U = (\partial_{e_k} U_i  + \omega_{ij}^k U_i) w_k \nonumber\\
-	\nabla U = \partial_{e_k} U_i  + \omega_{ij}^k U_i
-\end{eqnarray}
-which can also be written as:
-\begin{eqnarray}
-	\nabla U = \partial U + \omega_{ij}^k U_i
-\end{eqnarray}
-
-With the above representation we can contract $\nabla U$ with vector $w$ to get the classic 
-Levi-Civita connection:
-\begin{eqnarray}
-	\nabla_w U = w \cdot \nabla U
-\end{eqnarray}
-
-Recall the definition of $\Psi(x,y)$ basis function which is defined for every point $(x, y)$ on triangle $T_f$ 
-applied to a tangent vector $\vec X_i$ which is defined at node $N_i$:
-\begin{eqnarray}
-	\Psi_i(x,y)(\vec X_i) = \phi_i(x,y) R_i^f \vec X_i
-\end{eqnarray}
-The basis function $\Psi$ does a parallel transport of vectors from tanget space at $N_i$ to a flat tangent space at triangle
-$T_f$ by using a discrete connection $R_i^f$. The discrete connection $R_i^f$ is in essence the Connection Form $\omega(\vec X_i)$.
-The covariant derivative $\nabla \Psi$ is simply:
-\begin{eqnarray}
-	\nabla \Psi_i(x,y)(\vec X_i) = \nabla \phi_i(x,y) \otimes R_i^f \vec X_i + \phi_i(x,y) \nabla (R_i^f \vec X_i) \nonumber\\
-	\nabla \Psi_i(x,y)(\vec X_i) = \partial \phi_i(x,y) \otimes R_i^f \vec X_i
-\end{eqnarray}
-where $\partial \phi_i(x,y)$ is the grandient of a scalar valued function $\phi_i(x,y)$, which is a vector and $\otimes$ is the tensor
-(or dyadic) product of vectors. $\nabla (R_i^f \vec X_i) = \partial (R_i^f \vec X_i) = 0$ as $R_i^f \vec X_i$ is constant vector field 
-inside triangle tangent space (triangle is flat $\mathbb R^2$ space).
-
-
-\section{Reference Elements}
-
-One of the novelties of FEM is to be able to compute the integrals per individual elements on an easy and generic 
-way by using so called Reference Elements.
- 
-For triangle elements we just need a single reference triangle
- 
+\label{section:introduction}
+
+Suppose we are given one tangent vector at one point of a curved surface, and we want to know what that vector ``is'' at every other point: the vector we would obtain by carrying it along the surface without turning it. On a plane the answer is trivial, the same vector everywhere. On a curved surface it is not, for two reasons. First, the tangent planes at different points are different planes, so the vector cannot simply be copied; it has to be carried, and the rule that says how is the \emph{parallel transport} of the surface, given by its \emph{Levi-Civita connection}. Second, the result depends on the path: carrying a vector around a closed loop on a sphere brings it back rotated, by an angle equal to the curvature enclosed. A sensible global answer is to carry the vector along the shortest path from the source, the geodesic.
+
+The \emph{vector heat method} of Sharp, Soliman and Crane \cite{Sharp2019} computes that answer without computing a single geodesic. Its idea is simple. Heat spreading from a point source travels, for a short time, mostly along shortest paths. If what spreads is not a temperature but a tangent vector, which diffuses by the heat equation for tangent vector fields, then the direction of the diffused vector at each point is the direction of the source vector carried along the shortest path; only its length decays with distance. So: diffuse the vector for a short time, and normalize.
+
+This text derives a finite element implementation of that idea \cite{ConnectionLaplacianFEM}, following the classical presentations of the finite element method \cite{Sayas2015, Langtangen2014} and extending them from scalar functions on flat domains to tangent vector fields on surfaces. The derivation has a fixed structure, which recurs in every finite element method and which we follow strictly:
+\begin{enumerate}
+\item the continuous problem: the operator, the equation, the boundary condition (Sections~\ref{section:geometry}--\ref{section:pde});
+\item the weak form, which needs only first derivatives (Section~\ref{section:weak});
+\item a finite dimensional space of candidate solutions, the \emph{trial space}, and of \emph{test functions} (Section~\ref{section:galerkin});
+\item the element matrices, computed triangle by triangle (Sections~\ref{section:gradients}--\ref{section:element});
+\item the assembly of the global matrices, the boundary condition, and the solution of the linear system (Sections~\ref{section:assembly}--\ref{section:solve}).
+\end{enumerate}
+The ingredient that is not in the scalar method is the connection: tangent vectors at different vertices live in different planes and cannot be added before they are brought into a common plane. Section~\ref{section:transport} shows how the code does that, and Section~\ref{section:galerkin} shows that this is exactly where the Levi-Civita connection enters the finite element method. Table~\ref{tab:map} at the end of Part~\ref{part:matrix} lists every formula with the function of \code{FEM.cpp} that evaluates it. Part~\ref{part:ga} repeats the derivation in the language of geometric algebra, where frames become a single vector, coordinates become complex numbers of the tangent plane, transports become rotors, and the gradients of the shape functions become a reciprocal frame; it also separates what is intrinsic to the curved surface from what depends on its embedding in space.
+
+%%% ======================================================================
+\part{The Derivation with Matrices}
+\label{part:matrix}
+
+%%% ----------------------------------------------------------------------
+\section{Tangent Vectors on a Surface}
+\label{section:geometry}
+
+\subsection{Tangent planes and frames}
+
+Let $\Omega \subset \R^3$ be a smooth surface with unit normal $n(x)$ at each point $x$. The \emph{tangent plane} $T_x \Omega$ is the plane through the origin orthogonal to $n(x)$, and a \emph{tangent vector} at $x$ is a vector of $\R^3$ in that plane. A \emph{tangent vector field} $U$ assigns to every point $x$ a tangent vector $U(x) \in T_x \Omega$.
+
+A vector of $\R^3$ needs three numbers, but a tangent vector needs only two, once we choose a basis of the tangent plane. We choose at each point an orthonormal, positively oriented \emph{frame} $(t(x), b(x))$: two unit tangent vectors, orthogonal to each other, with $b = n \times t$. Collecting them as the columns of a $3 \times 2$ matrix,
+\begin{equation}
+\label{eqn:frame}
+T(x) = \big[\, t(x) \;\; b(x) \,\big], \qquad T^T T = I_2, \qquad T T^T = I_3 - n n^T,
+\end{equation}
+a tangent vector $U(x)$ has the coordinates $u = T^T U \in \R^2$, and is recovered as $U = T u$. The two identities say that the columns are orthonormal, and that $T T^T$ is the orthogonal projection of $\R^3$ onto the tangent plane. Since the frame is orthonormal, coordinates preserve lengths and angles: $U \cdot V = u \cdot v$ for tangent vectors at the same point.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_tangent_plane}}
+\caption{A point $x$ of a surface, its normal $n$, its tangent plane $T_x \Omega$ (blue), an orthonormal frame $(t, b)$ of the tangent plane, and a tangent vector $U$ with its two coordinates $u_1, u_2$ in that frame.}
+\label{fig:tangent_plane}
+\end{figure}
+
+
+The choice of $t$ is arbitrary: any rotation of the frame in the tangent plane is as good. The physics does not depend on that choice, and we will see that the method does not either, because every quantity that compares vectors at different points will carry the change of frames with it.
+
+\subsection{The discrete surface}
+
+The surface is a triangle mesh with vertices $x_1, \ldots, x_n$ and triangular faces. For a face $f$ with vertices $x_{f_1}, x_{f_2}, x_{f_3}$ in counterclockwise order, its unit normal and area are
+\begin{equation}
+\label{eqn:face_normal}
+n_f = \frac{(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})}{|(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})|}, \qquad A_f = \tfrac12 |(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})|,
+\end{equation}
+which is \code{computeFaceNormals}. A face is flat: all its points share the tangent plane orthogonal to $n_f$. A vertex has no tangent plane of its own, since it is a corner shared by several faces, so we must choose one. The code takes the plane orthogonal to the \emph{vertex normal}, the normalized sum of the unnormalized normals of the incident faces (\code{Mesh::computeNormals}), which weighs each face by its area:
+\begin{equation}
+\label{eqn:vertex_normal}
+n_i = \frac{\sum_{f \ni i} 2 A_f\, n_f}{\big|\sum_{f \ni i} 2 A_f\, n_f\big|}.
+\end{equation}
+
+\paragraph{Frames.} Each vertex and each face gets an orthonormal frame:
+\begin{itemize}
+\item \emph{vertex $i$} (\code{computeVertex\-Tangent\-Space}): $t_i$ is the projection, onto the tangent plane of $i$, of the edge from $x_i$ to one of its neighbors $x_j$, normalized; and $b_i = n_i \times t_i$:
+\begin{equation}
+\label{eqn:vertex_frame}
+t_i = \frac{(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i}{\big|(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i\big|}, \qquad T_i = \big[\, t_i \;\; n_i \times t_i \,\big];
+\end{equation}
+\item \emph{face $f$} (\code{computeFace\-Tangent\-Space}): $t_f$ is the direction of its first edge, and $T_f = [\, t_f \;\; n_f \times t_f \,]$.
+\end{itemize}
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_one_ring}}
+\caption{The one-ring of a vertex $x_i$. Each face has its own normal (gray arrows); the vertex normal $n_i$ (red) is their area-weighted average~(\ref{eqn:vertex_normal}). The vertex frame vector $t_i$ is the edge to a neighbor $x_j$ (orange), projected onto the vertex tangent plane (blue) and normalized, and $b_i = n_i \times t_i$.}
+\label{fig:one_ring}
+\end{figure}
+
+
+\paragraph{Unknowns.} The unknown field is represented by one tangent vector per vertex, stored by its two coordinates in the vertex frame: $u_i \in \R^2$, with the vector $T_i u_i \in \R^3$. All the unknowns form one vector of $2n$ numbers,
+\begin{equation}
+\label{eqn:dofs}
+\mathrm u = (u_{1,1}, u_{1,2}, u_{2,1}, u_{2,2}, \ldots, u_{n,1}, u_{n,2}),
+\end{equation}
+so that the coordinate $k \in \{1, 2\}$ of vertex $i$ is the entry $2(i - 1) + k$, or $2 i + k$ with the zero-based indices of the code (\code{v->ID * 2 + row}). It is often convenient to read $u_i$ as the complex number $u_{i,1} + \mathrm{i}\, u_{i,2}$: a rotation of the tangent plane by an angle $\alpha$ is then multiplication by $e^{\mathrm i \alpha}$. The code uses this reading to set the source vector and to draw the solution (Section~\ref{section:solve}).
+
+%%% ----------------------------------------------------------------------
+\section{Parallel Transport and the Levi-Civita Connection}
+\label{section:transport}
+
+\subsection{The covariant derivative}
+
+To differentiate a tangent field we would like to compare $U(x + \epsilon X)$ with $U(x)$, but they lie in different tangent planes, and their difference is not a tangent vector. Differentiating in $\R^3$ is still possible: the \emph{directional derivative} $D_X U$ of the three components of $U$ in a tangent direction $X$ is a vector of $\R^3$. It has a tangent part, which measures how $U$ turns within the surface, and a normal part, which measures only how the surface itself bends under $U$. The \emph{covariant derivative} keeps the tangent part:
+\begin{equation}
+\label{eqn:covariant}
+\nabla_X U = \big( I - n n^T \big)\, D_X U = T T^T D_X U .
+\end{equation}
+Figure~\ref{fig:covariant} shows the split in a section of the surface: the tangent part measures the turning of $U$ within the surface, the normal part only the bending of the surface.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_covariant}}
+\caption{The covariant derivative. $U$ at two nearby points lies in two different tangent planes; its ambient derivative $D_X U$ has a tangent part $\nabla_X U$, the covariant derivative, and a normal part, which depends only on how the surface bends (Section~\ref{section:ga_intrinsic}).}
+\label{fig:covariant}
+\end{figure}
+
+This is the \emph{Levi-Civita connection} of a surface in $\R^3$ \cite{doCarmo1976}. Two of its properties will be used repeatedly. It is \emph{compatible with the metric}: for tangent fields $U, V$,
+\begin{equation}
+\label{eqn:metric_compatible}
+X (U \cdot V) = \nabla_X U \cdot V + U \cdot \nabla_X V,
+\end{equation}
+because $X (U \cdot V) = D_X U \cdot V + U \cdot D_X V$, and the normal parts of $D_X U$ and $D_X V$ are orthogonal to the tangent vectors $V$ and $U$. And it is linear in $X$, so at each point it defines a linear map $\nabla U : X \mapsto \nabla_X U$ from the tangent plane to itself, the \emph{total covariant derivative}, a $2 \times 2$ matrix in a frame.
+
+\paragraph{In a frame.} Write $U = T u$ with a frame field $T$. Then $D_X U = (D_X T)\, u + T\, (X \cdot \nabla u)$, and projecting with $T T^T$,
+\begin{equation}
+\label{eqn:covariant_frame}
+T^T \nabla_X U = X \cdot \nabla u + \omega(X)\, u, \qquad \omega(X) = T^T D_X T .
+\end{equation}
+The first term is the ordinary derivative of the coordinates; the second corrects for the turning of the frame. The $2 \times 2$ matrix $\omega(X)$ is skew-symmetric, because differentiating $T^T T = I$ gives $\omega + \omega^T = 0$: it is $\begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix}$, an infinitesimal rotation by the angle $\theta(X)$, the \emph{connection form} of the frame \cite{Liu2016}. On a flat piece of surface with a constant frame, $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple.
+
+\subsection{Parallel transport}
+
+A field $U$ is \emph{parallel} along a curve $\gamma$ if it does not change along it in the sense of the connection, $\nabla_{\gamma'} U = 0$. Given $U$ at the start of the curve, this linear differential equation determines it along the whole curve: that is the parallel transport of the vector along $\gamma$. By~(\ref{eqn:metric_compatible}), $\frac{d}{ds} (U \cdot V) = 0$ for two parallel fields, so parallel transport preserves lengths and angles: it is a rotation from one tangent plane onto another.
+
+On a mesh we need it only between a vertex and an incident face, two points whose tangent planes, with normals $n_i$ and $n_f$, are close. Of all the rotations of $\R^3$ that take $n_i$ to $n_f$, and therefore the tangent plane of $i$ onto that of $f$, the natural one is the \emph{smallest}: the rotation about the axis $n_i \times n_f$ by the angle between the normals. It is the discrete analogue of the transport along the short path from the vertex into the face. When the two planes are those of two faces sharing an edge, the axis $n_f \times n_g$ is the direction of the shared edge, and this rotation is exactly the \emph{unfolding} of one face onto the plane of the other about their common edge, which is how a vector is transported across an edge of a polyhedral surface. (Figure~\ref{fig:unfold}.)
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_unfold}}
+\caption{Transport across an edge. Two faces sharing an edge meet at an angle in space; unfolding face $g$ into the plane of face $f$ (dashed) is a rotation about the shared edge, and that rotation is exactly the smallest rotation taking $n_f$ to $n_g$. The vector $v$ of face $f$ and its transport $Q v \widetilde Q$ into face $g$ are the same vector of the unfolded plane.}
+\label{fig:unfold}
+\end{figure}
+ The smallest rotation is given by the Rodrigues formula.
+
+\begin{prop}
+\label{prop:rodrigues}
+Let $a$ and $c$ be unit vectors with $a \cdot c \neq -1$, and let $v = a \times c$ and $[v]_\times$ the matrix of $w \mapsto v \times w$. Then
+\begin{equation}
+\label{eqn:rodrigues}
+Q = I + [v]_\times + \frac{1}{1 + a \cdot c}\, [v]_\times^2
+\end{equation}
+is the rotation about the axis $v$ that takes $a$ to $c$.
+\end{prop}
+\begin{proof}
+Let $\phi$ be the angle between $a$ and $c$, so that $a \cdot c = \cos \phi$ and $|v| = \sin \phi$, and let $k = v / |v|$ be the unit axis. The Rodrigues rotation by $\phi$ about $k$ is $I + \sin \phi\, [k]_\times + (1 - \cos \phi)\, [k]_\times^2$. Since $[v]_\times = \sin \phi\, [k]_\times$ and $[v]_\times^2 = \sin^2 \phi\, [k]_\times^2$, and $\frac{\sin^2 \phi}{1 + \cos \phi} = \frac{1 - \cos^2 \phi}{1 + \cos \phi} = 1 - \cos \phi$, this is~(\ref{eqn:rodrigues}). It takes $a$ to $c$ because $a$ is orthogonal to the axis $k$ and the angle from $a$ to $c$ about $k$ is $\phi$.
+\end{proof}
+This is \code{alignVectors}$(n_i, n_f)$, with $[v]_\times$ computed by \code{bracket}. Figure~\ref{fig:rotor_transport} shows the rotation and the planes it connects. The formula fails when the normals are opposite, $a \cdot c = -1$, where the axis is undetermined; the code then returns $-I$, which only occurs for degenerate meshes (a face folded over onto its vertex) and is not a rotation.
+
+\paragraph{The discrete connection.} The rotation $Q_{i \to f}$ takes tangent vectors of vertex $i$ to tangent vectors of face $f$. In coordinates, a tangent vector $T_i u$ of $i$ becomes $Q_{i \to f} T_i u$, whose coordinates in the face frame are $T_f^T Q_{i \to f} T_i u$. So the transport from vertex $i$ to face $f$, in coordinates, is the $2 \times 2$ matrix
+\begin{equation}
+\label{eqn:connection}
+R_i^f = T_f^T\, Q_{i \to f}\, T_i ,
+\end{equation}
+which is \code{Rvf}$(v_i, f)$.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_rotor_transport}}
+\caption{The discrete transport from vertex $i$ into face $f$. The smallest rotation $Q$, about the axis $n_i \times n_f$ (dashed), takes the vertex plane (blue) onto the face plane (orange); the frame vector $t_i$ becomes $Q t_i \widetilde Q$ (green, written as a rotor as in Part~\ref{part:ga}), which makes the angle $\rho_i^f$ with the face frame vector $t_f$. The matrix $R_i^f$ is the rotation by $\rho_i^f$.}
+\label{fig:rotor_transport}
+\end{figure}
+
+\begin{prop}
+\label{prop:connection_rotation}
+$R_i^f$ is a rotation of $\R^2$: $(R_i^f)^T R_i^f = I_2$ and $\det R_i^f = 1$.
+\end{prop}
+\begin{proof}
+The columns of $T_i$ are orthonormal and orthogonal to $n_i$, so those of $Q_{i \to f} T_i$ are orthonormal and orthogonal to $Q_{i \to f}\, n_i = n_f$: they are an orthonormal basis of the tangent plane of $f$. The columns of $T_f$ are another one, so $T_f^T$, restricted to that plane, is an isometry onto $\R^2$, and $R_i^f$, the matrix of a change between two orthonormal bases of the same plane, is orthogonal. Both bases are positively oriented with respect to $n_f$: $T_f$ by construction, and $Q_{i \to f} T_i$ because the rotation $Q$ preserves orientation and takes $n_i \times t_i = b_i$ to $n_f \times Q t_i$. So the determinant is $+1$.
+\end{proof}
+\begin{example}
+\label{ex:transport}
+Let the vertex have the normal $n_i = (0, 0, 1)$ and the frame vector $t_i = (0, 1, 0)$, so $b_i = n_i \times t_i = (-1, 0, 0)$, and let the face have the normal $n_f = (0, -1, 1)/\sqrt 2$ and the frame vector $t_f = (1, 0, 0)$, so $b_f = n_f \times t_f = (0, 1, 1)/\sqrt 2$ (this is the face of Example~\ref{ex:triangle}). Then $n_i \cdot n_f = 1/\sqrt 2$ and $v = n_i \times n_f = (1/\sqrt 2, 0, 0)$: $Q$ is the rotation by $45^\circ$ about the $x$ axis, and it takes $t_i = (0, 1, 0)$ to $(0, 1, 1)/\sqrt 2 = b_f$ and $b_i$ to itself. So the transported $t_i$ is the second face frame vector, and
+\begin{equation*}
+R_i^f = T_f^T Q T_i = \begin{pmatrix} t_f \cdot Q t_i & t_f \cdot Q b_i \\ b_f \cdot Q t_i & b_f \cdot Q b_i \end{pmatrix} = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix},
+\end{equation*}
+the rotation by $\rho_i^f = 90^\circ$. The program \code{ga\_fem} prints these numbers (Section~\ref{section:ga_code}).
+\end{example}
+
+A rotation of the plane is multiplication by a unit complex number, $R_i^f \leftrightarrow e^{\mathrm i \rho_i^f}$: the angle $\rho_i^f$ is the discrete connection between the frame of vertex $i$ and that of face $f$. The angle has two contributions, the turning of the tangent plane, from $Q$, and the arbitrary choice of the two frames, which is why only combinations in which the frame choices cancel have a geometric meaning.
+
+\paragraph{Transport between two vertices.} To bring a vector from vertex $j$ to vertex $i$ through a face $f$ that contains both, go from $j$ into the face and from the face back to $i$:
+\begin{equation}
+\label{eqn:vertex_transport}
+R_{j \to i}^f = (R_i^f)^{-1} R_j^f = (R_i^f)^T R_j^f .
+\end{equation}
+Here the choice of the face frame cancels: replacing $T_f$ by $T_f S$ for a rotation $S$ of the plane changes $R_i^f$ to $S^T R_i^f$ and $R_j^f$ to $S^T R_j^f$, and leaves $(R_i^f)^T R_j^f$ unchanged. The choices of the vertex frames do not cancel, and should not: they define the coordinates of the unknowns. This product is the matrix that will appear in the stiffness matrix. The first version of the code, \code{AssembleStiffness\-Element\-Embedded}, uses instead the smallest rotation from $n_j$ to $n_i$ directly, \code{Rvv}$(v_j, v_i) = T_i^T Q_{j \to i} T_j$, which is the same to first order in the angles between the normals; the version used, \code{AssembleStiffness\-Element\-Embedded2}, goes through the face as in~(\ref{eqn:vertex_transport}), which is what the finite element derivation of Section~\ref{section:galerkin} produces.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[b]{0.52\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_holonomy_cone}}\end{minipage}\hfill
+\begin{minipage}[b]{0.42\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_sphere_holonomy}}\end{minipage}
+\caption{Holonomy. Left: the one-ring of a vertex of five equilateral triangles, unfolded into the plane; its angles add up to $300^\circ$, and a vector transported around the vertex (constant in the unfolded plane) comes back turned by the angle defect $60^\circ$ when the gap is closed. Right: on the unit sphere, a vector carried around the octant bounded by three quarter great circles comes back turned by $90^\circ$, the area $\pi/2$ of the octant.}
+\label{fig:holonomy}
+\end{figure}
+
+\begin{rem}[Curvature]
+Going around a vertex from face to face, the transports~(\ref{eqn:vertex_transport}) through consecutive faces compose to a rotation that is not the identity in general. For the intrinsic transport of the polyhedral surface (unfolding the faces one after another) its angle is the \emph{angle defect} $2\pi - \sum_f \alpha_f$ of the vertex, the discrete Gaussian curvature; for the transport through vertex normals used here, it approximates the angle defect on fine meshes (Section~\ref{section:ga_intrinsic}). This is the path dependence of parallel transport mentioned in the introduction, and the reason why the transported field must be defined globally by an equation, rather than by composing transports along one particular path.
+\end{rem}
+
+\begin{example}
+\label{ex:holonomy}
+Five equilateral triangles around a vertex (Figure~\ref{fig:holonomy}, left) form a cone with total angle $5 \cdot 60^\circ = 300^\circ$, a pentagonal pyramid. Cutting it along an edge and laying it flat leaves a gap of $60^\circ$. A vector carried around the vertex keeps its direction in the flat layout, and when the gap is glued shut it meets its starting copy turned by $60^\circ = 2\pi - 300^\circ$, the angle defect. On the unit sphere (right), start at the north pole with a vector, go down a meridian to the equator, along the equator by a quarter turn, and up another meridian back to the pole. Along each great circle the vector keeps its angle with the direction of motion, and it returns turned by $90^\circ$, which is the area $4\pi/8 = \pi/2$ of the octant: on a sphere of curvature $K = 1$, holonomy is enclosed area.
+\end{example}
+
+%%% ----------------------------------------------------------------------
+\section{The Connection Laplacian and the Vector Heat Equation}
+\label{section:pde}
+
+\subsection{The Dirichlet energy and the connection Laplacian}
+
+How much does a field turn? The natural measure is the \emph{Dirichlet energy}
+\begin{equation}
+\label{eqn:dirichlet}
+E(U) = \frac12 \int_\Omega |\nabla U|^2\, dA, \qquad |\nabla U|^2 = \nabla U : \nabla U = \sum_{k=1}^2 |\nabla_{e_k} U|^2,
+\end{equation}
+where $e_1, e_2$ is any orthonormal basis of the tangent plane and $A : B = \tr(A^T B)$ is the inner product of $2 \times 2$ matrices. $E(U) = 0$ exactly when $\nabla U = 0$ everywhere, that is, when $U$ is parallel along every curve; on a curved surface such fields do not exist, and the fields of smallest energy are the ``most parallel'' ones.
+
+The operator associated with this energy is found, as always, by differentiating it. For a variation $U + \epsilon V$, the derivative of $E$ at $\epsilon = 0$ is $\int \nabla U : \nabla V\, dA$, and we want to write it as $\int (\cdots) \cdot V\, dA$, with no derivative on $V$. The tool is Green's identity for tangent fields.
+
+\begin{prop}[Green's identity]
+\label{prop:green}
+For tangent fields $U$ and $V$ on a surface $\Omega$ with boundary $\partial \Omega$ and outward unit conormal $\nu$,
+\begin{equation}
+\label{eqn:green}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds,
+\end{equation}
+where the \emph{connection Laplacian} is $\nabla^* \nabla U = -\sum_k \big( \nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big)$.
+\end{prop}
+\begin{proof}
+Consider the tangent field $W$ defined by $W \cdot X = (\nabla_X U) \cdot V$ for every tangent $X$. Its divergence, computed with the connection, is $\operatorname{div} W = \sum_k (\nabla_{e_k} W) \cdot e_k$, and by the metric compatibility~(\ref{eqn:metric_compatible}) applied twice,
+\begin{align*}
+\operatorname{div} W &= \sum_k \Big( \big(\nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U\big) \cdot V + \nabla_{e_k} U \cdot \nabla_{e_k} V \Big) \\
+&= -(\nabla^* \nabla U) \cdot V + \nabla U : \nabla V .
+\end{align*}
+Integrating over $\Omega$ and using the divergence theorem, $\int_\Omega \operatorname{div} W\, dA = \oint_{\partial \Omega} W \cdot \nu\, ds = \oint (\nabla_\nu U) \cdot V\, ds$, gives~(\ref{eqn:green}).
+\end{proof}
+
+With $V$ vanishing on the boundary, (\ref{eqn:green}) reads $\int \nabla U : \nabla V = \int (\nabla^* \nabla U) \cdot V$: $\nabla^* \nabla$ is the \emph{adjoint} of $\nabla$, hence the notation. Taking $V = U$ shows that it is \emph{positive}: $\int (\nabla^* \nabla U) \cdot U\, dA = \int |\nabla U|^2\, dA \geq 0$. Its negative, $\Delta U = -\nabla^* \nabla U$, is the \emph{rough} or \emph{Bochner} Laplacian of tangent fields; on scalar functions the same construction gives the familiar Laplace--Beltrami operator. The sign matters: the energy decreases along $-\nabla^* \nabla U$, which is the direction in which the heat equation must move.
+
+\subsection{The vector heat equation}
+
+The heat equation for tangent fields lets a field flow downhill in the Dirichlet energy:
+\begin{equation}
+\label{eqn:heat}
+\frac{\partial U}{\partial t} = -\nabla^* \nabla U = \Delta U .
+\end{equation}
+By Green's identity, $\frac{d}{dt} \frac12 \int |U|^2 = -\int |\nabla U|^2 \leq 0$ (with $U = 0$ or $\nabla_\nu U = 0$ on the boundary): the flow smooths the field and decays it. Starting from a vector concentrated at a source point $s$, Sharp, Soliman and Crane \cite{Sharp2019} show that for short times the solution at a point $x$ points in the direction of the source vector transported along the shortest geodesic from $s$ to $x$, and that only its magnitude depends on the distance. Normalizing the solution at every point therefore gives the parallel transport of the source vector. (Their method also diffuses the magnitude separately, with a scalar heat equation, to recover a field of prescribed length; here we need only the direction.)
+
+\subsection{Backward Euler}
+
+We take one time step of length $\Delta t$ with the \emph{backward} Euler method, which evaluates the right-hand side of~(\ref{eqn:heat}) at the new time: with $U^0$ at time $0$ and $U$ at time $\Delta t$,
+\begin{equation}
+\label{eqn:backward_euler}
+\frac{U - U^0}{\Delta t} = -\nabla^* \nabla U \qquad \Longleftrightarrow \qquad U + \Delta t\, \nabla^* \nabla U = U^0 .
+\end{equation}
+The operator $I + \Delta t\, \nabla^* \nabla$ is positive definite, because $\nabla^* \nabla$ is positive, so the step is always solvable and stable for any $\Delta t$, which is why the implicit method is used: a single large step can be taken. The vector heat method takes exactly one step, with $\Delta t$ of the order of the square of the mesh spacing $h$, the time it takes heat to cross a few elements; the code uses $\Delta t = \bar h^2$ with $\bar h$ the mean edge length (\code{computeEdgeLengths}).
+
+\paragraph{The boundary condition used by the code.} The source can be imposed in two ways. Sharp et al. put it in the initial condition, $U^0 = \delta_s\, U_s$, a vector concentrated at the source vertex. The code instead prescribes the value at the source vertex and starts from zero everywhere else: it solves
+\begin{equation}
+\label{eqn:dirichlet_problem}
+U + \Delta t\, \nabla^* \nabla U = 0 \quad \text{away from } s, \qquad U(s) = U_s,
+\end{equation}
+a \emph{Dirichlet} condition at one point. Both produce a field that decays away from the source and whose direction is transported along the paths of steepest heat flow; the direction, which is all we keep, is the same to the accuracy of the method. Equation~(\ref{eqn:dirichlet_problem}) is a \emph{screened} Poisson equation for the connection Laplacian: the term $U$ makes the influence of the source decay over a distance of order $\sqrt{\Delta t} \approx \bar h$.
+
+%%% ----------------------------------------------------------------------
+\section{The Weak Form}
+\label{section:weak}
+
+The equation~(\ref{eqn:backward_euler}) involves second derivatives of $U$, through $\nabla^* \nabla$, and a piecewise linear field on a mesh has no second derivatives: its first derivatives jump across edges. The weak form removes the second derivatives by moving one of them onto a test field.
+
+\paragraph{Test fields.} Multiply~(\ref{eqn:backward_euler}) by an arbitrary tangent field $V$, a \emph{test field}, take the inner product, and integrate:
+\begin{equation*}
+\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega (\nabla^* \nabla U) \cdot V\, dA = \int_\Omega U^0 \cdot V\, dA .
+\end{equation*}
+If this holds for every test field $V$, the equation holds at every point (take $V$ concentrated near any point). Conversely it suffices to ask it for every $V$ in a large enough family; this is the idea that the finite element method will exploit with a finite family.
+
+\paragraph{Integration by parts.} By Green's identity~(\ref{eqn:green}), the second term equals $\int \nabla U : \nabla V$ minus a boundary term. Our surfaces are closed, or we choose test fields that vanish where $U$ is prescribed, so the boundary term disappears, and the \emph{weak form} of the backward Euler step is: find $U$ such that
+\begin{equation}
+\label{eqn:weak}
+\boxed{\;\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA = \int_\Omega U^0 \cdot V\, dA \;}
+\end{equation}
+for every test field $V$.
+Only first derivatives appear, of $U$ and of $V$ symmetrically. The equation now makes sense for fields whose derivatives are merely square integrable, including continuous, piecewise linear ones, which is the meaning of ``weak''. And it is the condition that the energy
+\begin{equation}
+\label{eqn:weak_energy}
+J(U) = \frac12 \int_\Omega |U|^2\, dA + \frac{\Delta t}{2} \int_\Omega |\nabla U|^2\, dA - \int_\Omega U^0 \cdot U\, dA
+\end{equation}
+be stationary, since its derivative in the direction $V$ is the left-hand side of~(\ref{eqn:weak}) minus its right-hand side. Being a sum of squares plus a linear term, $J$ is strictly convex, and its unique minimizer is the solution: the backward Euler step looks for the field closest to $U^0$ that is also as parallel as possible, with $\Delta t$ trading one against the other.
+
+%%% ----------------------------------------------------------------------
+\section{The Galerkin Method: Piecewise Linear Tangent Fields}
+\label{section:galerkin}
+
+The Galerkin method replaces ``every test field'' by a finite family, and the unknown field by a combination of the same family. We need, then, a finite dimensional space of tangent fields on the mesh. For scalar functions the standard choice is the piecewise linear functions; this section builds their analogue for tangent fields, and shows that the connection is what makes it possible.
+
+\subsection{The scalar hat functions}
+
+For each vertex $i$, the \emph{hat function} $\phi_i$ is the continuous function on the mesh that is linear on every face, equals $1$ at $x_i$ and $0$ at every other vertex. It is nonzero only on the faces around $i$ (its \emph{support}), it is a tent over the one-ring of $i$, and on each face $f$ the three hat functions of its vertices add up to $1$, since $\phi_{f_1} + \phi_{f_2} + \phi_{f_3}$ is linear and equals $1$ at the three vertices. The scalar piecewise linear functions are the combinations $\sum_i c_i \phi_i$, and $c_i$ is the value at vertex $i$.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_hat}}
+\caption{The hat function $\phi_i$ of a vertex: linear on every face, $1$ at $x_i$, $0$ at all other vertices, and therefore zero outside the one-ring of $x_i$.}
+\label{fig:hat}
+\end{figure}
+
+
+\subsection{Why the vector case needs a connection}
+
+The obvious vector analogue would be $U = \sum_i \phi_i\, (T_i u_i)$: interpolate the three vertex vectors of each face with the hat functions. But $T_i u_i$ lies in the tangent plane of vertex $i$, and the three vertices of a face have three different tangent planes: the interpolated vector would not be tangent to the face, and its derivative would contain the bending of the surface rather than the turning of the field. Before interpolating, the three vectors must be brought into one plane, the plane of the face, and the rule that brings a vector from one tangent plane into another is parallel transport.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_naive}}
+\caption{Why vectors must be transported before they are interpolated. The vertex vectors $T_i u_i$ (red) lie in three different vertex planes (blue), none of which is the plane of the face; transported into the face, $T_f R_i^f u_i$ (green), they lie in one plane and can be combined.}
+\label{fig:naive}
+\end{figure}
+ So, on each face $f$, we interpolate the \emph{transported} vertex vectors:
+\begin{equation}
+\label{eqn:trial}
+U\big|_f = \sum_{i \in f} \phi_i\; T_f R_i^f u_i, \qquad \text{in face coordinates:} \quad T_f^T U\big|_f = \sum_{i \in f} \phi_i\, R_i^f u_i .
+\end{equation}
+Figure~\ref{fig:naive} shows the difference. This defines a tangent field on every face, linear in the unknowns $u_i$. The space of such fields is spanned by the $2n$ \emph{vector hat functions}
+\begin{equation}
+\label{eqn:basis}
+\Psi_{i,k}\big|_f = \phi_i\; T_f R_i^f \varepsilon_k, \qquad k = 1, 2,
+\end{equation}
+where $\varepsilon_1 = (1, 0)$ and $\varepsilon_2 = (0, 1)$: the frame vector $k$ of vertex $i$, transported into each incident face, and faded out by the scalar hat. Then $U = \sum_{i,k} u_{i,k} \Psi_{i,k}$, with the unknowns~(\ref{eqn:dofs}) as coefficients. At vertex $i$ itself, $\phi_i = 1$ and the other hats vanish, so the field takes, in each incident face, the transported value $T_f R_i^f u_i$: the vertex vector seen from that face.
+
+\subsection{The covariant derivative of a basis function}
+
+Inside a face, the surface is a plane and the face frame $T_f$ is constant, so the connection form vanishes, and by~(\ref{eqn:covariant_frame}) the covariant derivative is the ordinary derivative of the face coordinates. In~(\ref{eqn:trial}) the transported vectors $R_i^f u_i$ are constant on the face; only the hat functions vary. Hence, for a tangent direction $X$ of the face,
+\begin{equation}
+\label{eqn:grad_trial}
+T_f^T \nabla_X U\big|_f = \sum_{i \in f} (X \cdot \nabla \phi_i)\, R_i^f u_i, \qquad T_f^T \nabla U\big|_f = \sum_{i \in f} (R_i^f u_i)\, (g_i^f)^T,
+\end{equation}
+where $g_i^f = T_f^T \nabla \phi_i \in \R^2$ is the gradient of the hat function in the coordinates of the face, a constant vector on the face, computed in Section~\ref{section:gradients}. The total covariant derivative is a sum of rank-one $2 \times 2$ matrices: the transported vertex vector times the gradient of its hat. In tensor notation, $\nabla \Psi_{i,k} = (R_i^f \varepsilon_k) \otimes g_i^f$.
+
+\subsection{The discrete equations}
+
+Now take $U = \sum_{j,l} u_{j,l} \Psi_{j,l}$ and, as test fields, every basis function $V = \Psi_{i,k}$ (the \emph{Galerkin} choice: test and trial spaces are the same). The weak form~(\ref{eqn:weak}) becomes $2n$ linear equations,
+\begin{equation}
+\label{eqn:galerkin}
+\sum_{j,l} \Big( \int_\Omega \Psi_{j,l} \cdot \Psi_{i,k}\, dA + \Delta t \int_\Omega \nabla \Psi_{j,l} : \nabla \Psi_{i,k}\, dA \Big)\, u_{j,l} = \int_\Omega U^0 \cdot \Psi_{i,k}\, dA ,
+\end{equation}
+which, in matrix form, read
+\begin{equation}
+\label{eqn:linear_system}
+(\mathrm M + \Delta t\, \mathrm L)\, \mathrm u = \mathrm M\, \mathrm u^0 ,
+\end{equation}
+with the \emph{mass matrix} $\mathrm M$ and the \emph{stiffness matrix} $\mathrm L$, both $2n \times 2n$ and both made of $2 \times 2$ blocks, one per pair of vertices $(i, j)$:
+\begin{equation}
+\label{eqn:global_blocks}
+\mathrm M_{ij} = \Big[ \int_\Omega \Psi_{j,l} \cdot \Psi_{i,k}\, dA \Big]_{k,l}, \qquad \mathrm L_{ij} = \Big[ \int_\Omega \nabla \Psi_{j,l} : \nabla \Psi_{i,k}\, dA \Big]_{k,l}.
+\end{equation}
+(For the right-hand side we have written $U^0 = \sum_j \Psi_{j,l}\, u^0_{j,l}$, its interpolant.) Each integral is a sum over faces, and a face contributes only if it contains both $i$ and $j$, because the hats vanish elsewhere. So the matrices are sparse, with a nonzero block for each vertex and for each pair of vertices joined by an edge, and they can be computed face by face, which is the next step.
+
+\paragraph{The stiffness block of a face.} On a face $f$ containing $i$ and $j$, by~(\ref{eqn:grad_trial}) and the identity $(a b^T) : (c d^T) = (a \cdot c)(b \cdot d)$,
+\begin{equation*}
+\nabla \Psi_{j,l} : \nabla \Psi_{i,k} = \big( (R_j^f \varepsilon_l) (g_j^f)^T \big) : \big( (R_i^f \varepsilon_k) (g_i^f)^T \big) = (g_i^f \cdot g_j^f)\, (R_i^f \varepsilon_k) \cdot (R_j^f \varepsilon_l),
+\end{equation*}
+and $(R_i^f \varepsilon_k) \cdot (R_j^f \varepsilon_l) = \varepsilon_k^T (R_i^f)^T R_j^f \varepsilon_l$ is the entry $(k, l)$ of $(R_i^f)^T R_j^f$. The integrand is constant on the face, so its integral is the area times the constant:
+\begin{equation}
+\label{eqn:element_stiffness}
+\boxed{\; \mathrm L^f_{ij} = A_f\, \big( g_i^f \cdot g_j^f \big)\, (R_i^f)^T R_j^f \;}
+\end{equation}
+This is the heart of the method, and it is worth reading slowly. The scalar factor $A_f\, g_i^f \cdot g_j^f$ is the entry $(i, j)$ of the stiffness matrix of the ordinary scalar Laplacian; the $2 \times 2$ factor $(R_i^f)^T R_j^f$ is, by~(\ref{eqn:vertex_transport}), the parallel transport from vertex $j$ to vertex $i$ through the face. The connection Laplacian is the scalar Laplacian in which every coupling between two vertices first transports the vector of one into the frame of the other. For $i = j$ the transport is the identity, $(R_i^f)^T R_i^f = I$, and the diagonal block is the scalar diagonal entry times $I$. On a flat mesh with a common frame, every $R_i^f = I$, and the connection Laplacian is two copies of the scalar Laplacian, one per coordinate.
+
+The block for $(j, i)$ is $A_f (g_j^f \cdot g_i^f) (R_j^f)^T R_i^f = (\mathrm L^f_{ij})^T$, so the matrix is symmetric. It is also positive semi-definite, because $\mathrm u^T \mathrm L \mathrm u = \int |\nabla U|^2\, dA \geq 0$ for the field $U$ of coefficients $\mathrm u$.
+
+%%% ----------------------------------------------------------------------
+\section{Shape Functions and Their Gradients on a Triangle in Space}
+\label{section:gradients}
+
+The element matrices need the constant gradients $g_i^f$ of the three hat functions on each face. The standard way to compute them is to do the work once, on a fixed \emph{reference triangle}, and to carry the result to every face of the mesh with an affine map \cite{Sayas2015}.
+
+\subsection{The reference triangle}
+
+The reference triangle $\hat K$ has the vertices $\hat P_1 = (0, 0)$, $\hat P_2 = (1, 0)$, $\hat P_3 = (0, 1)$ in the plane of the coordinates $\xi = (\xi_1, \xi_2)$:
 \begin{center}
-	\begin{tikzpicture}
-		\draw (0,0) node[anchor=south]{$P_3$}
-		-- (0,-3) node[anchor=north]{$P_1$}
-		-- (3,-3) node[anchor=north]{$P_2$}
-		-- cycle;
-	\end{tikzpicture}		
+\begin{tikzpicture}[scale=1.6]
+  \draw[thick] (0,0) node[anchor=north east]{$\hat P_1$} -- (1,0) node[anchor=north west]{$\hat P_2$} -- (0,1) node[anchor=south east]{$\hat P_3$} -- cycle;
+  \draw[->] (0,0) -- (1.3,0) node[anchor=west]{$\xi_1$};
+  \draw[->] (0,0) -- (0,1.3) node[anchor=south]{$\xi_2$};
+\end{tikzpicture}
 \end{center}
-\begin{eqnarray} 
-	P_1 = (0,0) \nonumber\\
-	P_2 = (1,0) \nonumber\\
-	P_3 = (0,1) \nonumber
-\end{eqnarray}
+Its three linear \emph{shape functions}, each equal to $1$ at one vertex and $0$ at the other two, are
+\begin{equation}
+\label{eqn:shape}
+\hat\phi_1(\xi) = 1 - \xi_1 - \xi_2, \qquad \hat\phi_2(\xi) = \xi_1, \qquad \hat\phi_3(\xi) = \xi_2,
+\end{equation}
+as one checks at the three vertices: $\hat \phi_a(\hat P_b) = \delta_{ab}$. Their gradients are constant:
+\begin{equation}
+\label{eqn:shape_gradients}
+\hat \nabla \hat\phi_1 = (-1, -1), \qquad \hat \nabla \hat\phi_2 = (1, 0), \qquad \hat \nabla \hat\phi_3 = (0, 1).
+\end{equation}
 
-The P1 (linear) 2D Lagrange shape functions $\psi(u,v)$ has the form 
-\begin{eqnarray} 
-	\psi(u,v) = A u + B u + C \nonumber
-\end{eqnarray}
+\subsection{The map to a face in space}
 
-For the reference trignale defined above the $\psi(u,v)$ takes the simple form:
-\begin{eqnarray} 
-	\psi_1(u,v) = 1 - u - v \nonumber\\
-	\psi_2(u,v) = u \nonumber\\
-	\psi_3(u,v) = v \nonumber
-\end{eqnarray}
+The affine map that takes the reference triangle onto a face $f$ with vertices $x_1, x_2, x_3$ (local numbering, in the order of the face) is
+\begin{equation}
+\label{eqn:affine}
+F(\xi) = x_1 + B\, \xi, \qquad B = \big[\, x_2 - x_1 \;\; x_3 - x_1 \,\big] \in \R^{3 \times 2}.
+\end{equation}
+It takes $\hat P_1, \hat P_2, \hat P_3$ to $x_1, x_2, x_3$, and the edges $\hat e_1, \hat e_2$ of the reference triangle to the edges $e_1 = x_2 - x_1$ and $e_2 = x_3 - x_1$ of the face, the columns of $B$ (Figure~\ref{fig:reference}).
 
-We can check that $\psi_i \cdot \psi_j = \delta_{ij}$
-\begin{eqnarray} 
-\psi_1(P_1) = 1 \ \  \psi_1(P_2) = 0  \ \  \psi_1(P_3) = 0 \nonumber\\
-\psi_2(P_1) = 0 \ \  \psi_2(P_2) = 1  \ \  \psi_2(P_3) = 0 \nonumber\\
-\psi_3(P_1) = 0 \ \  \psi_3(P_2) = 0  \ \  \psi_3(P_3) = 1 \nonumber
-\end{eqnarray}
+\begin{figure}[t]
+\centering
+\begin{minipage}[c]{0.5\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_reference_2d}}\end{minipage}\hfill
+\begin{minipage}[c]{0.45\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_reference_map_3d}}\end{minipage}
+\caption{The affine map from the reference triangle to a face in space. The columns of $B$ are the images of the reference edges.}
+\label{fig:reference}
+\end{figure} The hat functions on the face are the reference shape functions composed with the inverse of the map: $\phi_a = \hat\phi_a \circ F^{-1}$. In the plane we would invert $B$, but here $B$ is $3 \times 2$: it maps the plane of $\xi$ onto the plane of the face, which is a plane in space, and has no inverse. What we need is the gradient of $\phi_a$, a vector in the plane of the face, and the chain rule determines it.
 
-We define a function $F(\vec U)$, a.k.a., \emph{pushforward}, that maps reference 2D triangle to "physical" 2D triangle on the mesh
-(the inverse $F^{-1}(\vec X)$ , a.k.a., \emph{pullback}, maps triangle from physical to reference frame).
-\begin{eqnarray}
-	\left[\begin{array}{c}
-		x \\
-		y
-	\end{array}\right] = 
-	\left[\begin{array}{cc}
-		x_2 - x_1 &  x_3 - x_1 \\
-		y_2 - y_1 &  y_3 - y_1
-	\end{array}\right] 
-	\left[\begin{array}{c}
-		u \\
-		v
-	\end{array}\right] +
-	\left[\begin{array}{c}
-		x_1 \\
-		y_1
-	\end{array}\right] \nonumber
-\end{eqnarray}
+\begin{prop}
+\label{prop:gradient}
+On the face, $\nabla \phi_a = B (B^T B)^{-1}\, \hat\nabla \hat\phi_a$, and this vector lies in the plane of the face.
+\end{prop}
+\begin{proof}
+Let $g = \nabla \phi_a$ be the gradient, a vector in the plane of the face. Its defining property is that, along any direction $X$ of the face, the derivative of $\phi_a$ is $g \cdot X$. The edges $B \hat e_1 = x_2 - x_1$ and $B \hat e_2 = x_3 - x_1$ are two such directions, and along them $\phi_a(F(\xi)) = \hat\phi_a(\xi)$ changes at the rates $\partial \hat\phi_a / \partial \xi_m$: so $B^T g = \hat\nabla \hat\phi_a$, two equations. Since $g$ lies in the plane spanned by the columns of $B$, $g = B c$ for some $c \in \R^2$, and then $B^T B c = \hat\nabla \hat\phi_a$, so $c = (B^T B)^{-1} \hat\nabla \hat\phi_a$, and $g = B (B^T B)^{-1} \hat\nabla \hat\phi_a$. The matrix $B^T B$ is the Gram matrix of the two edges, invertible for a non-degenerate triangle.
+\end{proof}
+The matrix $B (B^T B)^{-1}$ is the transpose of the Moore--Penrose pseudo-inverse $B^+ = (B^T B)^{-1} B^T$ of $B$, and for a triangle in the plane, where $B$ is square, it reduces to $B^{-T}$, the familiar formula of the planar finite element method. In the code, \code{Binv} $= ((B^T B)^{-1} B^T)^T = B (B^T B)^{-1}$, and the three gradients are its columns combined as in~(\ref{eqn:shape_gradients}):
+\begin{equation}
+\label{eqn:gradN}
+\nabla \phi_1 = -C_{:,1} - C_{:,2}, \qquad \nabla \phi_2 = C_{:,1}, \qquad \nabla \phi_3 = C_{:,2}, \qquad C = \code{Binv},
+\end{equation}
+which is \code{gradN[0]}, \code{gradN[1]}, \code{gradN[2]} in \code{AssembleStiffness\-Element\-Embedded2} (and in \code{Gradient}). Note that the three gradients add up to zero, as they must, since the three hat functions add up to $1$. Finally, the coordinates of the gradient in the face frame are
+\begin{equation}
+\label{eqn:grad_face}
+g_a^f = T_f^T\, \nabla \phi_a \in \R^2,
+\end{equation}
+\code{grad\_i = Tf.transpose() * gradN[i]}. Since $\nabla \phi_a$ lies in the face plane and the frame is orthonormal, $g_a^f \cdot g_b^f = \nabla \phi_a \cdot \nabla \phi_b$: the projection does not change the stiffness, it only expresses the gradients in the same coordinates as the transported vectors.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_gradient}}
+\caption{The gradients of the hat functions of a face. $\nabla \phi_2$ is orthogonal to the edge opposite to $x_2$, points towards $x_2$, and has length $1/h_2$, the reciprocal of the height; the gradients $\nabla\phi_2 = e^1$ and $\nabla\phi_3 = e^2$ form the \emph{reciprocal frame} of the edges $e_1, e_2$ ($e^k \cdot e_m = \delta_{km}$), and the three gradients add up to zero.}
+\label{fig:gradient}
+\end{figure}
 
-Which cab be expressed in vector form
-\begin{eqnarray} 
-	F(\vec U) =  B \vec U + \vec X_1 \nonumber\\
-	F^{-1}(\vec X)  = B^{-1} (\vec X - \vec X_1) \nonumber
-\end{eqnarray}
+\begin{example}
+\label{ex:triangle}
+Take the triangle $x_1 = (0, 0, 0)$, $x_2 = (2, 0, 0)$, $x_3 = (0, 1, 1)$ of Figure~\ref{fig:worked_triangle}. Its edges are $e_1 = (2, 0, 0)$ and $e_2 = (0, 1, 1)$, so
+\begin{equation*}
+B = \begin{pmatrix} 2 & 0 \\ 0 & 1 \\ 0 & 1 \end{pmatrix}, \quad B^T B = \begin{pmatrix} 4 & 0 \\ 0 & 2 \end{pmatrix}, \quad B (B^T B)^{-1} = \begin{pmatrix} 1/2 & 0 \\ 0 & 1/2 \\ 0 & 1/2 \end{pmatrix}.
+\end{equation*}
+The edges are orthogonal, so $B^T B$ is diagonal and the reciprocal frame is just $e_k / |e_k|^2$. By~(\ref{eqn:gradN}),
+\begin{equation*}
+\nabla\phi_1 = \left(-\tfrac12, -\tfrac12, -\tfrac12\right), \qquad \nabla\phi_2 = \left(\tfrac12, 0, 0\right), \qquad \nabla\phi_3 = \left(0, \tfrac12, \tfrac12\right),
+\end{equation*}
+which add up to zero. Check $\nabla\phi_2$: along $e_1$, $\phi_2$ goes from $0$ to $1$, and $\nabla\phi_2 \cdot e_1 = 1$; along $e_2$ it stays $0$, and $\nabla\phi_2 \cdot e_2 = 0$. The area is $A_f = \frac12 |e_1 \times e_2| = \frac12 |(0, -2, 2)| = \sqrt 2$, and the scalar stiffness $A_f\, \nabla\phi_a \cdot \nabla\phi_b$ of the face is
+\begin{equation*}
+\sqrt 2 \begin{pmatrix} 3/4 & -1/4 & -1/2 \\ -1/4 & 1/4 & 0 \\ -1/2 & 0 & 1/2 \end{pmatrix} = \begin{pmatrix} 1.0607 & -0.3536 & -0.7071 \\ -0.3536 & 0.3536 & 0 \\ -0.7071 & 0 & 0.7071 \end{pmatrix},
+\end{equation*}
+whose rows add up to zero, since constants have zero gradient. The entry $(2, 3)$ vanishes because the angle at $x_1$ is a right angle, in agreement with the cotangent formula of the next section; the entry $(1, 2)$ is $-\frac12 \cot\theta_3$, where $\cos\theta_3 = \frac{(x_1 - x_3) \cdot (x_2 - x_3)}{|x_1 - x_3|\, |x_2 - x_3|} = \frac{2}{\sqrt 2 \sqrt 6} = \frac{1}{\sqrt 3}$, so $\cot\theta_3 = \frac{1}{\sqrt 2}$ and $-\frac12 \cot\theta_3 = -0.3536$.
+\end{example}
 
-
-We denote $\psi^k_i$ the function $\psi_i$ defined on physical triangle $K$.
-
-\begin{eqnarray} 
-	\psi^k_i(\vec X) = \psi_i \circ  F^{-1}(\vec X) \nonumber\\
-	\psi^k_i(\vec X) = \psi_i( F^{-1}(\vec X) ) \nonumber
-\end{eqnarray}
-
-The gradient of $\psi^k_i(\vec X)$ in physical triangle is:
-
-\begin{eqnarray} 
-	\nabla_{\vec X} \psi^k_i(\vec X) = \nabla_{\vec X} \psi_i( F^{-1}(\vec X) ) \nonumber\\
-    = \nabla_{\vec U} \psi_i( \vec U ) \cdot \nabla_{\vec X} F^{-1}(\vec X) \nonumber\\
-    = B^{-T} \nabla_{\vec U} \psi_i( \vec U) \nonumber
-\end{eqnarray}
-where we used $\vec U = F^{-1}(\vec X)$ and $\nabla_{\vec X} F^{-1}(\vec X) = B^{-T}$.
-
-The gradient of $\psi_i(\vec U)$ in reference triangle is:
-
-\begin{eqnarray} 
-	\nabla \psi_1 = (-1, -1) \nonumber\\
-	\nabla \psi_2 = (1, 0) \nonumber\\
-	\nabla \psi_3 = (0, 1) \nonumber
-\end{eqnarray}
-
-So the gradient of $\psi^k_i(\vec X)$ in physical triangle $k$ is ``constant'':
- 
-\begin{eqnarray} 
-	\nabla \psi^k_1 = B^{-T} (-1, -1) \nonumber\\
-	\nabla \psi^k_2 = B^{-T} (1, 0) \nonumber\\
-	\nabla \psi^k_3 = B^{-T} (0, 1) \nonumber
-\end{eqnarray}
-
-\subsection{For 3D Triangles}
-
-For 3D triangles the map function $F$ changes as follows:
-\begin{eqnarray}
-	\left[\begin{array}{c}
-		x \\
-		y \\
-		z
-	\end{array}\right] = 
-	\left[\begin{array}{cc}
-		x_2 - x_1 &  x_3 - x_1 \\
-		y_2 - y_1 &  y_3 - y_1 \\
-		z_2 - z_1 &  z_3 - z_1
-	\end{array}\right] 
-	\left[\begin{array}{c}
-		u \\
-		v
-	\end{array}\right] +
-	\left[\begin{array}{c}
-		x_1 \\
-		y_1 \\
-		z_1
-	\end{array}\right] \nonumber
-\end{eqnarray}
-
-In matrix algebra it can be expressed as:
-
-\begin{eqnarray}
-	F(\vec U) = B \vec U + \vec X_1 \nonumber\\
-	F^{-1}(\vec X) = (B^T B)^{-1} B^T (\vec X - \vec X_1)  \nonumber
-\end{eqnarray}
-or
-\begin{eqnarray}
-	F^{-1}(\vec X) = B^{-*} (\vec X - \vec X_1) \nonumber
-\end{eqnarray}
-where $B^{-*} = (B^T B)^{-1} B^T$ is the Moore-Penrose pseudo-inverse of $B$.
-
-The same analysis as before holds so the gradient in ``physical'' trignale $k$ is:
-
-\begin{eqnarray} 
-	\nabla \psi^k_1 = B^{-*T} (-1, -1) \nonumber\\
-	\nabla \psi^k_2 = B^{-*T} (1, 0) \nonumber\\
-	\nabla \psi^k_3 = B^{-*T} (0, 1) \nonumber
-\end{eqnarray}
- 
-\section{Numerical Quadrature}
-
-The entries of the matrix $M_T^k$ are the following double integrals:
-
-\begin{eqnarray} 
-	M_T^k(i,j) = \int_{T^k}{ \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \ dA} \nonumber
-\end{eqnarray}
-inidices $(i,j)$ run for all nodes of triangle $T$.
- 
-Let define the inner product of basis functions as  
-
-\begin{eqnarray} 
-	I^k_{ij}(\vec X) = \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \nonumber
-\end{eqnarray}
-
-The 3-point Gauss quadrature rule for the linear triangle is:
-\begin{eqnarray} 
-	M_T^k(i,j) = \frac{area(T^k)}{3} ( I^k_{ij}(P_1) +  I^k_{ij}(P_2) +  I^k_{ij}(P_3))
-\end{eqnarray}
-evaluated at the vertices of the triangle $P_1$, $P_2$ and $P_3$. Which is an exact quadrature formula 
-for linear function on a triangle. However since $\nabla \psi^k_i(\vec X)$ does not depends on $\vec X$ the quadrature 
-expression reduces to:
-\begin{eqnarray} 
-	M_T^k(i,j) = area(T^k) \nabla \psi^k_i(\vec X) \cdot \nabla \psi^k_j(\vec X) \nonumber
-\end{eqnarray}
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_worked_triangle}}
+\caption{The triangle of Example~\ref{ex:triangle}, its normal $n_f = (0, -1, 1)/\sqrt 2$, and the gradients of its three hat functions, drawn from the centroid. All three lie in the plane of the face.}
+\label{fig:worked_triangle}
+\end{figure}
 
 
-\section{Implementation}
+\subsection{A check: the cotangent formula}
 
-Implementation can be found in \cite{Basic2DHeatEquationFEM}
+The scalar factor of~(\ref{eqn:element_stiffness}) has a classical closed form, which connects the finite element computation with the cotangent Laplacian of geometry processing (\code{CalcCotangentWeights} in \code{Laplacian.cpp}).
+\begin{prop}
+\label{prop:cotangent}
+For two distinct vertices $a, b$ of a face with area $A_f$, $A_f\, \nabla \phi_a \cdot \nabla \phi_b = -\frac12 \cot \theta_c$, where $\theta_c$ is the angle at the third vertex $c$; and $A_f\, |\nabla \phi_a|^2 = \frac12 (\cot \theta_b + \cot \theta_c)$.
+\end{prop}
+\begin{proof}
+$\nabla \phi_a$ is orthogonal to the edge opposite to $a$ (along which $\phi_a$ is constant, zero), points towards $a$, and has length $1 / h_a$, where $h_a = 2 A_f / \ell_a$ is the height from $a$ and $\ell_a$ the length of the opposite edge. So $\nabla \phi_a = \frac{\ell_a}{2 A_f} m_a$ with $m_a$ the unit inward normal of the opposite edge, and $\nabla \phi_a \cdot \nabla \phi_b = \frac{\ell_a \ell_b}{4 A_f^2}\, m_a \cdot m_b$. The inward normals of two edges meeting at $c$ make the angle $\pi - \theta_c$, so $m_a \cdot m_b = -\cos \theta_c$, and with $2 A_f = \ell_a \ell_b \sin \theta_c$ we get $A_f\, \nabla \phi_a \cdot \nabla \phi_b = -\frac{\ell_a \ell_b \cos \theta_c}{4 A_f} = -\frac12 \cot \theta_c$. The diagonal follows from $\nabla \phi_a = -\nabla \phi_b - \nabla \phi_c$.
+\end{proof}
+Summing over the two faces of an edge $ij$, the off-diagonal stiffness is $-\frac12 (\cot \alpha_{ij} + \cot \beta_{ij})$, the cotangent weight of the edge. (Figure~\ref{fig:cotangent}.)
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_cotangent}}
+\caption{The two angles opposite to an edge $ij$ in its two faces. The scalar part of the stiffness block of the edge is the cotangent weight; the connection Laplacian multiplies it by the transport from $j$ to $i$.}
+\label{fig:cotangent}
+\end{figure}
+ The connection Laplacian~(\ref{eqn:element_stiffness}) is therefore the cotangent Laplacian with a $2 \times 2$ transport on every edge, as in the discrete connection Laplacians of geometry processing \cite{Knoppel2013, Sharp2019}; the finite element derivation explains where both factors come from.
 
-\iffalse
+%%% ----------------------------------------------------------------------
+\section{The Element Matrices}
+\label{section:element}
 
-\fi
+\subsection{The element stiffness matrix}
+
+On one face, the hat functions of its three vertices are the only nonzero ones, so the face contributes to the $3 \times 3$ blocks of $\mathrm L$ indexed by its vertices, a $6 \times 6$ \emph{element matrix} in the local numbering $a, b \in \{1, 2, 3\}$:
+\begin{equation}
+\label{eqn:element_matrix}
+\mathrm L^f = \begin{pmatrix} \mathrm L^f_{11} & \mathrm L^f_{12} & \mathrm L^f_{13} \\ \mathrm L^f_{21} & \mathrm L^f_{22} & \mathrm L^f_{23} \\ \mathrm L^f_{31} & \mathrm L^f_{32} & \mathrm L^f_{33} \end{pmatrix}, \qquad \mathrm L^f_{ab} = A_f\, (g_a^f \cdot g_b^f)\, (R_a^f)^T R_b^f \in \R^{2 \times 2}.
+\end{equation}
+This is \code{AssembleStiffness\-Element\-Embedded2}: it computes $B$, \code{Binv}, $A_f$ (\code{faceArea}), the three gradients, their face coordinates $g_a^f$ and the transports $R_a^f$ (\code{Rvf}), and fills the blocks with \code{elementMatrix.block<2,2>(a*2, b*2)}. Following the symmetry $\mathrm L^f_{ba} = (\mathrm L^f_{ab})^T$, it loops over $a \geq b$ only and writes both blocks; on the diagonal it writes $A_f |g_a^f|^2 I_2$.
+
+\paragraph{Exactness of the integration.} The integrand of~(\ref{eqn:element_stiffness}) is constant on the face, so ``area times integrand'' is the exact integral, with no quadrature error. For higher order elements the gradients would vary and a quadrature rule would be needed; with linear elements it is not.
+
+\subsection{The element mass matrix and its lumping}
+
+The mass matrix needs $\int_f \Psi_{b,l} \cdot \Psi_{a,k}\, dA = \big( \int_f \phi_a \phi_b\, dA \big)\, \big( (R_a^f)^T R_b^f \big)_{kl}$, by the same computation as for the stiffness but without derivatives. The integrals of products of linear hats over a triangle are $\int_f \phi_a \phi_b\, dA = \frac{A_f}{12} (1 + \delta_{ab})$, so the \emph{consistent} element mass matrix is
+\begin{equation}
+\label{eqn:consistent_mass}
+\mathrm M^f_{ab} = \frac{A_f}{12} (1 + \delta_{ab})\, (R_a^f)^T R_b^f .
+\end{equation}
+The code uses the simpler \emph{lumped} mass matrix, which moves all the mass of each row to the diagonal. Since the three hats add up to $1$ on the face, the row sums of the scalar factor are $\sum_b \int_f \phi_a \phi_b = \int_f \phi_a = \frac{A_f}{3}$, and the lumped element mass matrix is
+\begin{equation}
+\label{eqn:lumped_mass}
+\mathrm M^f_{aa} = \frac{A_f}{3}\, I_2, \qquad \mathrm M^f_{ab} = 0 \quad (a \neq b),
+\end{equation}
+where the transport has disappeared because $(R_a^f)^T R_a^f = I$. Assembled, the mass of vertex $i$ is one third of the area of its incident faces, the same for both coordinates. This is \code{AssembleDiagonal\-Mass\-Matrix}. Lumping changes the discrete solution by an amount of the order of the discretization error, keeps $\mathrm M$ diagonal and positive, and makes $\mathrm M^{-1}$ trivial, which the code uses next.
+
+%%% ----------------------------------------------------------------------
+\section{Assembly}
+\label{section:assembly}
+
+\paragraph{From local to global indices.} The global matrices are sums of the element matrices, each placed at the rows and columns of the vertices of its face:
+\begin{equation}
+\label{eqn:assembly}
+\mathrm L = \sum_f P_f^T\, \mathrm L^f\, P_f, \qquad \mathrm M = \sum_f P_f^T\, \mathrm M^f\, P_f ,
+\end{equation}
+where $P_f$ is the $6 \times 2n$ matrix that extracts, from the global vector $\mathrm u$, the six coordinates of the vertices of $f$ in local order. In code, nobody forms $P_f$: the local block $(a, b)$ of $\mathrm L^f$, with entries $(k, l)$, is added to the global entry
+\begin{equation}
+\label{eqn:index_map}
+\big( 2\, \mathrm{ID}(f_a) + k,\; 2\, \mathrm{ID}(f_b) + l \big), \quad k, l \in \{0, 1\},
+\end{equation}
+with the zero-based vertex indices $\mathrm{ID}$ of the mesh: \code{(*A)(v[i]->ID * 2 + row, v[j]->ID * 2 + col) += wij(row, col)}. The function \code{AssembleMatrix2} loops over the faces, computes $\mathrm L^f$, and adds $\Delta t\, \mathrm L^f$ to the global matrix, so that it returns $\Delta t\, \mathrm L$; \code{AssembleDiagonal\-Mass\-Matrix} does the same with~(\ref{eqn:lumped_mass}). Each interior edge gets contributions from its two faces, and each vertex from all its incident faces: the sums~(\ref{eqn:assembly}) are exactly the sums over faces of the integrals in~(\ref{eqn:global_blocks}). Figure~\ref{fig:assembly} shows one face being added.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_assembly}}
+\caption{Assembly. The $6 \times 6$ element matrix of a face, made of $3 \times 3$ blocks of size $2 \times 2$ (diagonal blocks red), is added into the global matrix at the rows and columns of its vertices, here $1$, $4$ and $6$.}
+\label{fig:assembly}
+\end{figure}
+
+
+\paragraph{Structure.} The assembled $\mathrm L$ has a $2 \times 2$ block for each vertex (the diagonal) and for each edge, in both orders, with $\mathrm L_{ji} = \mathrm L_{ij}^T$. It is symmetric and positive semi-definite. It is singular on closed surfaces only if a parallel field exists, which on a curved closed surface is never the case, so in practice $\mathrm M + \Delta t\, \mathrm L$ is positive definite even before the boundary condition.
+
+%%% ----------------------------------------------------------------------
+\section{The Linear System and Its Solution}
+\label{section:solve}
+
+\subsection{The system the code solves}
+
+The discrete backward Euler step is~(\ref{eqn:linear_system}), $(\mathrm M + \Delta t\, \mathrm L)\, \mathrm u = \mathrm M\, \mathrm u^0$. Multiplying by the diagonal $\mathrm M^{-1}$ on the left, which does not change the solution,
+\begin{equation}
+\label{eqn:scaled_system}
+(I + \Delta t\, \mathrm M^{-1} \mathrm L)\, \mathrm u = \mathrm u^0 .
+\end{equation}
+This is the form the code builds, in place: \code{IplusMinvTimesA} divides each row of $\Delta t\, \mathrm L$ by the diagonal mass of that row and adds $1$ to the diagonal. The scaled matrix is no longer symmetric (its rows are scaled by different masses), which is one reason why the code factors it with a general sparse LU. The symmetric form~(\ref{eqn:linear_system}) could be factored with a Cholesky factorization instead, at half the cost; the two have the same solution.
+
+\subsection{The Dirichlet condition}
+
+The source vector is prescribed at one vertex $s$: $u_s = \bar u_s$, given as the unit complex number $e^{2 \pi \mathrm i / 3}$, that is, the unit tangent vector at $120^\circ$ from the first frame vector $t_s$. The two coordinates of $s$ are then not unknowns, and their two equations of~(\ref{eqn:scaled_system}) are replaced by the prescribed values: in the matrix, the rows $2s$ and $2s + 1$ become rows of the identity, and in the right-hand side, the entries become $\bar u_s$. This \emph{row replacement} is \code{PreFactor}, which copies every unconstrained row and writes $1$ on the diagonal of each constrained row before the LU factorization (\code{solver.compute}). Every other entry of the right-hand side is zero, $\mathrm u^0 = 0$ away from the source, which is the problem~(\ref{eqn:dirichlet_problem}).
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_dirichlet}}
+\caption{The Dirichlet condition by row replacement: the two rows of the source vertex $s$ become rows of the identity, and the right-hand side holds the prescribed vector $\bar u_s$ there and zero elsewhere.}
+\label{fig:dirichlet}
+\end{figure}
+
+
+\begin{rem}[Which vertices are constrained]
+The loop in \code{main} that chooses the source scans the vertices and stops (\code{break}) at the first one that is either near the center of the model or above the height $0.83$. Exactly one vertex is constrained.
+\end{rem}
+
+\begin{rem}[Symmetric elimination]
+Row replacement makes the matrix non-symmetric even if it was symmetric. The symmetric alternative eliminates the constrained unknowns: move their columns, multiplied by the prescribed values, to the right-hand side, and keep only the rows and columns of the free unknowns. For~(\ref{eqn:linear_system}), the reduced matrix is a principal submatrix of $\mathrm M + \Delta t\, \mathrm L$, hence symmetric positive definite.
+\end{rem}
+
+\subsection{From the solution to vectors}
+
+The solve (\code{solver.solve(right\_hand\_side)}) returns $\mathrm u$, two coordinates per vertex. Its magnitudes decay away from the source; its directions are the transported source vector. So the code keeps only the direction: reading $u_i$ as the complex number $u_{i,1} + \mathrm i u_{i,2}$, it normalizes it, $\hat u_i = u_i / |u_i|$, takes its angle $\alpha_i = \arg \hat u_i$ (\code{log(R\_i).imag()}), and rotates the first frame vector $t_i$ by $\alpha_i$ about the vertex normal $n_i$, which is the tangent vector $T_i \hat u_i = \cos \alpha_i\, t_i + \sin \alpha_i\, b_i$. That vector is drawn as an arrow at the vertex (\code{display}).
+
+\subsection{What the program computes}
+
+Figure~\ref{fig:cactus} shows the result on the cactus that \code{FEM.cpp} loads: one vector prescribed at one vertex has been spread over the whole surface, following its arms and trunk. To see that the directions are right we need a surface where parallel transport is known exactly.
+
+\begin{example}
+\label{ex:sphere}
+On the unit sphere, the geodesics from a point $s$ are the great circles through it, and transporting a vector along the great circle from $s$ to $x$ is the smallest rotation taking $s$ to $x$, applied to the vector: the rolling of Section~\ref{section:ga_intrinsic}, with the normal turning from $s$ to $x$ in their common plane. The program \code{ga\_fem} solves the problem of this text on a geodesic sphere of $2{,}562$ vertices (an icosahedron subdivided four times, mean edge length $0.076$), with the source at its top vertex, and compares the direction of the result at every vertex with that exact transport (Figure~\ref{fig:sphere}). Out to three quarters of the way to the antipode, the angle between the two is $0.07^\circ$ on average and $0.30^\circ$ at most. Near the antipode the error grows without bound, and it must: every great circle from $s$ reaches the antipode, each with a different transported vector, so there is no shortest path and no correct answer there. The magnitude $|u_i|$ decays by twenty orders of magnitude from the source to the antipode, the screening of~(\ref{eqn:dirichlet_problem}) over a distance of order $\sqrt{\Delta t} = \bar h$, and yet the direction, which is all we keep, is accurate wherever it is defined.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_cactus_result}}
+\caption{The output of the method on the cactus of \code{FEM.cpp} ($502$ vertices): the normalized solution at every visible vertex, drawn as a tangent vector.}
+\label{fig:cactus}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=0.8\linewidth}{\input{figures/fig_sphere_result}}\\[6pt]
+\input{figures/fig_sphere_plots}
+\caption{Validation on the sphere (Example~\ref{ex:sphere}). Top: the computed directions (thin red) over the exact parallel transport along great circles from the source (thick gray), on the visible half of the sphere. Bottom: the angle between the two at every vertex against the geodesic distance from the source (beyond the dashed line, three quarters of the way, the errors grow towards the antipode, where transport is not defined, and are not shown), and the magnitude of the solution, on a logarithmic scale.}
+\label{fig:sphere}
+\end{figure}
+
+\begin{algorithm}[t]
+\caption{Parallel transport of a tangent vector by one step of the vector heat equation (\code{main} of \code{FEM.cpp}).}
+\label{alg:fem}
+\begin{algorithmic}[1]
+\STATE Vertex normals~(\ref{eqn:vertex_normal}), vertex frames $T_i$~(\ref{eqn:vertex_frame}), face normals, areas and frames $T_f$~(\ref{eqn:face_normal})
+\STATE $\Delta t \leftarrow \bar h^2$, the square of the mean edge length
+\STATE choose the source vertex $s$ and its vector $\bar u_s$; $\mathrm b \leftarrow 0$, $\mathrm b_s \leftarrow \bar u_s$
+\FOR{every face $f$}
+  \STATE $B \leftarrow [x_2 - x_1, \; x_3 - x_1]$, \quad $\nabla \phi_a \leftarrow B (B^T B)^{-1} \hat\nabla \hat\phi_a$, \quad $g_a^f \leftarrow T_f^T \nabla \phi_a$
+  \STATE $R_a^f \leftarrow T_f^T\, Q_{a \to f}\, T_a$ \hfill (Rodrigues rotation $n_a \to n_f$)
+  \STATE add $\Delta t\, A_f\, (g_a^f \cdot g_b^f)\, (R_a^f)^T R_b^f$ to the block $(a, b)$ of $\Delta t\, \mathrm L$, \quad $\frac{A_f}{3} I$ to the block $(a, a)$ of $\mathrm M$
+\ENDFOR
+\STATE $\mathrm A \leftarrow I + \mathrm M^{-1} (\Delta t\, \mathrm L)$; replace the rows of $s$ by identity rows
+\STATE solve $\mathrm A\, \mathrm u = \mathrm b$ by sparse LU
+\STATE for every vertex $i$: draw $T_i\, u_i / |u_i|$
+\end{algorithmic}
+\end{algorithm}
+
+%%% ----------------------------------------------------------------------
+\section{Summary: From the Equations to the Code}
+\label{section:summary}
+
+Algorithm~\ref{alg:fem} lists the steps of the program, and Table~\ref{tab:map} the formula behind every function. Read from top to bottom, the table is the derivation of this text in the order the code executes it: the geometry first, then the connection, then the element matrices, their assembly, the boundary condition, and the solve.
+
+\begin{table}[t]
+\centering
+\caption{Every formula and the function of \code{FEM.cpp} that evaluates it.}
+\label{tab:map}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.35\linewidth} p{0.16\linewidth} p{0.40\linewidth}}
+\toprule
+Quantity & Equation & Function \\
+\midrule
+vertex normal $n_i$ & (\ref{eqn:vertex_normal}) & \code{Mesh::computeNormals} \\
+vertex frame $T_i$ & (\ref{eqn:vertex_frame}) & \code{computeVertex\-Tangent\-Space}, \code{project} \\
+face normal $n_f$, area $A_f$ & (\ref{eqn:face_normal}) & \code{computeFaceNormals} \\
+face frame $T_f$ & Section~\ref{section:geometry} & \code{computeFace\-Tangent\-Space} \\
+smallest rotation $Q_{i \to f}$ & (\ref{eqn:rodrigues}) & \code{alignVectors}, \code{bracket} \\
+discrete connection $R_i^f$ & (\ref{eqn:connection}) & \code{Rvf} \\
+vertex-to-vertex transport (variant) & (\ref{eqn:vertex_transport}) & \code{Rvv} \\
+edge matrix $B$, $B (B^T B)^{-1}$ & (\ref{eqn:affine}), Prop.~\ref{prop:gradient} & \code{B}, \code{Binv} \\
+gradients $\nabla \phi_a$, $g_a^f$ & (\ref{eqn:gradN}), (\ref{eqn:grad_face}) & \code{gradN}, \code{grad\_i} \\
+element stiffness $\mathrm L^f$ & (\ref{eqn:element_matrix}) & \code{AssembleStiffness\-Element\-Embedded2} \\
+lumped mass $\mathrm M$ & (\ref{eqn:lumped_mass}) & \code{AssembleDiagonal\-Mass\-Matrix} \\
+assembly of $\Delta t\, \mathrm L$ & (\ref{eqn:assembly}), (\ref{eqn:index_map}) & \code{AssembleMatrix2} \\
+time step $\Delta t = \bar h^2$ & Section~\ref{section:pde} & \code{computeEdgeLengths} \\
+$I + \Delta t\, \mathrm M^{-1} \mathrm L$ & (\ref{eqn:scaled_system}) & \code{IplusMinvTimesA} \\
+Dirichlet rows, LU factorization & Section~\ref{section:solve} & \code{PreFactor} \\
+normalization and drawing & Section~\ref{section:solve} & \code{display} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three ideas carry the whole construction. The weak form trades the second derivatives of the heat equation for first derivatives of a trial field and a test field, so that piecewise linear fields can be used. Piecewise linear \emph{tangent} fields exist only once the vectors of the three vertices of a face are brought into the plane of the face, and that is done by the discrete Levi-Civita connection, a $2 \times 2$ rotation per vertex and face. And because a face is flat, the covariant derivative inside it is an ordinary derivative, so that the stiffness of the connection Laplacian is the stiffness of the scalar Laplacian, multiplied on every edge by the transport between its two vertices.
+
+%%% ======================================================================
+\part{The Same Derivation in Geometric Algebra, and What Is Intrinsic}
+\label{part:ga}
+
+Part~\ref{part:matrix} worked with matrices: frames as $3 \times 2$ arrays, transports as $2 \times 2$ rotations, coordinates as pairs of numbers. Every one of those objects is a geometric object in disguise: a plane, a rotation, a direction in a plane. This part repeats the derivation with the objects themselves, in the geometric algebra $\Ge_3$ of space \cite{Doran2003, HestenesSobczyk1984}, and uses the clearer language to answer a question Part~\ref{part:matrix} left open: which parts of the computation are \emph{intrinsic}, that is, depend only on the curved surface as its inhabitants experience it, and which depend on how the surface sits in space.
+
+%%% ----------------------------------------------------------------------
+\section{The Tangent Plane as a Bivector}
+\label{section:ga_plane}
+
+\subsection{Geometric algebra in brief}
+
+In $\Ge_3$, vectors are multiplied with the geometric product $a b = a \cdot b + a \wedge b$, the sum of the inner product, a scalar, and the outer product, a \emph{bivector}: an oriented plane element, with the orientation of the turn from $a$ to $b$ and magnitude the area of the parallelogram they span. Orthogonal vectors anticommute, parallel ones commute, and $a a = |a|^2$. The unit pseudoscalar $I = e_1 e_2 e_3$ squares to $-1$, commutes with everything, and turns a vector into the bivector of its orthogonal plane: $a \wedge b = I (a \times b)$. The reverse $\widetilde X$ of a product reverses the order of its vector factors. A \emph{rotor} is an even element $R$ with $R \widetilde R = 1$; it rotates any multivector by the sandwich $X \mapsto R X \widetilde R$, and the rotor that turns by the angle $\theta$ in the plane of the unit bivector $B$ (in the sense of $B$) is $R = e^{-B \theta / 2} = \cos\frac{\theta}{2} - B \sin\frac{\theta}{2}$.
+
+\subsection{The tangent bivector}
+
+At each point of the surface, instead of the normal $n$, take its dual, the unit bivector
+\begin{equation}
+\label{eqn:ga_T}
+\mathsf T = I n ,
+\end{equation}
+the \emph{tangent bivector}: the tangent plane itself, as an oriented plane element. Its square is $\mathsf T^2 = I n I n = I^2 n^2 = -1$. A vector $a$ is tangent exactly when $a \wedge \mathsf T = 0$, and its projection onto the tangent plane and its rejection from it are
+\begin{equation}
+\label{eqn:ga_projection}
+P(a) = (a \cdot \mathsf T)\, \mathsf T^{-1} = -(a \cdot \mathsf T)\, \mathsf T, \qquad a - P(a) = (a \wedge \mathsf T)\, \mathsf T^{-1} = (a \cdot n)\, n ,
+\end{equation}
+which is the matrix $T T^T = I - n n^T$ of~(\ref{eqn:frame}), now written without a choice of frame.
+
+\subsection{The tangent plane is the complex plane}
+
+The bivector $\mathsf T$ acts on tangent vectors by right multiplication. For a tangent vector $a$, $a \cdot n = 0$, so $a n = a \wedge n$ and $a \mathsf T = a I n = I (a n) = I (a \wedge n) = I^2 (a \times n) = n \times a$:
+\begin{equation}
+\label{eqn:ga_quarter_turn}
+a\, \mathsf T = n \times a ,
+\end{equation}
+the vector $a$ turned by a quarter turn, counterclockwise about $n$, within the tangent plane. Applying it twice gives $a \mathsf T^2 = -a$. So the even elements $\alpha + \beta \mathsf T$ of the plane behave exactly like complex numbers, with $\mathsf T$ as the imaginary unit, and they act on tangent vectors by right multiplication:
+\begin{equation}
+\label{eqn:ga_rotation_plane}
+a\, e^{\mathsf T \theta} = a \cos\theta + (n \times a) \sin\theta ,
+\end{equation}
+the rotation of $a$ by $\theta$ about $n$ (Figure~\ref{fig:quarter_turn}). This is why Part~\ref{part:matrix} could read the coordinates $u_i$ as complex numbers: with the first frame vector $t$, every tangent vector is
+\begin{equation}
+\label{eqn:ga_spinor}
+U = t\, \psi, \qquad \psi = u_1 + u_2\, \mathsf T ,
+\end{equation}
+since $t \mathsf T = n \times t = b$. We call $\psi$ the \emph{spinor coordinate} of $U$ in the frame $t$: a complex number of the plane, $|\psi| = |U|$, and $\arg \psi$ is the angle from $t$ to $U$. The pair $(u_1, u_2)$ of the code is $\psi$ written in the basis $(1, \mathsf T)$. The frame is now a single unit vector $t$, the second vector $b = t \mathsf T$ being determined by the plane; and changing the frame, $t \to t e^{\mathsf T \theta}$, changes the coordinate to $\psi \to e^{-\mathsf T \theta} \psi$.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_quarter_turn}}
+\caption{The tangent bivector $\mathsf T = I n$ as an oriented disk in the tangent plane. Right multiplication by $\mathsf T$ turns a tangent vector $a$ by a quarter turn in the sense of $\mathsf T$, twice gives $-a$, and $e^{\mathsf T \theta} = \cos\theta + \mathsf T \sin\theta$ turns it by $\theta$: the even elements of the plane are the complex numbers, with $\mathsf T$ as imaginary unit.}
+\label{fig:quarter_turn}
+\end{figure}
+
+
+%%% ----------------------------------------------------------------------
+\section{Rotors Between Tangent Planes}
+\label{section:ga_rotor}
+
+\subsection{The smallest rotor taking one normal to another}
+
+\begin{prop}
+\label{prop:ga_rotor}
+For unit vectors $a$ and $c$ with $a \cdot c \neq -1$,
+\begin{equation}
+\label{eqn:ga_rotor}
+Q = \frac{1 + c\, a}{|1 + c\, a|} = \frac{1 + c\, a}{\sqrt{2 (1 + a \cdot c)}}
+\end{equation}
+is the rotor that turns $a$ to $c$ in the plane $a \wedge c$, by their angle; it is the rotation of the Rodrigues formula~(\ref{eqn:rodrigues}). It takes the bivector $I a$ to $I c$.
+\end{prop}
+\begin{proof}
+$c a = c \cdot a + c \wedge a$ is the product of two unit vectors, a rotor up to normalization that turns by twice their angle $\phi$. The half-way vector $m = (a + c) / |a + c|$ splits that angle in two, and $c m$, the product of two unit vectors at the angle $\phi/2$, is the rotor that turns by $\phi$ from $a$ through $m$ to $c$: $c m\, a\, m c = c (m a m) c = c\, c\, c = c$, because reflecting $a$ in the line of $m$ gives $c$. Now $c m = c (a + c) / |a + c| = (1 + c a) / |a + c|$, and $|a + c|^2 = 2 (1 + a \cdot c)$. The plane of the rotation is that of $c \wedge a$, so its axis is $a \times c$, as in~(\ref{eqn:rodrigues}). Finally a rotor commutes with $I$, so $Q (I a) \widetilde Q = I (Q a \widetilde Q) = I c$.
+\end{proof}
+So the rotor
+\begin{equation}
+\label{eqn:ga_Q}
+Q_{i \to f} = \frac{1 + n_f\, n_i}{|1 + n_f\, n_i|}
+\end{equation}
+takes the normal of vertex $i$ to that of face $f$ and, by the last statement, the tangent bivector $\mathsf T_i = I n_i$ to $\mathsf T_f = I n_f$: it carries the tangent plane of the vertex onto that of the face, and with it every tangent vector, $a \mapsto Q_{i \to f}\, a\, \widetilde Q_{i \to f}$. The failure of \code{alignVectors} for opposite normals is visible here: $1 + n_f n_i = 0$ when $n_f = -n_i$, and no plane of rotation is singled out.
+
+\begin{example}
+\label{ex:ga_transport}
+For the vertex and the face of Example~\ref{ex:transport}, $n_f n_i = n_f \cdot n_i + n_f \wedge n_i = \frac{1}{\sqrt 2} + I (n_f \times n_i)$ with $n_f \times n_i = (-\frac{1}{\sqrt 2}, 0, 0)$. Normalizing $1 + n_f n_i$, whose norm is $\sqrt{2 (1 + 1/\sqrt 2)} = 1.8478$,
+\begin{equation*}
+Q = 0.9239 - 0.3827\, I e_1 = \cos 22.5^\circ - I e_1 \sin 22.5^\circ = e^{-I e_1 \pi / 8} ,
+\end{equation*}
+the rotor of the rotation by $45^\circ$ in the plane $I e_1 = e_2 e_3$, about the $x$ axis, as found with matrices (the program prints $Q = 0.923880 + I(-0.382683, 0, 0)$). It takes $t_i = e_2$ to $c = Q e_2 \widetilde Q = (e_2 + e_3)/\sqrt 2$, and the connection is the geometric product $t_f c = e_1 (e_2 + e_3)/\sqrt 2 = (e_1 e_2 + e_1 e_3)/\sqrt 2$, a unit bivector with no scalar part. Since $\mathsf T_f = I n_f = (-I e_2 + I e_3)/\sqrt 2 = (-e_3 e_1 + e_1 e_2)/\sqrt 2 = (e_1 e_3 + e_1 e_2)/\sqrt 2$, this is $t_f c = \mathsf T_f = e^{\mathsf T_f \pi/2}$: $\rho_i^f = 90^\circ$, the same number, now read off a single product.
+\end{example}
+
+\subsection{The connection angle}
+
+The transported first frame vector $Q t_i \widetilde Q$ and the face frame vector $t_f$ are two unit vectors of the face plane. Their geometric product is a complex number of that plane:
+\begin{equation}
+\label{eqn:ga_connection}
+e^{\mathsf T_f \rho_i^f} = t_f\, \big( Q_{i \to f}\, t_i\, \widetilde Q_{i \to f} \big),
+\end{equation}
+since for unit vectors $t_f$ and $c$ in the plane, $t_f c = t_f \cdot c + t_f \wedge c = \cos \rho + \mathsf T_f \sin \rho$, with $\rho$ the angle from $t_f$ to $c$ (the bivector $t_f \wedge c$ is $\sin\rho$ times $t_f \wedge b_f = \mathsf T_f$). This single number is the discrete connection: transporting $U = t_i \psi$ from vertex $i$ into face $f$ gives
+\begin{equation}
+\label{eqn:ga_transport}
+Q\, t_i \psi\, \widetilde Q = (Q t_i \widetilde Q)(Q \psi \widetilde Q) = t_f\, e^{\mathsf T_f \rho_i^f}\, \psi_f ,
+\end{equation}
+where $\psi_f = u_1 + u_2 \mathsf T_f$ is the same pair of numbers read in the face plane (because $Q \mathsf T_i \widetilde Q = \mathsf T_f$). In spinor coordinates, transport from the vertex to the face is \emph{multiplication by the unit complex number} $e^{\mathsf T_f \rho_i^f}$, and the $2 \times 2$ matrix $R_i^f$ of~(\ref{eqn:connection}) is the matrix of that multiplication in the basis $(1, \mathsf T_f)$:
+\begin{equation}
+\label{eqn:ga_matrix}
+R_i^f = \begin{pmatrix} \cos\rho_i^f & -\sin\rho_i^f \\ \sin\rho_i^f & \cos\rho_i^f \end{pmatrix}.
+\end{equation}
+The transport between two vertices through the face, $(R_i^f)^T R_j^f$, is multiplication by $e^{\mathsf T (\rho_j^f - \rho_i^f)}$: the connection angles subtract, and the arbitrary angle of the face frame cancels, as found in Section~\ref{section:transport}.
+
+%%% ----------------------------------------------------------------------
+\section{Intrinsic and Extrinsic Geometry}
+\label{section:ga_intrinsic}
+
+\subsection{What an inhabitant of the surface can measure}
+
+A two-dimensional being living on the surface can measure lengths of curves and angles between them, and nothing else: it cannot see the normal, nor how the surface bends in space. Everything that can be computed from lengths and angles alone is \emph{intrinsic}; it is unchanged if the surface is bent without stretching, as a sheet of paper rolled into a cylinder. Everything else, the normal $n$, the tangent bivector $\mathsf T$ as an element of $\Ge_3$, the bending of the surface, is \emph{extrinsic}. Gauss's \emph{Theorema Egregium} says that the Gaussian curvature $K$, defined extrinsically as the product of the principal curvatures, is intrinsic.
+
+The questions this method answers are intrinsic: parallel transport, the covariant derivative, the Dirichlet energy, the connection Laplacian, and hence the heat flow and the transported field, depend only on the metric. A paper cylinder rolled from a flat sheet transports vectors as the flat sheet does, and the method should give the same field on both. The computation, however, uses extrinsic tools: normals, rotations of $\R^3$, projections. The rest of this section separates the two.
+
+\subsection{The Gauss formula}
+
+Let $a$ be a tangent direction and $b$ a tangent field, and differentiate $b$ in $\R^3$: $a \cdot \nabla b$. Split the result into its tangent and normal parts with~(\ref{eqn:ga_projection}):
+\begin{equation}
+\label{eqn:ga_gauss}
+a \cdot \nabla b = \underbrace{P(a \cdot \nabla b)}_{\nabla_a b} + \underbrace{\big((a \cdot \nabla b) \cdot n\big)\, n}_{\mathrm{II}(a, b)\, n} .
+\end{equation}
+The tangent part is the covariant derivative~(\ref{eqn:covariant}); the normal part is the \emph{second fundamental form}, $\mathrm{II}(a, b) = (a \cdot \nabla b) \cdot n = -b \cdot (a \cdot \nabla n)$ (differentiate $b \cdot n = 0$), which measures how the surface bends under $b$: it is extrinsic. The covariant derivative is the remaining, intrinsic part. That it depends only on the metric is the content of the fundamental theorem of Riemannian geometry: there is exactly one connection on tangent fields that is compatible with the metric, (\ref{eqn:metric_compatible}), and torsion free, $\nabla_a b - \nabla_b a = [a, b]$; it is given by the metric alone (the Koszul formula), and the projection $\nabla_a b = P(a \cdot \nabla b)$ has both properties \cite{doCarmo1976}.
+
+\subsection{Parallel transport is rolling without twisting}
+
+How does a tangent plane move along a curve $\gamma(s)$ if it carries its vectors parallel? The plane must follow the surface, turning $n(s)$ along with it, but it should not spin about the normal. In geometric algebra this is a rotor equation.
+\begin{prop}
+\label{prop:ga_rolling}
+Let $R(s)$ solve $R' = \frac12 \Omega\, R$ with $R(0) = 1$, where $\Omega = n' \wedge n$ and $n(s)$ is the normal along the curve. Then $R n(0) \widetilde R = n(s)$, and for every tangent vector $a_0$ at $\gamma(0)$, the field $a(s) = R\, a_0 \widetilde R$ is tangent and parallel along the curve.
+\end{prop}
+\begin{proof}
+For $v(s) = R v_0 \widetilde R$, the product rule and $\widetilde R' = -\frac12 \widetilde R\, \Omega$ (because $\Omega$ is a bivector, $\widetilde\Omega = -\Omega$) give $v' = \frac12 (\Omega v - v \Omega) = \Omega \cdot v$, the inner product of a bivector and a vector. With $\Omega = n' \wedge n$ and the rule $(x \wedge y) \cdot v = x (y \cdot v) - y (x \cdot v)$,
+\begin{equation*}
+\Omega \cdot v = n' (n \cdot v) - n (n' \cdot v).
+\end{equation*}
+First, $m(s) = R n(0) \widetilde R$ satisfies $m' = n' (n \cdot m) - n (n' \cdot m)$, and $m = n$ is a solution, since $n \cdot n = 1$ and $n' \cdot n = 0$; by uniqueness $m = n$. So $R$ takes the normal along the curve, hence the tangent planes onto each other, and $a(s)$ stays tangent. Second, for the tangent field $a$, $n \cdot a = 0$, so $a' = -(n' \cdot a)\, n$: the derivative of $a$ is purely normal, its tangent part vanishes, and $\nabla_{\gamma'} a = P(a') = 0$.
+\end{proof}
+Figure~\ref{fig:rolling} shows the rolling planes along a curve on a sphere. The bivector $\Omega = n' \wedge n$ contains the normal, so it never rotates within the tangent plane: the plane \emph{rolls} along the curve, as a coin rolls on a table, without twisting about its normal. Parallel transport is this rolling. The discrete transport $Q_{i \to f}$ of~(\ref{eqn:ga_Q}) is the same idea over a finite step: the rotor in the plane $n_f \wedge n_i$, which contains both normals and therefore has no component of spin about either of them.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_rolling}}
+\caption{Parallel transport is rolling without twisting. Along a curve $\gamma$ on a sphere, the tangent plane (blue) is rolled by the rotor of Proposition~\ref{prop:ga_rolling}, here integrated as a sequence of smallest rotations between consecutive normals (red). The transported vector (green) changes only in the direction of the normal, so its covariant derivative vanishes.}
+\label{fig:rolling}
+\end{figure}
+
+
+\subsection{What is intrinsic in the discrete transport}
+
+On a triangle mesh the intrinsic geometry is that of the flat faces glued along their edges: it is given by the edge lengths. Transport \emph{across an edge}, from one face to the next, is intrinsic: by Proposition~\ref{prop:ga_rotor} with the two face normals, the rotor $Q$ turns about the shared edge (the direction of $n_f \times n_g$), which is exactly the unfolding of one face onto the plane of the other, an isometry that depends only on the two triangles and not on the angle at which they meet in space.
+
+A vertex is different. It has no tangent plane: it is the apex of a cone whose total angle $\Theta_i = \sum_f \alpha_{i,f}$, the sum of the angles of the incident faces at the vertex, is in general not $2\pi$. The code gives the vertex a plane anyway, the plane orthogonal to the vertex normal~(\ref{eqn:vertex_normal}), and transports between that plane and the faces with the rolling rotor $Q_{i \to f}$. This is an \emph{extrinsic} choice: bending the mesh at the vertex without stretching any triangle changes the vertex normal and the rotors, although no length changes. The error it introduces vanishes as the mesh is refined on a smooth surface, because the vertex normal then converges to the normal of the smooth surface and the rolling rotors to its parallel transport. An intrinsic alternative \cite{Knoppel2013, Sharp2019} defines the tangent space of the vertex by the angles around it, rescaled by $2\pi / \Theta_i$ so that they close up, and the transport to a face, or across an edge, by those rescaled angles; in the code it would replace only the computation of the connection angle $\rho_i^f$ (\code{Rvf}), leaving the finite element machinery untouched.
+
+\subsection{Holonomy and curvature}
+
+Carry a vector parallel around a small closed loop and it comes back rotated, in the tangent plane, by an angle: the \emph{holonomy} of the loop. For rolling, Proposition~\ref{prop:ga_rolling}, the angle has a geometric meaning: it is the area enclosed by the loop that the normal $n(s)$ traces on the unit sphere. By the Gauss--Bonnet theorem that area is $\int K\, dA$ over the region enclosed by the loop on the surface, which is why holonomy measures curvature and is intrinsic. On a mesh, the intrinsic transport around a vertex, unfolding the faces one after another, closes with the rotation $2\pi - \Theta_i$, the \emph{angle defect}, the discrete total curvature of the vertex. The code's transport, which rolls through the vertex normals, closes with the area of the spherical polygon whose corners are the normals visited by the loop, those of the neighboring vertices and faces, which approximates the angle defect on fine meshes; the remark of Section~\ref{section:transport} should be read in this sense.
+
+%%% ----------------------------------------------------------------------
+\section{The Covariant Derivative as a Connection on Spinor Coordinates}
+\label{section:ga_gauge}
+
+\subsection{The connection form}
+
+Choose a frame field, a unit tangent vector $t(x)$ at each point, and write fields as $U = t \psi$ with spinor coordinates $\psi = u_1 + u_2 \mathsf T$. Differentiating along a tangent direction $a$, $a \cdot \nabla U = (a \cdot \nabla t)\, \psi + t\, (a \cdot \nabla \psi)$. The covariant derivative of the frame vector is tangent and orthogonal to $t$ (since $|t| = 1$), so it is a multiple of $t \mathsf T$:
+\begin{equation}
+\label{eqn:ga_omega}
+\nabla_a t = \omega(a)\, t\, \mathsf T ,
+\end{equation}
+where the scalar $\omega(a)$, linear in $a$, is the rate at which the frame turns, measured against parallel transport: the \emph{connection form} of the frame, the angle $\theta(a)$ of~(\ref{eqn:covariant_frame}). Writing $U = u_1 t + u_2 b$ with $b = t \mathsf T$, and using also $\nabla_a b = -\omega(a)\, t$ (the frame turns rigidly, since $t \cdot b = 0$), the covariant derivative of $U$ is
+\begin{equation}
+\label{eqn:ga_covariant}
+\nabla_a (t \psi) = t\, \big( a \cdot \nabla \psi + \omega(a)\, \mathsf T\, \psi \big) = t\, D_a \psi, \qquad D_a = a \cdot \nabla + \omega(a)\, \mathsf T ,
+\end{equation}
+where $a \cdot \nabla \psi = (a \cdot \nabla u_1) + (a \cdot \nabla u_2)\, \mathsf T$ differentiates the two coefficients, and $\omega \mathsf T \psi = \omega (u_1 \mathsf T - u_2)$ collects the terms $u_1 \nabla_a t + u_2 \nabla_a b$.
+On spinor coordinates, the Levi-Civita connection is the ordinary derivative plus a multiplication by $\omega \mathsf T$: an infinitesimal rotation. In the language of physics, $\psi$ is a charged field and $\omega \mathsf T$ a $U(1)$ gauge potential; the connection Laplacian is the corresponding \emph{magnetic} Laplacian, and the curvature of the connection, the ``magnetic field'', is $d\omega$, the Gaussian curvature times the area form \cite{Knoppel2013}.
+
+\subsection{Frame independence}
+
+The frame $t$ is arbitrary, and nothing physical may depend on it. Rotating the frame by a field of angles, $t \to t' = t\, e^{\mathsf T \theta}$, changes the coordinates to $\psi' = e^{-\mathsf T \theta} \psi$ and, since $\nabla_a t' = (\nabla_a t)\, e^{\mathsf T\theta} + t\, (a \cdot \nabla\theta)\, \mathsf T e^{\mathsf T\theta}$, the connection form to $\omega' = \omega + d\theta$; and then
+\begin{equation}
+\label{eqn:ga_gauge}
+D'_a \psi' = e^{-\mathsf T \theta}\, D_a \psi ,
+\end{equation}
+as one checks by differentiating $e^{-\mathsf T \theta} \psi$: the extra term $-(a \cdot \nabla \theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ is cancelled by the extra term $(a \cdot \nabla\theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ of $\omega'$. So $\nabla U = t\, D\psi = t' D'\psi'$ is the same tangent object in both frames, $|D\psi|$ is frame independent, and so are the Dirichlet energy, the connection Laplacian and the solution of the heat equation. In the discrete setting this is the cancellation of the face frame in $(R_i^f)^T R_j^f$ and the statement that changing a vertex frame $t_i$ rotates the computed $u_i$ by the opposite angle and changes nothing else: the arrow $t_i \hat\psi_i$ drawn by the code is independent of the choice of $t_i$ in \code{computeVertexTangentSpace}.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_gauge}}
+\caption{A change of frame is a change of gauge. The same tangent vector $U$ has the spinor coordinate $\psi$ in the frame $t$ and $\psi' = e^{-\mathsf T\theta}\psi$ in the frame $t' = t\, e^{\mathsf T\theta}$; nothing geometric depends on the choice.}
+\label{fig:gauge}
+\end{figure}
+
+
+\subsection{The energy and the equation in spinor form}
+
+With $|U| = |\psi|$ and $|\nabla_a U| = |D_a \psi|$,
+\begin{equation}
+\label{eqn:ga_energy}
+E = \frac12 \int_\Omega \sum_k |D_{e_k} \psi|^2\, dA, \qquad \frac{\partial \psi}{\partial t} = -D^* D\, \psi ,
+\end{equation}
+and the backward Euler step and its weak form, (\ref{eqn:backward_euler}) and (\ref{eqn:weak}), read
+\begin{equation}
+\label{eqn:ga_weak}
+\int_\Omega \langle \psi\, \widetilde\chi \rangle\, dA + \Delta t \int_\Omega \sum_k \langle (D_{e_k} \psi)\, \widetilde{(D_{e_k} \chi)} \rangle\, dA = \int_\Omega \langle \psi^0\, \widetilde\chi \rangle\, dA
+\end{equation}
+for every test spinor $\chi$, where $\langle \psi \widetilde\chi \rangle$ is the scalar part of $\psi \widetilde\chi$: for $\psi = u_1 + u_2 \mathsf T$ and $\chi = v_1 + v_2 \mathsf T$, $\widetilde \chi = v_1 - v_2 \mathsf T$ and $\langle \psi \widetilde\chi \rangle = u_1 v_1 + u_2 v_2 = U \cdot V$. This is the real part of $\psi \bar\chi$, the familiar Hermitian inner product, with the reverse playing the role of complex conjugation.
+
+%%% ----------------------------------------------------------------------
+\section{The Finite Element Method in Geometric Algebra}
+\label{section:ga_fem}
+
+\subsection{Spinor hat functions}
+
+The trial field~(\ref{eqn:trial}), in spinor coordinates of the face, is
+\begin{equation}
+\label{eqn:ga_trial}
+U\big|_f = t_f\, \psi_f, \qquad \psi_f = \sum_{i \in f} \phi_i\; e^{\mathsf T_f \rho_i^f}\, \psi_i ,
+\end{equation}
+by~(\ref{eqn:ga_transport}): each vertex coordinate is turned by its connection angle into the face, and the three are interpolated with the hats. The face is flat and $t_f$ constant, so $\omega = 0$ on the face and $D = \nabla$, and
+\begin{equation}
+\label{eqn:ga_grad_trial}
+D_a \psi_f = \sum_{i \in f} (a \cdot \nabla \phi_i)\, e^{\mathsf T_f \rho_i^f}\, \psi_i .
+\end{equation}
+
+\subsection{The gradients of the hat functions: the reciprocal frame}
+
+On the face with vertices $x_1, x_2, x_3$, take the \emph{edge frame} $e_1 = x_2 - x_1$, $e_2 = x_3 - x_1$, the columns of $B$ in~(\ref{eqn:affine}), and their \emph{area bivector} $E = e_1 \wedge e_2 = 2 A_f\, \mathsf T_f$. The \emph{reciprocal frame} $e^1, e^2$ is the pair of vectors of the face plane with $e^k \cdot e_m = \delta_{km}$. In geometric algebra it is written directly:
+\begin{equation}
+\label{eqn:ga_reciprocal}
+e^1 = e_2 \cdot E^{-1}, \qquad e^2 = -\,e_1 \cdot E^{-1}, \qquad E^{-1} = -\frac{E}{|E|^2} .
+\end{equation}
+Indeed $e_2 \cdot E$ lies in the plane and is orthogonal to $e_2$, and $(e_2 \cdot E) \cdot e_1 = (e_2 \cdot e_1)^2 - |e_2|^2 |e_1|^2 = -|E|^2$, so $e^1 \cdot e_1 = 1$ and $e^1 \cdot e_2 = 0$; similarly for $e^2$.
+
+\begin{prop}
+\label{prop:ga_reciprocal}
+The gradients of the hat functions of the face are $\nabla \phi_2 = e^1$, $\nabla \phi_3 = e^2$ and $\nabla \phi_1 = -e^1 - e^2$; the reciprocal frame is the pair of columns of $B (B^T B)^{-1}$, \code{Binv}. Equivalently, for each vertex $a$ with the opposite edge $x_c - x_b$ (in the counterclockwise order $a, b, c$),
+\begin{equation}
+\label{eqn:ga_grad_edge}
+\nabla \phi_a = \frac{(x_c - x_b)\, \mathsf T_f}{2 A_f} :
+\end{equation}
+the opposite edge, turned a quarter turn inward, divided by twice the area.
+\end{prop}
+\begin{proof}
+The gradient $g$ of $\phi_a$ lies in the plane and is determined by its inner products with the edges, $g \cdot e_m = \partial \hat\phi_a / \partial \xi_m$ (proof of Proposition~\ref{prop:gradient}). Writing $g = \sum_k (\partial \hat\phi_a / \partial \xi_k)\, e^k$ satisfies these equations, by the defining property of the reciprocal frame, and with~(\ref{eqn:shape_gradients}) gives the three gradients. The matrix $B (B^T B)^{-1}$ has the same defining property, $B^T \big(B (B^T B)^{-1}\big) = I$, and its columns lie in the plane, so its columns are $e^1$ and $e^2$. For~(\ref{eqn:ga_grad_edge}), take $a = 2$; in the counterclockwise order $a, b, c = 2, 3, 1$ its opposite edge is $x_c - x_b = x_1 - x_3 = -e_2$. Since $E = 2 A_f \mathsf T_f$ and $\mathsf T_f^{-1} = -\mathsf T_f$, $E^{-1} = -\mathsf T_f / (2 A_f)$, and by~(\ref{eqn:ga_reciprocal}) $e^1 = e_2 \cdot E^{-1} = -e_2 \mathsf T_f / (2 A_f) = (x_1 - x_3)\, \mathsf T_f / (2 A_f)$, using that for a vector in the plane of a bivector the inner and geometric products coincide. The other vertices follow by relabeling. (On the triangle $x_1 = 0$, $x_2 = e_x$, $x_3 = e_y$ with $n = e_z$: $(x_1 - x_3)\mathsf T = n \times (-e_y) = e_x$, which is indeed $\nabla \phi_2$.)
+\end{proof}
+The formula~(\ref{eqn:ga_grad_edge}) makes the cotangent formula of Proposition~\ref{prop:cotangent} immediate: the quarter turn preserves inner products, so $A_f\, \nabla\phi_a \cdot \nabla\phi_b = \frac{(x_c - x_b) \cdot (x_a - x_c)}{4 A_f}$, and for the two edges meeting at $c$, the ratio of their inner product to $|(x_c - x_b) \wedge (x_a - x_c)| = 2 A_f$ is $-\cot \theta_c$. In the vector manifold calculus of Hestenes and Sobczyk \cite{HestenesSobczyk1984}, the reciprocal frame is the general rule: the vector derivative on a face is $\nabla = e^1 \partial_{\xi_1} + e^2 \partial_{\xi_2}$.
+
+\begin{example}
+For the triangle of Example~\ref{ex:triangle}, $E = e_1 \wedge e_2 = I (e_1 \times e_2) = I (0, -2, 2)$, with $|E| = 2\sqrt 2 = 2 A_f$, and $\mathsf T_f = E / |E| = I n_f$. The gradient of $\phi_2$ by~(\ref{eqn:ga_grad_edge}) is the opposite edge $x_1 - x_3 = (0, -1, -1)$, turned a quarter turn in the face, $(x_1 - x_3)\, \mathsf T_f = n_f \times (x_1 - x_3) = \frac{1}{\sqrt 2} (0, -1, 1) \times (0, -1, -1) = \frac{1}{\sqrt 2} (2, 0, 0)$, divided by $2 A_f = 2\sqrt 2$: $\nabla\phi_2 = (\frac12, 0, 0)$, as in Example~\ref{ex:triangle}, without inverting any matrix.
+\end{example}
+
+\subsection{The element matrices}
+
+For two vertices $i, j$ of the face, the stiffness integrand of~(\ref{eqn:ga_weak}) with the trial field~(\ref{eqn:ga_grad_trial}) and the test spinor $\chi = \phi_i\, e^{\mathsf T_f \rho_i^f}\, \chi_i$ is
+\begin{align*}
+\sum_k \big\langle (D_{e_k} \psi)\, \widetilde{(D_{e_k}\chi)} \big\rangle &= (\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f \rho_j^f} \psi_j\; \widetilde{\chi_i}\, e^{-\mathsf T_f \rho_i^f} \big\rangle \\
+&= (\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f (\rho_j^f - \rho_i^f)}\, \psi_j\, \widetilde{\chi_i} \big\rangle ,
+\end{align*}
+using that the even elements of the plane commute and the cyclic property of the scalar part. So, as a complex matrix,
+\begin{equation}
+\label{eqn:ga_element}
+\mathrm L^f_{ij} = A_f\, (\nabla\phi_i \cdot \nabla\phi_j)\; e^{\mathsf T (\rho_j^f - \rho_i^f)}, \qquad \mathrm M^f_{ii} = \frac{A_f}{3} :
+\end{equation}
+one complex number per pair of vertices instead of a $2 \times 2$ block. The global stiffness $\mathrm L$ is then an $n \times n$ \emph{Hermitian} matrix, $\mathrm L_{ji} = \overline{\mathrm L_{ij}}$ (the reverse of $e^{\mathsf T \rho}$ is $e^{-\mathsf T \rho}$), the form in which discrete connection Laplacians are usually written \cite{Knoppel2013, Sharp2019}, and the backward Euler step is the complex system
+\begin{equation}
+\label{eqn:ga_system}
+(\mathrm M + \Delta t\, \mathrm L)\, \psi = \mathrm M\, \psi^0, \qquad \psi \in \mathbb C^n .
+\end{equation}
+
+\subsection{The code solves the real form of the complex system}
+
+A complex number $z = \alpha + \beta \mathsf T$ acts on $\psi = u_1 + u_2 \mathsf T$ by multiplication, and in the basis $(1, \mathsf T)$ that multiplication is the real $2 \times 2$ matrix $\begin{pmatrix} \alpha & -\beta \\ \beta & \alpha \end{pmatrix}$. Replacing every complex entry of~(\ref{eqn:ga_system}) by this matrix, and every complex unknown by its two real coordinates, turns the $n \times n$ complex system into a $2n \times 2n$ real one with the same solution: and that real system is exactly the one assembled in Part~\ref{part:matrix}. The element block~(\ref{eqn:element_stiffness}) is the matrix of multiplication by~(\ref{eqn:ga_element}), $(R_i^f)^T R_j^f$ being the matrix of $e^{\mathsf T (\rho_j^f - \rho_i^f)}$ by~(\ref{eqn:ga_matrix}), and the real mass and the Dirichlet rows are the real forms of their complex counterparts. The code works with real arithmetic and the general sparse solver; the complex form halves the size of the system and shows that every block of the code has the structure ``scalar times rotation''.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_complex_block}}
+\caption{Every $2 \times 2$ block of the code is a real multiple of a rotation, the matrix of multiplication by a complex number $e^{\mathsf T \delta}$ of the tangent plane; the complex form stores only that number.}
+\label{fig:complex_block}
+\end{figure}
+
+
+%%% ----------------------------------------------------------------------
+\section{The Geometric Algebra in Code}
+\label{section:ga_code}
+
+The repository contains a second program, \code{ga\_fem.cpp}, which needs no graphics and implements Part~\ref{part:ga} with the small header \code{GAConnection.h}. It is built and run from \code{src/} with
+\begin{lstlisting}[language=bash, numbers=none]
+c++ -std=c++17 -O2 -I<eigen> ga_fem.cpp HalfEdge/Mesh.cpp -o ga_fem
+./ga_fem ../fem-basic-2d/data
+\end{lstlisting}
+It prints the worked examples of this text, solves the cactus of \code{FEM.cpp} twice, with the real $2 \times 2$ blocks of Part~\ref{part:matrix} and with the complex Hermitian system of Part~\ref{part:ga}, solves the sphere of Example~\ref{ex:sphere}, and writes the data of Figures~\ref{fig:cactus} and~\ref{fig:sphere}. On the cactus, the two solutions agree to $6 \cdot 10^{-16}$, the rounding error of double precision: the two parts of this text compute the same thing.
+
+\paragraph{The algebra.} Only the grades the method needs are implemented: vectors, bivectors stored by their dual vectors ($B = I b$), and rotors $w + I b$. The product of two vectors is a rotor up to normalization, and the inner product of a vector with a bivector is the quarter turn~(\ref{eqn:ga_quarter_turn}):
+\lstinputlisting[firstline=19, lastline=60, firstnumber=19]{../src/GAConnection.h}
+
+\paragraph{The connection.} The smallest rotor of Proposition~\ref{prop:ga_rotor}, and the connection~(\ref{eqn:ga_connection}) as the geometric product of two unit vectors of the face plane, a complex number of that plane:
+\lstinputlisting[firstline=62, lastline=83, firstnumber=62]{../src/GAConnection.h}
+
+\paragraph{The gradients.} The reciprocal frame of Proposition~\ref{prop:ga_reciprocal}, and the single-vertex form~(\ref{eqn:ga_grad_edge}):
+\lstinputlisting[firstline=85, lastline=102, firstnumber=85]{../src/GAConnection.h}
+
+\paragraph{The complex system.} The assembly of~(\ref{eqn:ga_element}), the scaling by the lumped mass, and the Dirichlet row, with \code{std::complex} entries. Compare it line by line with \code{AssembleStiffness\-Element\-Embedded2}, \code{AssembleMatrix2}, \code{IplusMinvTimesA} and \code{PreFactor}, where each complex number is a $2 \times 2$ block:
+\lstinputlisting[firstline=151, lastline=188, firstnumber=151]{../src/ga_fem.cpp}
+
+%%% ----------------------------------------------------------------------
+\section{Dictionary}
+\label{section:ga_dictionary}
+
+Table~\ref{tab:dictionary} lists each object of the two parts side by side, with its nature, intrinsic or extrinsic.
+
+\begin{table}[t]
+\centering
+\caption{The objects of Part~\ref{part:matrix} and of Part~\ref{part:ga}, and whether they depend only on the metric of the surface (intrinsic) or on its embedding in space (extrinsic).}
+\label{tab:dictionary}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.24\linewidth} p{0.27\linewidth} p{0.27\linewidth} p{0.14\linewidth}}
+\toprule
+Object & Matrices (Part~\ref{part:matrix}) & Geometric algebra & Nature \\
+\midrule
+tangent plane & $T T^T = I - n n^T$ & bivector $\mathsf T = I n$ & extrinsic \\
+frame & $T = [t \;\; n \times t]$ & one vector $t$, $b = t \mathsf T$ & a gauge choice \\
+coordinates & $u \in \R^2$ & spinor $\psi = u_1 + u_2 \mathsf T$ & gauge dependent \\
+rotation in the plane & $2 \times 2$ rotation & $e^{\mathsf T \theta}$ & intrinsic \\
+plane to plane & Rodrigues $Q$ & rotor $(1 + n_f n_i)/|1 + n_f n_i|$ & extrinsic tool \\
+discrete connection & $R_i^f = T_f^T Q T_i$ & $e^{\mathsf T \rho_i^f} = t_f Q t_i \widetilde Q$ & see Sec.~\ref{section:ga_intrinsic} \\
+transport $j \to i$ & $(R_i^f)^T R_j^f$ & $e^{\mathsf T (\rho_j - \rho_i)}$ & gauge covariant \\
+covariant derivative & $\partial u + \omega u$ & $D = \nabla + \omega \mathsf T$ & intrinsic \\
+hat gradients & $B (B^T B)^{-1} \hat\nabla\hat\phi$ & reciprocal frame, $\frac{(x_c - x_b)\mathsf T}{2A}$ & intrinsic \\
+stiffness block & $A (g_i \cdot g_j) R_i^T R_j$ & $A (\nabla\phi_i \cdot \nabla\phi_j) e^{\mathsf T(\rho_j - \rho_i)}$ & intrinsic up to the vertex planes \\
+global system & real $2n \times 2n$ & complex Hermitian $n \times n$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The geometric algebra formulation removes the frames from the geometry: a tangent plane is a bivector, a direction in it is a complex number of that plane, and transport is a rotor. Frames reappear only as the gauge in which coordinates are stored, and the gauge covariance~(\ref{eqn:ga_gauge}) guarantees that they do not affect the result. What remains of the embedding is the choice of a tangent plane at each vertex, the one extrinsic ingredient of the discrete connection, and the place where an intrinsic method would differ.
+
 
 \bibliographystyle{abbrv}
 \bibliography{fembasic2d}
 
-% ------------------------------------------------------------------------
 \end{document}
-% ------------------------------------------------------------------------

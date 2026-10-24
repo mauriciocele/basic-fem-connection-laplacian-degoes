@@ -1,0 +1,18 @@
+% five equilateral triangles around a vertex, unfolded into the plane: total angle 300 degrees, defect 60 degrees
+\begin{tikzpicture}[scale=1.9]
+  \foreach \k in {0,...,4} {
+    \filldraw[draw=gray!70, fill=gray!10] (0,0) -- ({60*\k}:1) -- ({60*(\k+1)}:1) -- cycle;
+  }
+  \draw[gray!60, dashed] (0,0) -- (300:1);
+  \draw[gray!60, dashed] (0,0) -- (0:1);
+  \fill[red!10] (0,0) -- (300:0.42) arc (300:360:0.42) -- cycle;
+  \node[red!60!black] at (330:0.6) {$60^\circ$};
+  % a vector carried around: constant in the unfolded plane
+  \foreach \k in {0,...,4} {
+    \draw[-{Stealth[length=2mm]}, very thick, green!50!black] ({60*\k+30}:0.62) -- ++(90:0.3);
+  }
+  \draw[-{Stealth[length=2mm]}, very thick, red!70!black] (330:0.75) -- ++(150:0.3);
+  \draw[-{Stealth[length=2mm]}, very thick, green!50!black, dashed] (330:0.75) -- ++(90:0.3);
+  \fill (0,0) circle (1pt) node[below left] {$x_i$};
+  \node[align=left, font=\footnotesize, anchor=west] at (1.15,0.2) {glued back:\\ the gap closes, and\\ the vector returns\\ turned by $60^\circ$};
+\end{tikzpicture}

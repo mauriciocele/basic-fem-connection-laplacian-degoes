@@ -1,0 +1,21 @@
+% the gradient of a hat function, and the reciprocal frame
+\begin{tikzpicture}[scale=2.2]
+  \coordinate (x1) at (0,0); \coordinate (x2) at (2,0.2); \coordinate (x3) at (0.6,1.3);
+  \filldraw[draw=black, fill=orange!12] (x1) -- (x2) -- (x3) -- cycle;
+  \draw[-{Stealth[length=2mm]}, very thick, blue!70!black] (x1) -- (x2) node[midway, below] {$e_1$};
+  \draw[-{Stealth[length=2mm]}, very thick, blue!70!black] (x1) -- (x3) node[midway, left] {$e_2$};
+  % reciprocal frame: e^1 is orthogonal to e_2, e^2 orthogonal to e_1 (computed: B (B^T B)^{-1})
+  \pgfmathsetmacro{\aa}{2*2+0.2*0.2} \pgfmathsetmacro{\ab}{2*0.6+0.2*1.3} \pgfmathsetmacro{\bb}{0.6*0.6+1.3*1.3}
+  \pgfmathsetmacro{\det}{\aa*\bb-\ab*\ab}
+  \pgfmathsetmacro{\rax}{( \bb*2-\ab*0.6)/\det} \pgfmathsetmacro{\ray}{( \bb*0.2-\ab*1.3)/\det}
+  \pgfmathsetmacro{\rbx}{(-\ab*2+\aa*0.6)/\det} \pgfmathsetmacro{\rby}{(-\ab*0.2+\aa*1.3)/\det}
+  \coordinate (c) at (0.87,0.5);
+  \draw[-{Stealth[length=2mm]}, very thick, red!70!black] (c) -- ++(\rax,\ray) node[right] {$e^1 = \nabla\phi_2$};
+  \draw[-{Stealth[length=2mm]}, very thick, red!70!black] (c) -- ++(\rbx,\rby) node[left] {$e^2 = \nabla\phi_3$};
+  \draw[-{Stealth[length=2mm]}, very thick, red!40!black] (c) -- ++({-\rax-\rbx},{-\ray-\rby}) node[below left] {$\nabla\phi_1$};
+  \fill (x1) circle (0.8pt) node[below left] {$x_1$};
+  \fill (x2) circle (0.8pt) node[below right] {$x_2$};
+  \fill (x3) circle (0.8pt) node[above] {$x_3$};
+  % height from x2 to the opposite edge
+  \draw[dashed, gray] (x2) -- ($(x1)!(x2)!(x3)$) node[midway, above, sloped, font=\scriptsize] {$h_2 = 1/|\nabla\phi_2|$};
+\end{tikzpicture}

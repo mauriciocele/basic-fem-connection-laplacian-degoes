@@ -1,0 +1,11 @@
+% the tangent bivector T = I n as an oriented plane element, and its action on tangent vectors
+\begin{tikzpicture}[scale=1.6]
+  \filldraw[draw=blue!60, fill=blue!10] (0,0) circle (1.1);
+  \draw[-{Stealth[length=2mm]}, blue!60, thick] (20:0.8) arc (20:320:0.8);
+  \node[blue!60!black] at (230:0.55) {$\mathsf T$};
+  \draw[-{Stealth[length=2mm]}, very thick, black] (0,0) -- (0:1) node[right] {$a$};
+  \draw[-{Stealth[length=2mm]}, very thick, red!70!black] (0,0) -- (90:1) node[above] {$a\,\mathsf T = n \times a$};
+  \draw[-{Stealth[length=2mm]}, very thick, green!50!black] (0,0) -- (35:1) node[right] {$a\, e^{\mathsf T\theta}$};
+  \draw[green!50!black] (0:0.35) arc (0:35:0.35) node[midway, right, font=\scriptsize] {$\theta$};
+  \draw[-{Stealth[length=2mm]}, very thick, gray] (0,0) -- (180:1) node[left] {$a\,\mathsf T^2 = -a$};
+\end{tikzpicture}

@@ -34,3 +34,5 @@
 *.out.yml
 *.plist
 
+src/ga_fem
+fem-basic-2d/data/icosphere.obj

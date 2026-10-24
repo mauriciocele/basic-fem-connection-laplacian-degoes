@@ -1,0 +1,20 @@
+% assembly: the 6 x 6 element matrix of a face, in 2 x 2 blocks, added into the global matrix
+\begin{tikzpicture}[scale=0.32]
+  % element matrix
+  \foreach \a in {0,1,2} \foreach \b in {0,1,2} {
+    \pgfmathsetmacro{\c}{\a==\b ? "red!35" : "orange!30"}
+    \filldraw[draw=black, fill=\c] (2*\b, -2*\a) rectangle ++(2,-2);
+  }
+  \node at (3,1) {$\mathrm L^f$ ($6 \times 6$)};
+  \foreach \a/\l in {0/1,1/2,2/3} { \node[font=\scriptsize] at (-0.8, -2*\a-1) {$\l$}; \node[font=\scriptsize] at (2*\a+1, 0.5) {$\l$}; }
+  \draw[-{Stealth[length=2mm]}, thick] (7,-3) -- (10,-3) node[midway, above, font=\scriptsize] {$+=$};
+  % global matrix, 2n x 2n with n = 7, face vertices 1, 4, 6
+  \draw[gray] (11,0) rectangle (25,-14);
+  \foreach \k in {1,...,6} { \draw[gray!30] (11+2*\k,0) -- (11+2*\k,-14); \draw[gray!30] (11,-2*\k) -- (25,-2*\k); }
+  \foreach \a/\ga in {0/1,1/4,2/6} \foreach \b/\gb in {0/1,1/4,2/6} {
+    \pgfmathsetmacro{\c}{\a==\b ? "red!35" : "orange!30"}
+    \filldraw[draw=black, fill=\c] (11+2*\gb, -2*\ga) rectangle ++(2,-2);
+  }
+  \foreach \k in {0,...,6} \node[font=\scriptsize] at (12+2*\k, 0.6) {$\k$};
+  \node at (18,1.8) {global $2n \times 2n$, rows $2\,\mathrm{ID} + k$};
+\end{tikzpicture}

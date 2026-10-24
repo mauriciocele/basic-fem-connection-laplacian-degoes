@@ -1,0 +1,16 @@
+% the Gauss formula: the ambient derivative of a tangent field splits into a tangent and a normal part
+\begin{tikzpicture}[scale=2]
+  \draw[thick, gray!70] plot[domain=-1.6:1.6, samples=50] (\x, {-0.25*\x*\x});
+  \node[gray] at (1.55,-0.85) {surface};
+  \coordinate (x) at (0,0);
+  \draw[blue!50, thick] (-1,0) -- (1,0) node[right] {tangent plane};
+  \draw[-{Stealth[length=2mm]}, very thick, black] (x) -- (0.8,0) node[above] {$U(x)$};
+  % neighbouring point and its tangent
+  \pgfmathsetmacro{\px}{0.9} \pgfmathsetmacro{\py}{-0.25*0.81} \pgfmathsetmacro{\s}{-0.5*0.9}
+  \draw[-{Stealth[length=2mm]}, very thick, black] (\px,\py) -- ++({0.8/sqrt(1+\s*\s)},{0.8*\s/sqrt(1+\s*\s)}) node[right] {$U(x + \epsilon X)$};
+  % decomposition of the derivative
+  \draw[-{Stealth[length=2mm]}, thick, green!50!black] (0,-1.1) -- (0.6,-1.1) node[right] {$\nabla_X U$ (tangent, intrinsic)};
+  \draw[-{Stealth[length=2mm]}, thick, red!70!black] (0,-1.1) -- (0,-1.55) node[right] {$\mathrm{II}(X, U)\, n$ (normal, extrinsic)};
+  \draw[-{Stealth[length=2mm]}, very thick, black!70] (0,-1.1) -- (0.6,-1.55) node[below right] {$D_X U$};
+  \fill (x) circle (0.8pt) node[above left] {$x$};
+\end{tikzpicture}

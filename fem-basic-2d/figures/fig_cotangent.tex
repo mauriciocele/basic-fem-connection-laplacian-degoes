@@ -1,0 +1,12 @@
+% the cotangent weight of an edge: the angles opposite to it in its two faces
+\begin{tikzpicture}[scale=2]
+  \coordinate (i) at (0,0); \coordinate (j) at (2,0); \coordinate (k) at (1.2,1.1); \coordinate (l) at (0.7,-0.9);
+  \filldraw[draw=black, fill=orange!12] (i) -- (j) -- (k) -- cycle;
+  \filldraw[draw=black, fill=blue!10] (i) -- (l) -- (j) -- cycle;
+  \draw[very thick] (i) -- (j);
+  \pic[draw, angle radius=0.35cm, "$\alpha_{ij}$", angle eccentricity=1.7] {angle = i--k--j};
+  \pic[draw, angle radius=0.35cm, "$\beta_{ij}$", angle eccentricity=1.7] {angle = j--l--i};
+  \fill (i) circle (0.8pt) node[left] {$x_i$};
+  \fill (j) circle (0.8pt) node[right] {$x_j$};
+  \node[font=\footnotesize, align=center] at (1,-1.35) {$\mathrm L_{ij} = -\frac12 (\cot\alpha_{ij} + \cot\beta_{ij})\, (R_i^f)^T R_j^f$ \\ (scalar part summed over the two faces)};
+\end{tikzpicture}
