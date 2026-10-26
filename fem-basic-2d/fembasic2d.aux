@@ -2,36 +2,416 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{ConnectionLaplacianFEM}
+\providecommand \oddpage@label [2]{}
+\citation{Sharp2019}
+\citation{ConnectionLaplacianFEM}
+\citation{Sayas2015,Langtangen2014}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{1}{Introduction}}{2}{section.1}\protected@file@percent }
+\newlabel{section:introduction}{{1}{2}{Introduction}{section.1}{}}
+\@writefile{toc}{\contentsline {part}{\tocpart {Part}{1}{The Derivation with Matrices}}{3}{part.1}\protected@file@percent }
+\newlabel{part:matrix}{{1}{3}{The Derivation with Matrices}{part.1}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{2}{Tangent Vectors on a Surface}}{3}{section.2}\protected@file@percent }
+\newlabel{section:geometry}{{2}{3}{Tangent Vectors on a Surface}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{2.1}{Tangent planes and frames}}{3}{subsection.2.1}\protected@file@percent }
+\newlabel{eqn:frame}{{2.1}{3}{Tangent planes and frames}{equation.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{2.2}{The discrete surface}}{3}{subsection.2.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces A point $x$ of a surface, its normal $n$, its tangent plane $T_x \Omega $ (blue), an orthonormal frame $(t, b)$ of the tangent plane, and a tangent vector $U$ with its two coordinates $u_1, u_2$ in that frame.}}{4}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:tangent_plane}{{1}{4}{A point $x$ of a surface, its normal $n$, its tangent plane $T_x \Omega $ (blue), an orthonormal frame $(t, b)$ of the tangent plane, and a tangent vector $U$ with its two coordinates $u_1, u_2$ in that frame}{figure.caption.1}{}}
+\newlabel{eqn:face_normal}{{2.2}{4}{The discrete surface}{equation.2.2}{}}
+\newlabel{eqn:vertex_normal}{{2.3}{4}{The discrete surface}{equation.2.3}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Frames.}}{4}{section*.2}\protected@file@percent }
+\newlabel{eqn:vertex_frame}{{2.4}{4}{Frames}{equation.2.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Unknowns.}}{4}{section*.4}\protected@file@percent }
+\newlabel{eqn:dofs}{{2.5}{4}{Unknowns}{equation.2.5}{}}
+\citation{doCarmo1976}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The one-ring of a vertex $x_i$. Each face has its own normal (gray arrows); the vertex normal $n_i$ (red) is their area-weighted average\nonbreakingspace (\ref {eqn:vertex_normal}). The vertex frame vector $t_i$ is the edge to a neighbor $x_j$ (orange), projected onto the vertex tangent plane (blue) and normalized, and $b_i = n_i \times t_i$.}}{5}{figure.caption.3}\protected@file@percent }
+\newlabel{fig:one_ring}{{2}{5}{The one-ring of a vertex $x_i$. Each face has its own normal (gray arrows); the vertex normal $n_i$ (red) is their area-weighted average~(\ref {eqn:vertex_normal}). The vertex frame vector $t_i$ is the edge to a neighbor $x_j$ (orange), projected onto the vertex tangent plane (blue) and normalized, and $b_i = n_i \times t_i$}{figure.caption.3}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{3}{Parallel Transport and the Levi-Civita Connection}}{5}{section.3}\protected@file@percent }
+\newlabel{section:transport}{{3}{5}{Parallel Transport and the Levi-Civita Connection}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{3.1}{The covariant derivative}}{5}{subsection.3.1}\protected@file@percent }
+\newlabel{eqn:covariant}{{3.1}{5}{The covariant derivative}{equation.3.1}{}}
+\newlabel{eqn:metric_compatible}{{3.2}{5}{The covariant derivative}{equation.3.2}{}}
+\citation{Liu2016}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The covariant derivative. $U$ at two nearby points lies in two different tangent planes; its ambient derivative $D_X U$ has a tangent part $\nabla _X U$, the covariant derivative, and a normal part, which depends only on how the surface bends (Section\nonbreakingspace \ref {section:ga_intrinsic}).}}{6}{figure.caption.5}\protected@file@percent }
+\newlabel{fig:covariant}{{3}{6}{The covariant derivative. $U$ at two nearby points lies in two different tangent planes; its ambient derivative $D_X U$ has a tangent part $\nabla _X U$, the covariant derivative, and a normal part, which depends only on how the surface bends (Section~\ref {section:ga_intrinsic})}{figure.caption.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{In a frame.}}{6}{section*.6}\protected@file@percent }
+\newlabel{eqn:covariant_frame}{{3.3}{6}{In a frame}{equation.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{3.2}{Parallel transport}}{6}{subsection.3.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Transport across an edge. Two faces sharing an edge meet at an angle in space; unfolding face $g$ into the plane of face $f$ (dashed) is a rotation about the shared edge, and that rotation is exactly the smallest rotation taking $n_f$ to $n_g$. The vector $v$ of face $f$ and its transport $Q v \setbox \z@ \hbox {\mathsurround \z@ $\textstyle Q$}\mathaccent "0365{Q}$ into face $g$ are the same vector of the unfolded plane.}}{7}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:unfold}{{4}{7}{Transport across an edge. Two faces sharing an edge meet at an angle in space; unfolding face $g$ into the plane of face $f$ (dashed) is a rotation about the shared edge, and that rotation is exactly the smallest rotation taking $n_f$ to $n_g$. The vector $v$ of face $f$ and its transport $Q v \widetilde Q$ into face $g$ are the same vector of the unfolded plane}{figure.caption.7}{}}
+\newlabel{prop:rodrigues}{{3.1}{7}{}{thm.3.1}{}}
+\newlabel{eqn:rodrigues}{{3.4}{7}{}{equation.3.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The discrete connection.}}{7}{section*.8}\protected@file@percent }
+\newlabel{eqn:connection}{{3.5}{7}{The discrete connection}{equation.3.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces The discrete transport from vertex $i$ into face $f$. The smallest rotation $Q$, about the axis $n_i \times n_f$ (dashed), takes the vertex plane (blue) onto the face plane (orange); the frame vector $t_i$ becomes $Q t_i \setbox \z@ \hbox {\mathsurround \z@ $\textstyle Q$}\mathaccent "0365{Q}$ (green, written as a rotor as in Part\nonbreakingspace \ref {part:ga}), which makes the angle $\rho _i^f$ with the face frame vector $t_f$. The matrix $R_i^f$ is the rotation by $\rho _i^f$.}}{8}{figure.caption.9}\protected@file@percent }
+\newlabel{fig:rotor_transport}{{5}{8}{The discrete transport from vertex $i$ into face $f$. The smallest rotation $Q$, about the axis $n_i \times n_f$ (dashed), takes the vertex plane (blue) onto the face plane (orange); the frame vector $t_i$ becomes $Q t_i \widetilde Q$ (green, written as a rotor as in Part~\ref {part:ga}), which makes the angle $\rho _i^f$ with the face frame vector $t_f$. The matrix $R_i^f$ is the rotation by $\rho _i^f$}{figure.caption.9}{}}
+\newlabel{prop:connection_rotation}{{3.2}{8}{}{thm.3.2}{}}
+\newlabel{ex:transport}{{3.3}{8}{}{thm.3.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Holonomy. Left: the one-ring of a vertex of five equilateral triangles, unfolded into the plane; its angles add up to $300^\circ $, and a vector transported around the vertex (constant in the unfolded plane) comes back turned by the angle defect $60^\circ $ when the gap is closed. Right: on the unit sphere, a vector carried around the octant bounded by three quarter great circles comes back turned by $90^\circ $, the area $\pi /2$ of the octant.}}{9}{figure.caption.11}\protected@file@percent }
+\newlabel{fig:holonomy}{{6}{9}{Holonomy. Left: the one-ring of a vertex of five equilateral triangles, unfolded into the plane; its angles add up to $300^\circ $, and a vector transported around the vertex (constant in the unfolded plane) comes back turned by the angle defect $60^\circ $ when the gap is closed. Right: on the unit sphere, a vector carried around the octant bounded by three quarter great circles comes back turned by $90^\circ $, the area $\pi /2$ of the octant}{figure.caption.11}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Transport between two vertices.}}{9}{section*.10}\protected@file@percent }
+\newlabel{eqn:vertex_transport}{{3.6}{9}{Transport between two vertices}{equation.3.6}{}}
+\newlabel{ex:holonomy}{{3.5}{10}{}{thm.3.5}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{4}{The Connection Laplacian and the Vector Heat Equation}}{10}{section.4}\protected@file@percent }
+\newlabel{section:pde}{{4}{10}{The Connection Laplacian and the Vector Heat Equation}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{4.1}{The Dirichlet energy and the connection Laplacian}}{10}{subsection.4.1}\protected@file@percent }
+\newlabel{eqn:dirichlet}{{4.1}{10}{The Dirichlet energy and the connection Laplacian}{equation.4.1}{}}
+\newlabel{prop:green}{{4.1}{10}{Green's identity}{thm.4.1}{}}
+\newlabel{eqn:green}{{4.2}{10}{Green's identity}{equation.4.2}{}}
+\citation{Sharp2019}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{4.2}{The vector heat equation}}{11}{subsection.4.2}\protected@file@percent }
+\newlabel{eqn:heat}{{4.3}{11}{The vector heat equation}{equation.4.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{4.3}{Backward Euler}}{11}{subsection.4.3}\protected@file@percent }
+\newlabel{eqn:backward_euler}{{4.4}{11}{Backward Euler}{equation.4.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The boundary condition used by the code.}}{12}{section*.12}\protected@file@percent }
+\newlabel{eqn:dirichlet_problem}{{4.5}{12}{The boundary condition used by the code}{equation.4.5}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{5}{The Weak Form}}{12}{section.5}\protected@file@percent }
+\newlabel{section:weak}{{5}{12}{The Weak Form}{section.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Test fields.}}{12}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Integration by parts.}}{12}{section*.14}\protected@file@percent }
+\newlabel{eqn:weak}{{5.1}{12}{Integration by parts}{equation.5.1}{}}
+\newlabel{eqn:weak_energy}{{5.2}{12}{Integration by parts}{equation.5.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces The hat function $\phi _i$ of a vertex: linear on every face, $1$ at $x_i$, $0$ at all other vertices, and therefore zero outside the one-ring of $x_i$.}}{13}{figure.caption.15}\protected@file@percent }
+\newlabel{fig:hat}{{7}{13}{The hat function $\phi _i$ of a vertex: linear on every face, $1$ at $x_i$, $0$ at all other vertices, and therefore zero outside the one-ring of $x_i$}{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{6}{The Galerkin Method: Piecewise Linear Tangent Fields}}{13}{section.6}\protected@file@percent }
+\newlabel{section:galerkin}{{6}{13}{The Galerkin Method: Piecewise Linear Tangent Fields}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{6.1}{The scalar hat functions}}{13}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{6.2}{Why the vector case needs a connection}}{13}{subsection.6.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Why vectors must be transported before they are interpolated. The vertex vectors $T_i u_i$ (red) lie in three different vertex planes (blue), none of which is the plane of the face; transported into the face, $T_f R_i^f u_i$ (green), they lie in one plane and can be combined.}}{14}{figure.caption.16}\protected@file@percent }
+\newlabel{fig:naive}{{8}{14}{Why vectors must be transported before they are interpolated. The vertex vectors $T_i u_i$ (red) lie in three different vertex planes (blue), none of which is the plane of the face; transported into the face, $T_f R_i^f u_i$ (green), they lie in one plane and can be combined}{figure.caption.16}{}}
+\newlabel{eqn:trial}{{6.1}{14}{Why the vector case needs a connection}{equation.6.1}{}}
+\newlabel{eqn:basis}{{6.2}{14}{Why the vector case needs a connection}{equation.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{6.3}{The covariant derivative of a basis function}}{14}{subsection.6.3}\protected@file@percent }
+\newlabel{eqn:grad_trial}{{6.3}{15}{The covariant derivative of a basis function}{equation.6.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{6.4}{The discrete equations}}{15}{subsection.6.4}\protected@file@percent }
+\newlabel{eqn:galerkin}{{6.4}{15}{The discrete equations}{equation.6.4}{}}
+\newlabel{eqn:linear_system}{{6.5}{15}{The discrete equations}{equation.6.5}{}}
+\newlabel{eqn:global_blocks}{{6.6}{15}{The discrete equations}{equation.6.6}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The stiffness block of a face.}}{15}{section*.17}\protected@file@percent }
+\newlabel{eqn:element_stiffness}{{6.7}{15}{The stiffness block of a face}{equation.6.7}{}}
 \citation{Sayas2015}
-\citation{Langtangen2014}
-\@writefile{toc}{\contentsline {section}{\tocsection {}{1}{Introduction}}{1}{section.1}\protected@file@percent }
-\newlabel{eqn:connection_laplacian}{{1.1}{1}{Introduction}{equation.1.1}{}}
-\newlabel{eqn:integration_by_parts_adjoint}{{1.3}{2}{Introduction}{equation.1.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{1.1}{The Vector Heat PDE}}{3}{subsection.1.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{2}{Weak Form}}{3}{section.2}\protected@file@percent }
-\newlabel{eqn:original_weak_form}{{2.1}{4}{Weak Form}{equation.2.1}{}}
-\newlabel{eqn:covariant_derivative_adjoint}{{2.2}{4}{Weak Form}{equation.2.2}{}}
-\newlabel{eqn:weak_form}{{2.3}{4}{Weak Form}{equation.2.3}{}}
-\@writefile{toc}{\contentsline {section}{\tocsection {}{3}{Discretization in Flat Space $\mathbb  R^2$}}{4}{section.3}\protected@file@percent }
-\newlabel{sec:discretization}{{3}{4}{Discretization in Flat Space $\mathbb R^2$}{section.3}{}}
-\@writefile{toc}{\contentsline {section}{\tocsection {}{4}{Assembly}}{6}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{5}{Discretization in 3D curved space e.g., 3D surface}}{7}{section.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{6}{The Covariant Derivative $\nabla \Psi $}}{9}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{7}{Reference Elements}}{11}{section.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{7.1}{For 3D Triangles}}{13}{subsection.7.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{8}{Numerical Quadrature}}{13}{section.8}\protected@file@percent }
-\citation{Basic2DHeatEquationFEM}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{7}{Shape Functions and Their Gradients on a Triangle in Space}}{16}{section.7}\protected@file@percent }
+\newlabel{section:gradients}{{7}{16}{Shape Functions and Their Gradients on a Triangle in Space}{section.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{7.1}{The reference triangle}}{16}{subsection.7.1}\protected@file@percent }
+\newlabel{eqn:shape}{{7.1}{16}{The reference triangle}{equation.7.1}{}}
+\newlabel{eqn:shape_gradients}{{7.2}{16}{The reference triangle}{equation.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{7.2}{The map to a face in space}}{16}{subsection.7.2}\protected@file@percent }
+\newlabel{eqn:affine}{{7.3}{16}{The map to a face in space}{equation.7.3}{}}
+\newlabel{prop:gradient}{{7.1}{16}{}{thm.7.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces The affine map from the reference triangle to a face in space. The columns of $B$ are the images of the reference edges.}}{17}{figure.caption.18}\protected@file@percent }
+\newlabel{fig:reference}{{9}{17}{The affine map from the reference triangle to a face in space. The columns of $B$ are the images of the reference edges}{figure.caption.18}{}}
+\newlabel{eqn:gradN}{{7.4}{17}{The map to a face in space}{equation.7.4}{}}
+\newlabel{eqn:grad_face}{{7.5}{17}{The map to a face in space}{equation.7.5}{}}
+\newlabel{ex:triangle}{{7.2}{17}{}{thm.7.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces The gradients of the hat functions of a face. $\nabla \phi _2$ is orthogonal to the edge opposite to $x_2$, points towards $x_2$, and has length $1/h_2$, the reciprocal of the height; the gradients $\nabla \phi _2 = e^1$ and $\nabla \phi _3 = e^2$ form the \emph  {reciprocal frame} of the edges $e_1, e_2$ ($e^k \cdot e_m = \delta _{km}$), and the three gradients add up to zero.}}{18}{figure.caption.19}\protected@file@percent }
+\newlabel{fig:gradient}{{10}{18}{The gradients of the hat functions of a face. $\nabla \phi _2$ is orthogonal to the edge opposite to $x_2$, points towards $x_2$, and has length $1/h_2$, the reciprocal of the height; the gradients $\nabla \phi _2 = e^1$ and $\nabla \phi _3 = e^2$ form the \emph {reciprocal frame} of the edges $e_1, e_2$ ($e^k \cdot e_m = \delta _{km}$), and the three gradients add up to zero}{figure.caption.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{7.3}{A check: the cotangent formula}}{18}{subsection.7.3}\protected@file@percent }
+\newlabel{prop:cotangent}{{7.3}{18}{}{thm.7.3}{}}
+\citation{Knoppel2013,Sharp2019}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces The triangle of Example\nonbreakingspace \ref {ex:triangle}, its normal $n_f = (0, -1, 1)/\sqrt  2$, and the gradients of its three hat functions, drawn from the centroid. All three lie in the plane of the face.}}{19}{figure.caption.20}\protected@file@percent }
+\newlabel{fig:worked_triangle}{{11}{19}{The triangle of Example~\ref {ex:triangle}, its normal $n_f = (0, -1, 1)/\sqrt 2$, and the gradients of its three hat functions, drawn from the centroid. All three lie in the plane of the face}{figure.caption.20}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{8}{The Element Matrices}}{19}{section.8}\protected@file@percent }
+\newlabel{section:element}{{8}{19}{The Element Matrices}{section.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{8.1}{The element stiffness matrix}}{19}{subsection.8.1}\protected@file@percent }
+\newlabel{eqn:element_matrix}{{8.1}{19}{The element stiffness matrix}{equation.8.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {12}{\ignorespaces The two angles opposite to an edge $ij$ in its two faces. The scalar part of the stiffness block of the edge is the cotangent weight; the connection Laplacian multiplies it by the transport from $j$ to $i$.}}{20}{figure.caption.21}\protected@file@percent }
+\newlabel{fig:cotangent}{{12}{20}{The two angles opposite to an edge $ij$ in its two faces. The scalar part of the stiffness block of the edge is the cotangent weight; the connection Laplacian multiplies it by the transport from $j$ to $i$}{figure.caption.21}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Exactness of the integration.}}{20}{section*.22}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{8.2}{The element mass matrix and its lumping}}{20}{subsection.8.2}\protected@file@percent }
+\newlabel{eqn:consistent_mass}{{8.2}{20}{The element mass matrix and its lumping}{equation.8.2}{}}
+\newlabel{eqn:lumped_mass}{{8.3}{20}{The element mass matrix and its lumping}{equation.8.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {13}{\ignorespaces Assembly. The $6 \times 6$ element matrix of a face, made of $3 \times 3$ blocks of size $2 \times 2$ (diagonal blocks red), is added into the global matrix at the rows and columns of its vertices, here $1$, $4$ and $6$.}}{21}{figure.caption.24}\protected@file@percent }
+\newlabel{fig:assembly}{{13}{21}{Assembly. The $6 \times 6$ element matrix of a face, made of $3 \times 3$ blocks of size $2 \times 2$ (diagonal blocks red), is added into the global matrix at the rows and columns of its vertices, here $1$, $4$ and $6$}{figure.caption.24}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{9}{Assembly}}{21}{section.9}\protected@file@percent }
+\newlabel{section:assembly}{{9}{21}{Assembly}{section.9}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{From local to global indices.}}{21}{section*.23}\protected@file@percent }
+\newlabel{eqn:assembly}{{9.1}{21}{From local to global indices}{equation.9.1}{}}
+\newlabel{eqn:index_map}{{9.2}{21}{From local to global indices}{equation.9.2}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Structure.}}{21}{section*.25}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {14}{\ignorespaces The Dirichlet condition by row replacement: the two rows of the source vertex $s$ become rows of the identity, and the right-hand side holds the prescribed vector $\bar  u_s$ there and zero elsewhere.}}{22}{figure.caption.26}\protected@file@percent }
+\newlabel{fig:dirichlet}{{14}{22}{The Dirichlet condition by row replacement: the two rows of the source vertex $s$ become rows of the identity, and the right-hand side holds the prescribed vector $\bar u_s$ there and zero elsewhere}{figure.caption.26}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{10}{The Linear System and Its Solution}}{22}{section.10}\protected@file@percent }
+\newlabel{section:solve}{{10}{22}{The Linear System and Its Solution}{section.10}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{10.1}{The system the code solves}}{22}{subsection.10.1}\protected@file@percent }
+\newlabel{eqn:scaled_system}{{10.1}{22}{The system the code solves}{equation.10.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{10.2}{The Dirichlet condition}}{22}{subsection.10.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{10.3}{From the solution to vectors}}{23}{subsection.10.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{10.4}{What the program computes}}{23}{subsection.10.4}\protected@file@percent }
+\newlabel{ex:sphere}{{10.3}{23}{}{thm.10.3}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{11}{Summary: From the Equations to the Code}}{23}{section.11}\protected@file@percent }
+\newlabel{section:summary}{{11}{23}{Summary: From the Equations to the Code}{section.11}{}}
+\citation{Doran2003,HestenesSobczyk1984}
+\@writefile{lof}{\contentsline {figure}{\numberline {15}{\ignorespaces The output of the method on the cactus of \texttt  {FEM.cpp} ($502$ vertices): the normalized solution at every visible vertex, drawn as a tangent vector.}}{24}{figure.caption.27}\protected@file@percent }
+\newlabel{fig:cactus}{{15}{24}{The output of the method on the cactus of \code {FEM.cpp} ($502$ vertices): the normalized solution at every visible vertex, drawn as a tangent vector}{figure.caption.27}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces Parallel transport of a tangent vector by one step of the vector heat equation (\texttt  {main} of \texttt  {FEM.cpp}).}}{24}{algorithm.1}\protected@file@percent }
+\newlabel{alg:fem}{{1}{24}{Parallel transport of a tangent vector by one step of the vector heat equation (\code {main} of \code {FEM.cpp})}{algorithm.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {16}{\ignorespaces Validation on the sphere (Example\nonbreakingspace \ref {ex:sphere}). Top: the computed directions (thin red) over the exact parallel transport along great circles from the source (thick gray), on the visible half of the sphere. Bottom: the angle between the two at every vertex against the geodesic distance from the source (beyond the dashed line, three quarters of the way, the errors grow towards the antipode, where transport is not defined, and are not shown), and the magnitude of the solution, on a logarithmic scale.}}{25}{figure.caption.28}\protected@file@percent }
+\newlabel{fig:sphere}{{16}{25}{Validation on the sphere (Example~\ref {ex:sphere}). Top: the computed directions (thin red) over the exact parallel transport along great circles from the source (thick gray), on the visible half of the sphere. Bottom: the angle between the two at every vertex against the geodesic distance from the source (beyond the dashed line, three quarters of the way, the errors grow towards the antipode, where transport is not defined, and are not shown), and the magnitude of the solution, on a logarithmic scale}{figure.caption.28}{}}
+\@writefile{toc}{\contentsline {part}{\tocpart {Part}{2}{The Same Derivation in Geometric Algebra, and What Is Intrinsic}}{25}{part.2}\protected@file@percent }
+\newlabel{part:ga}{{2}{25}{The Same Derivation in Geometric Algebra, and What Is Intrinsic}{part.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Every formula and the function of \texttt  {FEM.cpp} that evaluates it.}}{26}{table.caption.29}\protected@file@percent }
+\newlabel{tab:map}{{1}{26}{Every formula and the function of \code {FEM.cpp} that evaluates it}{table.caption.29}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{12}{The Tangent Plane as a Bivector}}{26}{section.12}\protected@file@percent }
+\newlabel{section:ga_plane}{{12}{26}{The Tangent Plane as a Bivector}{section.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{12.1}{Geometric algebra in brief}}{26}{subsection.12.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{12.2}{The tangent bivector}}{26}{subsection.12.2}\protected@file@percent }
+\newlabel{eqn:ga_T}{{12.1}{26}{The tangent bivector}{equation.12.1}{}}
+\newlabel{eqn:ga_projection}{{12.2}{27}{The tangent bivector}{equation.12.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{12.3}{The tangent plane is the complex plane}}{27}{subsection.12.3}\protected@file@percent }
+\newlabel{eqn:ga_quarter_turn}{{12.3}{27}{The tangent plane is the complex plane}{equation.12.3}{}}
+\newlabel{eqn:ga_rotation_plane}{{12.4}{27}{The tangent plane is the complex plane}{equation.12.4}{}}
+\newlabel{eqn:ga_spinor}{{12.5}{27}{The tangent plane is the complex plane}{equation.12.5}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{13}{Rotors Between Tangent Planes}}{27}{section.13}\protected@file@percent }
+\newlabel{section:ga_rotor}{{13}{27}{Rotors Between Tangent Planes}{section.13}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{13.1}{The smallest rotor taking one normal to another}}{27}{subsection.13.1}\protected@file@percent }
+\newlabel{prop:ga_rotor}{{13.1}{27}{}{thm.13.1}{}}
+\newlabel{eqn:ga_rotor}{{13.1}{27}{}{equation.13.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {17}{\ignorespaces The tangent bivector $\mathsf  T = I n$ as an oriented disk in the tangent plane. Right multiplication by $\mathsf  T$ turns a tangent vector $a$ by a quarter turn in the sense of $\mathsf  T$, twice gives $-a$, and $e^{\mathsf  T \theta } = \cos \theta + \mathsf  T \sin \theta $ turns it by $\theta $: the even elements of the plane are the complex numbers, with $\mathsf  T$ as imaginary unit.}}{28}{figure.caption.30}\protected@file@percent }
+\newlabel{fig:quarter_turn}{{17}{28}{The tangent bivector $\mathsf T = I n$ as an oriented disk in the tangent plane. Right multiplication by $\mathsf T$ turns a tangent vector $a$ by a quarter turn in the sense of $\mathsf T$, twice gives $-a$, and $e^{\mathsf T \theta } = \cos \theta + \mathsf T \sin \theta $ turns it by $\theta $: the even elements of the plane are the complex numbers, with $\mathsf T$ as imaginary unit}{figure.caption.30}{}}
+\newlabel{eqn:ga_Q}{{13.2}{28}{The smallest rotor taking one normal to another}{equation.13.2}{}}
+\newlabel{ex:ga_transport}{{13.2}{28}{}{thm.13.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{13.2}{The connection angle}}{29}{subsection.13.2}\protected@file@percent }
+\newlabel{eqn:ga_connection}{{13.3}{29}{The connection angle}{equation.13.3}{}}
+\newlabel{eqn:ga_transport}{{13.4}{29}{The connection angle}{equation.13.4}{}}
+\newlabel{eqn:ga_matrix}{{13.5}{29}{The connection angle}{equation.13.5}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{14}{Intrinsic and Extrinsic Geometry}}{29}{section.14}\protected@file@percent }
+\newlabel{section:ga_intrinsic}{{14}{29}{Intrinsic and Extrinsic Geometry}{section.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{14.1}{What an inhabitant of the surface can measure}}{29}{subsection.14.1}\protected@file@percent }
+\citation{doCarmo1976}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{14.2}{The Gauss formula}}{30}{subsection.14.2}\protected@file@percent }
+\newlabel{eqn:ga_gauss}{{14.1}{30}{The Gauss formula}{equation.14.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{14.3}{Parallel transport is rolling without twisting}}{30}{subsection.14.3}\protected@file@percent }
+\newlabel{prop:ga_rolling}{{14.1}{30}{}{thm.14.1}{}}
+\citation{Knoppel2013,Sharp2019}
+\@writefile{lof}{\contentsline {figure}{\numberline {18}{\ignorespaces Parallel transport is rolling without twisting. Along a curve $\gamma $ on a sphere, the tangent plane (blue) is rolled by the rotor of Proposition\nonbreakingspace \ref {prop:ga_rolling}, here integrated as a sequence of smallest rotations between consecutive normals (red). The transported vector (green) changes only in the direction of the normal, so its covariant derivative vanishes.}}{31}{figure.caption.31}\protected@file@percent }
+\newlabel{fig:rolling}{{18}{31}{Parallel transport is rolling without twisting. Along a curve $\gamma $ on a sphere, the tangent plane (blue) is rolled by the rotor of Proposition~\ref {prop:ga_rolling}, here integrated as a sequence of smallest rotations between consecutive normals (red). The transported vector (green) changes only in the direction of the normal, so its covariant derivative vanishes}{figure.caption.31}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{14.4}{What is intrinsic in the discrete transport}}{31}{subsection.14.4}\protected@file@percent }
+\citation{Knoppel2013}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{14.5}{Holonomy and curvature}}{32}{subsection.14.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\tocsection {}{15}{The Covariant Derivative as a Connection on Spinor Coordinates}}{32}{section.15}\protected@file@percent }
+\newlabel{section:ga_gauge}{{15}{32}{The Covariant Derivative as a Connection on Spinor Coordinates}{section.15}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{15.1}{The connection form}}{32}{subsection.15.1}\protected@file@percent }
+\newlabel{eqn:ga_omega}{{15.1}{32}{The connection form}{equation.15.1}{}}
+\newlabel{eqn:ga_covariant}{{15.2}{32}{The connection form}{equation.15.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {19}{\ignorespaces A change of frame is a change of gauge. The same tangent vector $U$ has the spinor coordinate $\psi $ in the frame $t$ and $\psi ' = e^{-\mathsf  T\theta }\psi $ in the frame $t' = t\, e^{\mathsf  T\theta }$; nothing geometric depends on the choice.}}{33}{figure.caption.32}\protected@file@percent }
+\newlabel{fig:gauge}{{19}{33}{A change of frame is a change of gauge. The same tangent vector $U$ has the spinor coordinate $\psi $ in the frame $t$ and $\psi ' = e^{-\mathsf T\theta }\psi $ in the frame $t' = t\, e^{\mathsf T\theta }$; nothing geometric depends on the choice}{figure.caption.32}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{15.2}{Frame independence}}{33}{subsection.15.2}\protected@file@percent }
+\newlabel{eqn:ga_gauge}{{15.3}{33}{Frame independence}{equation.15.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{15.3}{The energy and the equation in spinor form}}{33}{subsection.15.3}\protected@file@percent }
+\newlabel{eqn:ga_energy}{{15.4}{33}{The energy and the equation in spinor form}{equation.15.4}{}}
+\newlabel{eqn:ga_weak}{{15.5}{33}{The energy and the equation in spinor form}{equation.15.5}{}}
+\citation{HestenesSobczyk1984}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{16}{The Finite Element Method in Geometric Algebra}}{34}{section.16}\protected@file@percent }
+\newlabel{section:ga_fem}{{16}{34}{The Finite Element Method in Geometric Algebra}{section.16}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{16.1}{Spinor hat functions}}{34}{subsection.16.1}\protected@file@percent }
+\newlabel{eqn:ga_trial}{{16.1}{34}{Spinor hat functions}{equation.16.1}{}}
+\newlabel{eqn:ga_grad_trial}{{16.2}{34}{Spinor hat functions}{equation.16.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{16.2}{The gradients of the hat functions: the reciprocal frame}}{34}{subsection.16.2}\protected@file@percent }
+\newlabel{eqn:ga_reciprocal}{{16.3}{34}{The gradients of the hat functions: the reciprocal frame}{equation.16.3}{}}
+\newlabel{prop:ga_reciprocal}{{16.1}{34}{}{thm.16.1}{}}
+\newlabel{eqn:ga_grad_edge}{{16.4}{34}{}{equation.16.4}{}}
+\citation{Knoppel2013,Sharp2019}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{16.3}{The element matrices}}{35}{subsection.16.3}\protected@file@percent }
+\newlabel{eqn:ga_element}{{16.5}{35}{The element matrices}{equation.16.5}{}}
+\newlabel{eqn:ga_system}{{16.6}{35}{The element matrices}{equation.16.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{16.4}{The code solves the real form of the complex system}}{35}{subsection.16.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {20}{\ignorespaces Every $2 \times 2$ block of the code is a real multiple of a rotation, the matrix of multiplication by a complex number $e^{\mathsf  T \delta }$ of the tangent plane; the complex form stores only that number.}}{36}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:complex_block}{{20}{36}{Every $2 \times 2$ block of the code is a real multiple of a rotation, the matrix of multiplication by a complex number $e^{\mathsf T \delta }$ of the tangent plane; the complex form stores only that number}{figure.caption.33}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{17}{The Geometric Algebra in Code}}{36}{section.17}\protected@file@percent }
+\newlabel{section:ga_code}{{17}{36}{The Geometric Algebra in Code}{section.17}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The algebra.}}{36}{section*.34}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/GAConnection.h}{36}{lstlisting.-2}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The connection.}}{37}{section*.35}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/GAConnection.h}{37}{lstlisting.-3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The gradients.}}{37}{section*.36}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/GAConnection.h}{37}{lstlisting.-4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The complex system.}}{38}{section*.37}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/ga\textunderscore fem.cpp}{38}{lstlisting.-5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces The objects of Part\nonbreakingspace \ref {part:matrix} and of Part\nonbreakingspace \ref {part:ga}, and whether they depend only on the metric of the surface (intrinsic) or on its embedding in space (extrinsic).}}{39}{table.caption.38}\protected@file@percent }
+\newlabel{tab:dictionary}{{2}{39}{The objects of Part~\ref {part:matrix} and of Part~\ref {part:ga}, and whether they depend only on the metric of the surface (intrinsic) or on its embedding in space (extrinsic)}{table.caption.38}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{18}{Dictionary}}{39}{section.18}\protected@file@percent }
+\newlabel{section:ga_dictionary}{{18}{39}{Dictionary}{section.18}{}}
+\@writefile{toc}{\contentsline {part}{\tocpart {Part}{3}{The Intrinsic Method: Everything from Edge Lengths}}{40}{part.3}\protected@file@percent }
+\newlabel{part:intrinsic}{{3}{40}{The Intrinsic Method: Everything from Edge Lengths}{part.3}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{19}{What It Means to Be Intrinsic}}{40}{section.19}\protected@file@percent }
+\newlabel{section:int_meaning}{{19}{40}{What It Means to Be Intrinsic}{section.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{19.1}{A folded sheet of paper}}{40}{subsection.19.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {21}{\ignorespaces A Miura-ori fold: $24 \times 16$ parallelograms, each cut into two triangles, folded so that four creases meet at every vertex. The four angles at every vertex still add up to $2\pi $, so the folded sheet is isometric to a flat one, and parallel transport on it is the transport of the flat sheet. Arrows: the exact field, started at the center, which the method of this part reproduces to $2 \cdot 10^{-13}$ degrees. Shading: the error of the method of Part\nonbreakingspace \ref {part:ga} in each face, from $0^\circ $ (white) to $21.9^\circ $ (red).}}{41}{figure.caption.39}\protected@file@percent }
+\newlabel{fig:miura}{{21}{41}{A Miura-ori fold: $24 \times 16$ parallelograms, each cut into two triangles, folded so that four creases meet at every vertex. The four angles at every vertex still add up to $2\pi $, so the folded sheet is isometric to a flat one, and parallel transport on it is the transport of the flat sheet. Arrows: the exact field, started at the center, which the method of this part reproduces to $2 \cdot 10^{-13}$ degrees. Shading: the error of the method of Part~\ref {part:ga} in each face, from $0^\circ $ (white) to $21.9^\circ $ (red)}{figure.caption.39}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{19.2}{Intrinsic quantities of a mesh}}{41}{subsection.19.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\tocsection {}{20}{A Triangle Known Only by Its Edge Lengths}}{42}{section.20}\protected@file@percent }
+\newlabel{section:int_triangle}{{20}{42}{A Triangle Known Only by Its Edge Lengths}{section.20}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{20.1}{The metric of a face is its Gram matrix}}{42}{subsection.20.1}\protected@file@percent }
+\newlabel{eqn:metric}{{20.1}{42}{The metric of a face is its Gram matrix}{equation.20.1}{}}
+\newlabel{eqn:gram}{{20.2}{42}{The metric of a face is its Gram matrix}{equation.20.2}{}}
+\newlabel{prop:metric_only}{{20.1}{42}{}{thm.20.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{20.2}{Heron's formula and the angles}}{43}{subsection.20.2}\protected@file@percent }
+\newlabel{eqn:heron}{{20.3}{43}{Heron's formula and the angles}{equation.20.3}{}}
+\newlabel{eqn:law_of_cosines}{{20.4}{43}{Heron's formula and the angles}{equation.20.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{20.3}{Laying the triangle out in the plane}}{43}{subsection.20.3}\protected@file@percent }
+\newlabel{eqn:layout}{{20.5}{43}{Laying the triangle out in the plane}{equation.20.5}{}}
+\newlabel{eqn:intrinsic_gradient}{{20.6}{43}{Laying the triangle out in the plane}{equation.20.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {22}{\ignorespaces Left: the triangle of Example\nonbreakingspace \ref {ex:triangle} in space; Part\nonbreakingspace \ref {part:intrinsic} reads only its three edge lengths. Right: its layout\nonbreakingspace (\ref {eqn:layout}), an isometric copy in the plane, with the face frame $t_f$ along the first edge. Every quantity of the method can be computed on the layout.}}{44}{figure.caption.40}\protected@file@percent }
+\newlabel{fig:layout}{{22}{44}{Left: the triangle of Example~\ref {ex:triangle} in space; Part~\ref {part:intrinsic} reads only its three edge lengths. Right: its layout~(\ref {eqn:layout}), an isometric copy in the plane, with the face frame $t_f$ along the first edge. Every quantity of the method can be computed on the layout}{figure.caption.40}{}}
+\newlabel{ex:int_triangle}{{20.2}{44}{}{thm.20.2}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{21}{The Tangent Plane of a Vertex, from Angles}}{44}{section.21}\protected@file@percent }
+\newlabel{section:int_vertex}{{21}{44}{The Tangent Plane of a Vertex, from Angles}{section.21}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{21.1}{The cone around a vertex}}{44}{subsection.21.1}\protected@file@percent }
+\newlabel{eqn:total_angle}{{21.1}{44}{The cone around a vertex}{equation.21.1}{}}
+\citation{Sharp2019}
+\@writefile{lof}{\contentsline {figure}{\numberline {23}{\ignorespaces The faces around a vertex, cut along the reference edge (blue, $\theta = 0$) and flattened. Five equilateral triangles: $\Theta _i = 300^\circ $, a gap of $60^\circ $, the angle defect. Rescaling every angle by $s_i = 2\pi /\Theta _i = 6/5$ closes the gap: every $60^\circ $ corner becomes $72^\circ $. Seven equilateral triangles: $\Theta _i = 420^\circ $, the seventh overlaps the first; rescaling by $6/7$ turns every corner into $51.4^\circ $.}}{45}{figure.caption.41}\protected@file@percent }
+\newlabel{fig:cone_rescale}{{23}{45}{The faces around a vertex, cut along the reference edge (blue, $\theta = 0$) and flattened. Five equilateral triangles: $\Theta _i = 300^\circ $, a gap of $60^\circ $, the angle defect. Rescaling every angle by $s_i = 2\pi /\Theta _i = 6/5$ closes the gap: every $60^\circ $ corner becomes $72^\circ $. Seven equilateral triangles: $\Theta _i = 420^\circ $, the seventh overlaps the first; rescaling by $6/7$ turns every corner into $51.4^\circ $}{figure.caption.41}{}}
+\newlabel{eqn:defect}{{21.2}{45}{The cone around a vertex}{equation.21.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{21.2}{Why a vertex has no tangent plane}}{45}{subsection.21.2}\protected@file@percent }
+\citation{Sharp2019}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{21.3}{Directions at a vertex as angles}}{46}{subsection.21.3}\protected@file@percent }
+\newlabel{eqn:cone_angle}{{21.3}{46}{Directions at a vertex as angles}{equation.21.3}{}}
+\newlabel{eqn:scale}{{21.4}{46}{Directions at a vertex as angles}{equation.21.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{21.4}{What the vertex normal does instead}}{46}{subsection.21.4}\protected@file@percent }
+\newlabel{ex:int_pyramid}{{21.1}{47}{}{thm.21.1}{}}
+\newlabel{ex:int_leaning}{{21.2}{47}{}{thm.21.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {24}{\ignorespaces The leaning pyramid of Example\nonbreakingspace \ref {ex:int_leaning}, seen from its apex, corners counterclockwise from the reference edge (blue). Left: cut open and flattened, with a gap of $69.5^\circ $, the angle defect. Middle: the intrinsic vertex plane, every corner stretched by the same factor. Right: the extrinsic vertex plane of Part\nonbreakingspace \ref {part:ga}, every corner rolled rigidly into the plane orthogonal to the vertex normal; the defect falls into the gaps between them (red), unevenly.}}{48}{figure.caption.42}\protected@file@percent }
+\newlabel{fig:pyramid}{{24}{48}{The leaning pyramid of Example~\ref {ex:int_leaning}, seen from its apex, corners counterclockwise from the reference edge (blue). Left: cut open and flattened, with a gap of $69.5^\circ $, the angle defect. Middle: the intrinsic vertex plane, every corner stretched by the same factor. Right: the extrinsic vertex plane of Part~\ref {part:ga}, every corner rolled rigidly into the plane orthogonal to the vertex normal; the defect falls into the gaps between them (red), unevenly}{figure.caption.42}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{22}{The Connection from a Vertex into a Face}}{48}{section.22}\protected@file@percent }
+\newlabel{section:int_connection}{{22}{48}{The Connection from a Vertex into a Face}{section.22}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{22.1}{What the finite element method needs}}{48}{subsection.22.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{22.2}{The exact correspondence is not a rotation}}{48}{subsection.22.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{22.3}{The best rotation: match the bisectors}}{49}{subsection.22.3}\protected@file@percent }
+\newlabel{eqn:intrinsic_rho}{{22.1}{49}{The best rotation: match the bisectors}{equation.22.1}{}}
+\newlabel{ex:int_rho}{{22.1}{49}{}{thm.22.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{22.4}{Going around the vertex}}{49}{subsection.22.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {25}{\ignorespaces The second corner of the cone of Figure\nonbreakingspace \ref {fig:cone_rescale} ($\theta _e = 60^\circ $, $\alpha = 60^\circ $, $s_i = 1.2$) with the face frame along its first edge, $\beta _e = 0$. Left: in the face, the directions of the corner run from $0^\circ $ to $60^\circ $. Right: in the plane of the vertex, the corner is the sector from $72^\circ $ to $144^\circ $. The connection\nonbreakingspace (\ref {eqn:intrinsic_rho}), $\rho _i^f = 30^\circ - 108^\circ = -78^\circ $, carries bisector to bisector; the face's edges land $6^\circ $ inside the sector on each side.}}{50}{figure.caption.43}\protected@file@percent }
+\newlabel{fig:corner_map}{{25}{50}{The second corner of the cone of Figure~\ref {fig:cone_rescale} ($\theta _e = 60^\circ $, $\alpha = 60^\circ $, $s_i = 1.2$) with the face frame along its first edge, $\beta _e = 0$. Left: in the face, the directions of the corner run from $0^\circ $ to $60^\circ $. Right: in the plane of the vertex, the corner is the sector from $72^\circ $ to $144^\circ $. The connection~(\ref {eqn:intrinsic_rho}), $\rho _i^f = 30^\circ - 108^\circ = -78^\circ $, carries bisector to bisector; the face's edges land $6^\circ $ inside the sector on each side}{figure.caption.43}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{23}{The Finite Element Method, Unchanged}}{50}{section.23}\protected@file@percent }
+\newlabel{section:int_fem}{{23}{50}{The Finite Element Method, Unchanged}{section.23}{}}
+\newlabel{eqn:intrinsic_element}{{23.1}{50}{The Finite Element Method, Unchanged}{equation.23.1}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The same gauge as Part\nonbreakingspace \ref {part:matrix}.}}{50}{section*.44}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Drawing the result.}}{51}{section*.45}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{51}{section*.46}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/IntrinsicConnection.h}{51}{lstlisting.-6}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/IntrinsicConnection.h}{51}{lstlisting.-7}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/IntrinsicConnection.h}{51}{lstlisting.-8}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/ga\textunderscore fem.cpp}{52}{lstlisting.-9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\tocsection {}{24}{Experiments}}{53}{section.24}\protected@file@percent }
+\newlabel{section:int_experiments}{{24}{53}{Experiments}{section.24}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{How the error is measured.}}{53}{section*.47}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Folded sheets: exact bendings.}}{53}{section*.48}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The sphere: convergence.}}{53}{section*.49}\protected@file@percent }
+\citation{Knoppel2013,Sharp2019}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{The cactus: how large is the choice?}}{54}{section*.50}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\tocsection {}{25}{Summary: Two Ways to Give a Vertex a Plane}}{54}{section.25}\protected@file@percent }
+\newlabel{section:int_summary}{{25}{54}{Summary: Two Ways to Give a Vertex a Plane}{section.25}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {26}{\ignorespaces Left: the error of the vector heat method on geodesic spheres, against the number of vertices, with the extrinsic connection of Part\nonbreakingspace \ref {part:ga} (red) and the intrinsic one (green); mean (solid) and maximum (dashed), over all corners within three quarters of the way to the antipode. Right: on the cactus, the largest angle between the two solutions over the corners of each vertex, against the magnitude $|u_i|$ of the intrinsic solution: the two disagree strongly only where the field has almost vanished.}}{55}{figure.caption.51}\protected@file@percent }
+\newlabel{fig:intrinsic_plots}{{26}{55}{Left: the error of the vector heat method on geodesic spheres, against the number of vertices, with the extrinsic connection of Part~\ref {part:ga} (red) and the intrinsic one (green); mean (solid) and maximum (dashed), over all corners within three quarters of the way to the antipode. Right: on the cactus, the largest angle between the two solutions over the corners of each vertex, against the magnitude $|u_i|$ of the intrinsic solution: the two disagree strongly only where the field has almost vanished}{figure.caption.51}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces The ingredients of the element matrix in the extrinsic method of Part\nonbreakingspace \ref {part:ga} and in the intrinsic method of Part\nonbreakingspace \ref {part:intrinsic}.}}{55}{table.caption.52}\protected@file@percent }
+\newlabel{tab:intrinsic}{{3}{55}{The ingredients of the element matrix in the extrinsic method of Part~\ref {part:ga} and in the intrinsic method of Part~\ref {part:intrinsic}}{table.caption.52}{}}
+\citation{Doran2003}
+\newlabel{rem:gauge}{{25.1}{56}{}{thm.25.1}{}}
+\@writefile{toc}{\contentsline {part}{\tocpart {Part}{4}{Curvature on the Faces: the Connection as a Discrete 1-Form}}{56}{part.4}\protected@file@percent }
+\newlabel{part:edge}{{4}{56}{Curvature on the Faces: the Connection as a Discrete 1-Form}{part.4}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{26}{Parallel Transport Along the Edges}}{56}{section.26}\protected@file@percent }
+\newlabel{section:edge_transport}{{26}{56}{Parallel Transport Along the Edges}{section.26}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{26.1}{The transport along one edge}}{56}{subsection.26.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {27}{\ignorespaces Transport along the edge from $a$ to $b$ keeps the angle $\gamma $ between the vector and the edge. Each vertex measures angles from its own reference direction ($\varphi = 0$, gray); the edge points along $\varphi _{ab}$ at $a$ and along $\varphi _{ba} + \pi $ at $b$, so the transport turns the coordinate by $\rho _{ab} = \varphi _{ba} + \pi - \varphi _{ab}$.}}{57}{figure.caption.53}\protected@file@percent }
+\newlabel{fig:edge_transport}{{27}{57}{Transport along the edge from $a$ to $b$ keeps the angle $\gamma $ between the vector and the edge. Each vertex measures angles from its own reference direction ($\varphi = 0$, gray); the edge points along $\varphi _{ab}$ at $a$ and along $\varphi _{ba} + \pi $ at $b$, so the transport turns the coordinate by $\rho _{ab} = \varphi _{ba} + \pi - \varphi _{ab}$}{figure.caption.53}{}}
+\newlabel{eqn:edge_transport}{{26.1}{57}{The transport along one edge}{equation.26.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{26.2}{Going around a face: the holonomy}}{57}{subsection.26.2}\protected@file@percent }
+\newlabel{eqn:face_holonomy}{{26.2}{57}{Going around a face: the holonomy}{equation.26.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {28}{\ignorespaces The upright pyramid of Example\nonbreakingspace \ref {ex:int_pyramid}, cut open. With the corner connections of Parts\nonbreakingspace \ref {part:ga} and\nonbreakingspace \ref {part:intrinsic} the curvature is at the apex, the angle defect $60^\circ $. With the edge connection each face holds $(s_i - 1)\alpha = 0.2 \cdot 60^\circ = 12^\circ $ of it, (\ref {eqn:face_holonomy}).}}{58}{figure.caption.54}\protected@file@percent }
+\newlabel{fig:pyramid_faces}{{28}{58}{The upright pyramid of Example~\ref {ex:int_pyramid}, cut open. With the corner connections of Parts~\ref {part:ga} and~\ref {part:intrinsic} the curvature is at the apex, the angle defect $60^\circ $. With the edge connection each face holds $(s_i - 1)\alpha = 0.2 \cdot 60^\circ = 12^\circ $ of it, (\ref {eqn:face_holonomy})}{figure.caption.54}{}}
+\newlabel{ex:edge_pyramid}{{26.1}{58}{}{thm.26.1}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{27}{A Face with a Curved Connection}}{58}{section.27}\protected@file@percent }
+\newlabel{section:edge_element}{{27}{58}{A Face with a Curved Connection}{section.27}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.1}{Why a new element is needed}}{58}{subsection.27.1}\protected@file@percent }
+\newlabel{eqn:kappa}{{27.1}{58}{Why a new element is needed}{equation.27.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {29}{\ignorespaces A vector (blue) carried around a face with the curved connection\nonbreakingspace (\ref {eqn:symmetric_gauge}), here with an exaggerated $\Omega _f = 45^\circ $ and $c$ at the centroid: along each edge it turns steadily, by a third of $\Omega _f$, and it comes back to $a$ turned by $\Omega _f$ (red).}}{59}{figure.caption.55}\protected@file@percent }
+\newlabel{fig:face_holonomy}{{29}{59}{A vector (blue) carried around a face with the curved connection~(\ref {eqn:symmetric_gauge}), here with an exaggerated $\Omega _f = 45^\circ $ and $c$ at the centroid: along each edge it turns steadily, by a third of $\Omega _f$, and it comes back to $a$ turned by $\Omega _f$ (red)}{figure.caption.55}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.2}{A connection with constant curvature in the plane}}{59}{subsection.27.2}\protected@file@percent }
+\newlabel{eqn:symmetric_gauge}{{27.2}{59}{A connection with constant curvature in the plane}{equation.27.2}{}}
+\newlabel{eqn:segment_transport}{{27.3}{59}{A connection with constant curvature in the plane}{equation.27.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.3}{Matching the vertex planes}}{59}{subsection.27.3}\protected@file@percent }
+\newlabel{eqn:sigma}{{27.4}{60}{Matching the vertex planes}{equation.27.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.4}{The trial functions}}{60}{subsection.27.4}\protected@file@percent }
+\newlabel{eqn:curved_trial}{{27.5}{60}{The trial functions}{equation.27.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.5}{The covariant derivative of a trial function}}{60}{subsection.27.5}\protected@file@percent }
+\newlabel{eqn:w}{{27.6}{60}{The covariant derivative of a trial function}{equation.27.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{27.6}{The element matrix}}{60}{subsection.27.6}\protected@file@percent }
+\newlabel{eqn:curved_element}{{27.7}{61}{The element matrix}{equation.27.7}{}}
+\@writefile{toc}{\contentsline {paragraph}{\tocparagraph {}{}{Computing the integral.}}{61}{section*.56}\protected@file@percent }
+\newlabel{ex:edge_element}{{27.1}{61}{}{thm.27.1}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{28}{The Code}}{61}{section.28}\protected@file@percent }
+\newlabel{section:edge_code}{{28}{61}{The Code}{section.28}{}}
+\@writefile{lol}{\contentsline {lstlisting}{../src/EdgeConnection.h}{61}{lstlisting.-10}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/EdgeConnection.h}{62}{lstlisting.-11}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{../src/ga\textunderscore fem.cpp}{62}{lstlisting.-12}\protected@file@percent }
+\citation{Sharp2019}
+\citation{Knoppel2013}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{29}{Results}}{63}{section.29}\protected@file@percent }
+\newlabel{section:edge_results}{{29}{63}{Results}{section.29}{}}
+\@writefile{toc}{\contentsline {part}{\tocpart {Part}{5}{Discrete Exterior Calculus, Slowly}}{63}{part.5}\protected@file@percent }
+\newlabel{part:dec}{{5}{63}{Discrete Exterior Calculus, Slowly}{part.5}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{30}{Discrete Differential Forms}}{63}{section.30}\protected@file@percent }
+\newlabel{section:dec_forms}{{30}{63}{Discrete Differential Forms}{section.30}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{30.1}{Store integrals, not values}}{63}{subsection.30.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {30}{\ignorespaces Left: a function at the vertices, its exterior derivative on the edges (the differences), and its second derivative on the face, which is zero. Right: the same for vector coordinates, with the edge transports of Part\nonbreakingspace \ref {part:edge}: the differences must be taken after transport, and around a face they add up to $(1 - e^{\mathsf  T\Omega _f})\psi _1$, the curvature.}}{64}{figure.caption.57}\protected@file@percent }
+\newlabel{fig:cochains}{{30}{64}{Left: a function at the vertices, its exterior derivative on the edges (the differences), and its second derivative on the face, which is zero. Right: the same for vector coordinates, with the edge transports of Part~\ref {part:edge}: the differences must be taken after transport, and around a face they add up to $(1 - e^{\mathsf T\Omega _f})\psi _1$, the curvature}{figure.caption.57}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{30.2}{The exterior derivative is exact}}{64}{subsection.30.2}\protected@file@percent }
+\newlabel{eqn:dec_d}{{30.1}{64}{The exterior derivative is exact}{equation.30.1}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{31}{The Hodge Star: Where the Geometry Enters}}{64}{section.31}\protected@file@percent }
+\newlabel{section:dec_hodge}{{31}{64}{The Hodge Star: Where the Geometry Enters}{section.31}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{31.1}{Why lengths and areas are needed}}{64}{subsection.31.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {31}{\ignorespaces Left: the circumcentric dual of a one-ring: dual vertices at the circumcenters (blue dots), dual edges (dashed) orthogonal to the primal edges, and the dual cell $i^*$ of the center vertex (shaded); one edge $e$ and its dual $e^*$ in bold. Right: the dual edge of $e = ab$ runs from the circumcenter $O_f$ of one face to $O_g$ of the other, through the midpoint $m$; its two pieces are $\frac  {\ell }{2}\cot \alpha $ and $\frac  {\ell }{2}\cot \beta $, with $\alpha $ and $\beta $ the angles opposite to $e$.}}{65}{figure.caption.58}\protected@file@percent }
+\newlabel{fig:dual}{{31}{65}{Left: the circumcentric dual of a one-ring: dual vertices at the circumcenters (blue dots), dual edges (dashed) orthogonal to the primal edges, and the dual cell $i^*$ of the center vertex (shaded); one edge $e$ and its dual $e^*$ in bold. Right: the dual edge of $e = ab$ runs from the circumcenter $O_f$ of one face to $O_g$ of the other, through the midpoint $m$; its two pieces are $\frac {\ell }{2}\cot \alpha $ and $\frac {\ell }{2}\cot \beta $, with $\alpha $ and $\beta $ the angles opposite to $e$}{figure.caption.58}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{31.2}{The dual mesh}}{65}{subsection.31.2}\protected@file@percent }
+\newlabel{eqn:hodge}{{31.1}{65}{The dual mesh}{equation.31.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{31.3}{The length of a dual edge}}{65}{subsection.31.3}\protected@file@percent }
+\newlabel{prop:dual_edge}{{31.1}{65}{}{thm.31.1}{}}
+\newlabel{eqn:star1}{{31.2}{66}{}{equation.31.2}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{32}{The Scalar Laplacian of DEC Is the Finite Element Laplacian}}{66}{section.32}\protected@file@percent }
+\newlabel{section:dec_scalar}{{32}{66}{The Scalar Laplacian of DEC Is the Finite Element Laplacian}{section.32}{}}
+\newlabel{eqn:dec_laplacian}{{32.1}{66}{The Scalar Laplacian of DEC Is the Finite Element Laplacian}{equation.32.1}{}}
+\newlabel{ex:dec_triangle}{{32.1}{66}{}{thm.32.1}{}}
+\citation{Knoppel2013,Sharp2019}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{33}{Vector Fields: the Covariant Exterior Derivative}}{67}{section.33}\protected@file@percent }
+\newlabel{section:dec_vector}{{33}{67}{Vector Fields: the Covariant Exterior Derivative}{section.33}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{33.1}{Differences after transport}}{67}{subsection.33.1}\protected@file@percent }
+\newlabel{eqn:dnabla}{{33.1}{67}{Differences after transport}{equation.33.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{33.2}{The energy and the connection Laplacian}}{67}{subsection.33.2}\protected@file@percent }
+\newlabel{eqn:dec_energy}{{33.2}{67}{The energy and the connection Laplacian}{equation.33.2}{}}
+\newlabel{eqn:dec_entries}{{33.3}{67}{The energy and the connection Laplacian}{equation.33.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{33.3}{Curvature: $d^\nabla d^\nabla \neq  0$}}{67}{subsection.33.3}\protected@file@percent }
+\newlabel{ex:dec_curvature}{{33.1}{68}{}{thm.33.1}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{34}{DEC as a Finite Element Method}}{68}{section.34}\protected@file@percent }
+\newlabel{section:dec_fem}{{34}{68}{DEC as a Finite Element Method}{section.34}{}}
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{34.1}{The linear element written edge by edge}}{68}{subsection.34.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\tocsubsection {}{34.2}{Where DEC puts the transports}}{68}{subsection.34.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\tocsection {}{35}{The Code and the Results}}{69}{section.35}\protected@file@percent }
+\newlabel{section:dec_results}{{35}{69}{The Code and the Results}{section.35}{}}
+\@writefile{lol}{\contentsline {lstlisting}{../src/ga\textunderscore fem.cpp}{69}{lstlisting.-13}\protected@file@percent }
 \bibstyle{abbrv}
 \bibdata{fembasic2d}
-\bibcite{Langtangen2014}{1}
-\bibcite{Basic2DHeatEquationFEM}{2}
-\bibcite{Sayas2015}{3}
+\bibcite{doCarmo1976}{1}
+\bibcite{Doran2003}{2}
+\@writefile{lof}{\contentsline {figure}{\numberline {32}{\ignorespaces The vector heat method on geodesic spheres with the four connections: mean (left) and largest (right) angle to exact transport, against the number of vertices. DEC (blue) is the least accurate on the coarse spheres, where the faces have the largest holonomies; all four converge together.}}{70}{figure.caption.59}\protected@file@percent }
+\newlabel{fig:four_plots}{{32}{70}{The vector heat method on geodesic spheres with the four connections: mean (left) and largest (right) angle to exact transport, against the number of vertices. DEC (blue) is the least accurate on the coarse spheres, where the faces have the largest holonomies; all four converge together}{figure.caption.59}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{36}{Summary of the Five Parts}}{70}{section.36}\protected@file@percent }
+\newlabel{section:summary_all}{{36}{70}{Summary of the Five Parts}{section.36}{}}
+\@writefile{toc}{\contentsline {section}{\tocsection {}{}{References}}{70}{section*.61}\protected@file@percent }
+\bibcite{HestenesSobczyk1984}{3}
+\bibcite{Knoppel2013}{4}
+\bibcite{Langtangen2014}{5}
+\bibcite{Liu2016}{6}
+\bibcite{ConnectionLaplacianFEM}{7}
+\bibcite{Sayas2015}{8}
+\bibcite{Sharp2019}{9}
 \newlabel{tocindent-1}{0pt}
-\newlabel{tocindent0}{12.7778pt}
-\newlabel{tocindent1}{17.77782pt}
-\newlabel{tocindent2}{25.55562pt}
+\newlabel{tocindent0}{40.70842pt}
+\newlabel{tocindent1}{22.77783pt}
+\newlabel{tocindent2}{30.55563pt}
 \newlabel{tocindent3}{0pt}
-\@writefile{toc}{\contentsline {section}{\tocsection {}{9}{Implementation}}{14}{section.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\tocsection {}{}{References}}{14}{section*.1}\protected@file@percent }
-\lastpage{14}
-\gdef \@abspage@last{14}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces The five discretizations of the connection Laplacian in this text.}}{71}{table.caption.60}\protected@file@percent }
+\newlabel{tab:five}{{4}{71}{The five discretizations of the connection Laplacian in this text}{table.caption.60}{}}
+\lastpage{71}
+\gdef \@abspage@last{71}

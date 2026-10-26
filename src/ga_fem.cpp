@@ -148,7 +148,7 @@ static Eigen::VectorXd solve(Mesh& mesh, const Geometry& g, double dt, int sourc
 // ---------------------------------------------------------------------------------------------------------------
 namespace gaform {
 
-/// Section 15: L_ij += A_f (grad phi_i . grad phi_j) e^{T (rho_j - rho_i)}, M_ii += A_f / 3, then the same
+/// Section 16: L_ij += A_f (grad phi_i . grad phi_j) e^{T (rho_j - rho_i)}, M_ii += A_f / 3, then the same
 /// scaling I + M^-1 (dt L) and the same Dirichlet row as the matrix version, now with complex numbers.
 static Eigen::VectorXcd solve(Mesh& mesh, const Geometry& g, double dt, int source, Complex value) {
 	const int n = mesh.numVertices();
@@ -187,6 +187,150 @@ static Eigen::VectorXcd solve(Mesh& mesh, const Geometry& g, double dt, int sour
 }
 
 }   // namespace gaform
+
+// ---------------------------------------------------------------------------------------------------------------
+// Part III: the intrinsic version, the same n x n complex system from the edge lengths alone
+// ---------------------------------------------------------------------------------------------------------------
+#include "IntrinsicConnection.h"
+
+namespace intrinsicform {
+
+/// Section 23: the assembly of gaform::solve, with the gradients, areas and connection of IntrinsicConnection.h.
+static Eigen::VectorXcd solve(Mesh& mesh, const intrinsic::Geometry& G, double dt, int source, Complex value) {
+	const int n = mesh.numVertices();
+	std::vector<double> mass(n, 0.0);
+	std::map<std::pair<int, int>, Complex> A;
+	for (Face& f : mesh.getFaces()) {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(f, v, h);
+		const intrinsic::FaceGeometry& g = G.faces[f.ID];
+		for (int a = 0; a < 3; ++a) {
+			mass[v[a]->ID] += g.area / 3.0;
+			for (int b = 0; b < 3; ++b) {
+				const Complex transport = a == b ? Complex(1.0) : g.rho[b] * std::conj(g.rho[a]);
+				A[{ v[a]->ID, v[b]->ID }] += dt * g.area * g.grad[a].dot(g.grad[b]) * transport;
+			}
+		}
+	}
+	std::vector<Eigen::Triplet<Complex>> triplets;
+	for (const auto& [ij, value_ij] : A) {
+		if (ij.first == source) continue;
+		triplets.emplace_back(ij.first, ij.second, value_ij / mass[ij.first] + (ij.first == ij.second ? 1.0 : 0.0));
+	}
+	triplets.emplace_back(source, source, 1.0);
+	Eigen::SparseMatrix<Complex> S(n, n);
+	S.setFromTriplets(triplets.begin(), triplets.end());
+	Eigen::VectorXcd rhs = Eigen::VectorXcd::Zero(n);
+	rhs(source) = value;
+	Eigen::SparseLU<Eigen::SparseMatrix<Complex>> lu(S);
+	return lu.solve(rhs);
+}
+
+}   // namespace intrinsicform
+
+// ---------------------------------------------------------------------------------------------------------------
+// Part IV: the edge connection, with its curvature inside the faces; Part V: discrete exterior calculus
+// ---------------------------------------------------------------------------------------------------------------
+#include "EdgeConnection.h"
+
+/// The scaled system of Sections 16 and 23, I + M^-1 (dt L) with the Dirichlet row of the source, from the entries of
+/// dt L and the lumped masses, solved by sparse LU.
+static Eigen::VectorXcd solveScaled(int n, const std::map<std::pair<int, int>, Complex>& A, const std::vector<double>& mass,
+                                    int source, Complex value) {
+	std::vector<Eigen::Triplet<Complex>> triplets;
+	for (const auto& [ij, value_ij] : A) {
+		if (ij.first == source) continue;
+		triplets.emplace_back(ij.first, ij.second, value_ij / mass[ij.first] + (ij.first == ij.second ? 1.0 : 0.0));
+	}
+	triplets.emplace_back(source, source, 1.0);
+	Eigen::SparseMatrix<Complex> S(n, n);
+	S.setFromTriplets(triplets.begin(), triplets.end());
+	Eigen::VectorXcd rhs = Eigen::VectorXcd::Zero(n);
+	rhs(source) = value;
+	Eigen::SparseLU<Eigen::SparseMatrix<Complex>> lu(S);
+	return lu.solve(rhs);
+}
+
+/// The half edge from v[b] to v[a] of a face, for a != b.
+static const Edge* halfEdge(Edge* h[3], int b, int a) { return a == (b + 1) % 3 ? h[b] : h[a]->pair; }
+
+namespace curvedform {
+
+/// Section 27: assemble the curved elements (eq. curved_element) with the lumped mass A_f / 3.
+static Eigen::VectorXcd solve(Mesh& mesh, const intrinsic::Geometry& G, const edgeconn::Geometry& E, double dt, int source,
+                              Complex value, int quadrature = 8) {
+	const int n = mesh.numVertices();
+	std::vector<double> mass(n, 0.0);
+	std::map<std::pair<int, int>, Complex> A;
+	for (Face& f : mesh.getFaces()) {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(f, v, h);
+		Complex transportBA[3][3], L[3][3];   // e^{i rho_ba}: from the plane of v[b] to that of v[a]
+		for (int a = 0; a < 3; ++a)
+			for (int b = 0; b < 3; ++b) transportBA[a][b] = a == b ? Complex(1.0) : std::polar(1.0, E.transport.at(halfEdge(h, b, a)));
+		edgeconn::curvedElement(G.faces[f.ID], E.holonomy[f.ID], transportBA, quadrature, L);
+		for (int a = 0; a < 3; ++a) {
+			mass[v[a]->ID] += G.faces[f.ID].area / 3.0;
+			for (int b = 0; b < 3; ++b) A[{ v[a]->ID, v[b]->ID }] += dt * L[a][b];
+		}
+	}
+	return solveScaled(n, A, mass, source, value);
+}
+
+}   // namespace curvedform
+
+namespace decform {
+
+/// Section 33: the covariant exterior derivative d^nabla (one row per edge a -> b: psi_b - r_ab psi_a), the diagonal Hodge
+/// stars *1 (half the sum of the cotangents opposite to each edge) and *0 (a third of the area of the faces around each
+/// vertex), and the connection Laplacian L = (d^nabla)^H *1 d^nabla.
+static Eigen::SparseMatrix<Complex> laplacian(Mesh& mesh, const intrinsic::Geometry& G, const edgeconn::Geometry& E,
+                                              std::vector<double>& star0) {
+	std::vector<const Edge*> edges;
+	for (const Edge* e : mesh.getEdges()) if (e->vertex->ID < e->pair->vertex->ID) edges.push_back(e);
+	auto cotOpposite = [&](const Edge* e) {   // the cotangent of the angle opposite to e in the face to its left
+		if (!e->face) return 0.0;
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(*e->face, v, h);
+		int k = 0;
+		while (h[k] != e) ++k;
+		return 1.0 / std::tan(G.faces[e->face->ID].angle[(k + 2) % 3]);
+	};
+	std::vector<Eigen::Triplet<Complex>> d, star1;
+	for (int k = 0; k < (int)edges.size(); ++k) {
+		const Edge* e = edges[k];
+		d.emplace_back(k, e->pair->vertex->ID, 1.0);                                       // + psi_b
+		d.emplace_back(k, e->vertex->ID, -std::polar(1.0, E.transport.at(e)));            // - r_ab psi_a
+		star1.emplace_back(k, k, 0.5 * (cotOpposite(e) + cotOpposite(e->pair)));
+	}
+	const int n = mesh.numVertices(), m = (int)edges.size();
+	Eigen::SparseMatrix<Complex> D(m, n), S1(m, m);
+	D.setFromTriplets(d.begin(), d.end());
+	S1.setFromTriplets(star1.begin(), star1.end());
+	star0.assign(n, 0.0);
+	for (Face& f : mesh.getFaces()) {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(f, v, h);
+		for (int a = 0; a < 3; ++a) star0[v[a]->ID] += G.faces[f.ID].area / 3.0;
+	}
+	return Eigen::SparseMatrix<Complex>(D.adjoint() * S1 * D);
+}
+
+static Eigen::VectorXcd solve(Mesh& mesh, const intrinsic::Geometry& G, const edgeconn::Geometry& E, double dt, int source,
+                              Complex value) {
+	std::vector<double> star0;
+	const Eigen::SparseMatrix<Complex> L = laplacian(mesh, G, E, star0);
+	std::map<std::pair<int, int>, Complex> A;
+	for (int k = 0; k < L.outerSize(); ++k)
+		for (Eigen::SparseMatrix<Complex>::InnerIterator it(L, k); it; ++it) A[{ (int)it.row(), (int)it.col() }] += dt * it.value();
+	return solveScaled(mesh.numVertices(), A, star0, source, value);
+}
+
+}   // namespace decform
 
 // ---------------------------------------------------------------------------------------------------------------
 // Meshes
@@ -269,6 +413,405 @@ static void workedExamples() {
 	printf("  R_i^f = T_f^T Q T_i = [%.6f %.6f; %.6f %.6f]\n", R(0, 0), R(0, 1), R(1, 0), R(1, 1));
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------
+// Part III: comparing the extrinsic and the intrinsic connection
+// ---------------------------------------------------------------------------------------------------------------
+static double angleDeg(const Vector3d& a, const Vector3d& b) { return std::atan2(a.cross(b).norm(), a.dot(b)) * 180.0 / M_PI; }
+
+/// The unit vector of face f at the given angle from its frame vector t_f, counterclockwise about n_f.
+static Vector3d faceVector(const Geometry& g, int f, double angle) {
+	return std::cos(angle) * g.faceT[f] + std::sin(angle) * g.faceNormal[f].cross(g.faceT[f]);
+}
+
+/// What each method puts in face f for the spinor coordinate z of its corner a: the vector of angle arg z + rho_a^f
+/// (eq. ga_transport), which is what the finite element method uses in that face. Comparing these vectors face by face
+/// needs no choice of a plane at the vertex (Section 24).
+struct Methods {
+	Mesh& mesh;
+	const Geometry& g;
+	const intrinsic::Geometry& G;
+	Vector3d extrinsic(int f, int a, Complex z) const {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(mesh.faceAt(f), v, h);
+		const int i = v[a]->ID;
+		const Complex rho = ga::connection(g.vertexT[i], mesh.vertexAt(i).n, g.faceT[f], g.faceNormal[f]);
+		return faceVector(g, f, std::arg(z) + std::arg(rho));
+	}
+	Vector3d intrinsic(int f, int a, Complex z) const { return faceVector(g, f, std::arg(z) + std::arg(G.faces[f].rho[a])); }
+	/// Parts IV and V transport along edges: the vector keeps its angle to the edge h[a] leaving the vertex.
+	Vector3d edge(int f, int a, Complex z) const {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(mesh.faceAt(f), v, h);
+		return faceVector(g, f, G.faces[f].edgeAngle[a] + std::arg(z) - edgeconn::vertexAngle(G, h[a]));
+	}
+	/// Method k = 0, 1, 2, 3: Part II, III, IV, V.
+	Vector3d of(int k, int f, int a, Complex z) const { return k == 0 ? extrinsic(f, a, z) : k == 1 ? intrinsic(f, a, z) : edge(f, a, z); }
+};
+
+static const char* methodName[4] = { "extrinsic (II)", "intrinsic (III)", "curved (IV)", "DEC (V)" };
+
+/// The vector heat method with the four connections.
+static std::vector<Eigen::VectorXcd> solveAll(Mesh& mesh, const Geometry& g, const intrinsic::Geometry& G,
+                                              const edgeconn::Geometry& E, double dt, int source, Complex value) {
+	return { gaform::solve(mesh, g, dt, source, value), intrinsicform::solve(mesh, G, dt, source, value),
+	         curvedform::solve(mesh, G, E, dt, source, value), decform::solve(mesh, G, E, dt, source, value) };
+}
+
+/// The face of the reference edge of vertex i, and the corner of i in it.
+static void firstCorner(Mesh& mesh, int i, int& f, int& a) {
+	const Edge* e = mesh.vertexAt(i).edge;
+	f = e->face->ID;
+	Vertex* v[3];
+	Edge* h[3];
+	intrinsic::faceCorners(*e->face, v, h);
+	for (a = 0; h[a] != e; ++a) {}
+}
+
+/// The discrete Gauss-Bonnet sum of Section 21: sum of 2 pi - Theta_i over interior vertices, pi - Theta_i on the boundary.
+static double totalCurvature(const intrinsic::Geometry& G) {
+	double sum = 0;
+	for (const auto& v : G.vertices) sum += (v.boundary ? M_PI : 2.0 * M_PI) - v.totalAngle;
+	return sum;
+}
+
+static double largestDefect(const intrinsic::Geometry& G) {
+	double d = 0;
+	for (const auto& v : G.vertices) if (!v.boundary) d = std::max(d, std::abs(2.0 * M_PI - v.totalAngle));
+	return d * 180.0 / M_PI;
+}
+
+struct Errors { double mean = 0, max = 0; int count = 0;
+	void add(double e) { mean += e; max = std::max(max, e); ++count; }
+	double average() const { return count ? mean / count : 0.0; } };
+
+/// Exact parallel transport on an intrinsically flat mesh: carry a vector of face f0 to every face by unfolding across
+/// the edges, the rotation about the shared edge (Section 14). On a flat mesh the result does not depend on the path.
+static std::vector<Vector3d> unfoldFrom(Mesh& mesh, const Geometry& g, int f0, const Vector3d& u0) {
+	std::vector<Vector3d> u(mesh.numFaces(), Vector3d::Zero());
+	std::vector<bool> seen(mesh.numFaces(), false);
+	std::vector<int> queue{ f0 };
+	u[f0] = u0;
+	seen[f0] = true;
+	for (size_t k = 0; k < queue.size(); ++k) {
+		const int f = queue[k];
+		Edge* e = mesh.faceAt(f).edge;
+		for (int m = 0; m < 3; ++m, e = e->next) {
+			const Face* other = e->pair->face;
+			if (!other || seen[other->ID]) continue;
+			seen[other->ID] = true;
+			u[other->ID] = ga::rotorBetween(g.faceNormal[f], g.faceNormal[other->ID]).rotate(u[f]);
+			queue.push_back(other->ID);
+		}
+	}
+	return u;
+}
+
+/// Section 24: the vector heat method on a sphere, with the four connections, corner by corner against exact transport
+/// along great circles, carried from the tangent plane of the smooth sphere into each face by the smallest rotation.
+static void sphereAll(const std::string& dir, int levels, Errors err[4], double& h, int& nv, double& defect, double& face) {
+	const std::string obj = dir + "/icosphere_" + std::to_string(levels) + ".obj";
+	writeIcosphere(obj, levels);
+	Mesh mesh;
+	mesh.readOBJ(obj.c_str());
+	std::remove(obj.c_str());
+	mesh.computeNormals();
+	const Geometry g = computeGeometry(mesh);
+	const intrinsic::Geometry G = intrinsic::compute(mesh);
+	const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+	const Methods M{ mesh, g, G };
+	h = meanEdgeLength(mesh);
+	nv = mesh.numVertices();
+	defect = largestDefect(G);
+	face = 0;
+	for (double o : E.holonomy) face = std::max(face, std::abs(o) * 180 / M_PI);
+	int source = 0;
+	for (Vertex& v : mesh.getVertices()) if (v.p.z() > mesh.vertexAt(source).p.z()) source = v.ID;
+	const Vector3d s = mesh.vertexAt(source).p.normalized();
+	const Complex value = std::polar(1.0, 2.0 * M_PI / 3.0);
+	const std::vector<Eigen::VectorXcd> u = solveAll(mesh, g, G, E, h * h, source, value);
+	// the source vector: what each method puts in the first face of the source, rolled into the plane of the sphere
+	int f0, a0;
+	firstCorner(mesh, source, f0, a0);
+	Vector3d src[4];
+	for (int k = 0; k < 4; ++k) src[k] = ga::rotorBetween(g.faceNormal[f0], s).rotate(M.of(k, f0, a0, value));
+	for (Face& f : mesh.getFaces()) {
+		Vertex* v[3];
+		Edge* hh[3];
+		intrinsic::faceCorners(f, v, hh);
+		for (int a = 0; a < 3; ++a) {
+			const int i = v[a]->ID;
+			const Vector3d x = v[a]->p.normalized();
+			if (std::acos(std::max(-1.0, std::min(1.0, s.dot(x)))) > 0.75 * M_PI) continue;
+			const ga::Rotor along = ga::rotorBetween(s, x), into = ga::rotorBetween(x, g.faceNormal[f.ID]);
+			for (int k = 0; k < 4; ++k) err[k].add(angleDeg(M.of(k, f.ID, a, u[k](i)), into.rotate(along.rotate(src[k]))));
+		}
+	}
+}
+
+/// Section 24: a flat sheet of nx x ny squares, folded along every stripColumns-th column of vertices: parallel folds.
+static void writeSheet(const std::string& path, int nx, int ny, int stripColumns, double foldDeg) {
+	const double dx = 1.0 / ny;   // square cells, the sheet is nx / ny wide and 1 high
+	std::vector<Vector3d> v;
+	const double turn = foldDeg * M_PI / 180.0;
+	for (int j = 0; j <= ny; ++j)
+		for (int i = 0; i <= nx; ++i) {
+			// walk along the polygon: every stripColumns cells the direction turns by `turn`
+			Vector3d p(0, 0, j * dx);
+			double heading = 0;
+			for (int k = 0; k < i; ++k) {
+				if (k > 0 && k % stripColumns == 0) heading += turn;
+				p += dx * Vector3d(std::cos(heading), std::sin(heading), 0);
+			}
+			v.push_back(p);
+		}
+	std::ofstream out(path);
+	out.precision(17);
+	for (auto& x : v) out << "v " << x.x() << " " << x.y() << " " << x.z() << "\n";
+	auto id = [&](int i, int j) { return j * (nx + 1) + i + 1; };
+	for (int j = 0; j < ny; ++j)
+		for (int i = 0; i < nx; ++i) {
+			out << "f " << id(i, j) << " " << id(i, j + 1) << " " << id(i + 1, j + 1) << "\n";
+			out << "f " << id(i, j) << " " << id(i + 1, j + 1) << " " << id(i + 1, j) << "\n";
+		}
+}
+
+/// Section 24: a Miura-ori fold, X(i, j) = P_i + Q_j with the zigzags P_i = (i u, 0, (i mod 2) w) and
+/// Q_j = ((j mod 2) r, j t, 0). Every face is a parallelogram, cut into two triangles, and the four angles at every
+/// vertex add up to 2 pi exactly (acos x + acos(-x) = pi twice), so the folded sheet is isometric to a flat one.
+static void writeMiura(const std::string& path, int nx, int ny, double u, double w, double r, double t) {
+	std::ofstream out(path);
+	out.precision(17);
+	for (int j = 0; j <= ny; ++j)
+		for (int i = 0; i <= nx; ++i)
+			out << "v " << i * u + (j % 2) * r << " " << j * t << " " << (i % 2) * w << "\n";
+	auto id = [&](int i, int j) { return j * (nx + 1) + i + 1; };
+	for (int j = 0; j < ny; ++j)
+		for (int i = 0; i < nx; ++i) {
+			out << "f " << id(i, j) << " " << id(i + 1, j) << " " << id(i + 1, j + 1) << "\n";
+			out << "f " << id(i, j) << " " << id(i + 1, j + 1) << " " << id(i, j + 1) << "\n";
+		}
+}
+
+/// Section 24: the vector heat method on an intrinsically flat folded sheet, with the four connections, corner by corner
+/// against the exact field obtained by unfolding. Writes the faces with their largest error for Part II.
+static void foldExperiment(const char* name, const std::string& obj, int source, Complex value, const std::string& csv) {
+	Mesh m;
+	m.readOBJ(obj.c_str());
+	std::remove(obj.c_str());
+	m.computeNormals();
+	const Geometry g = computeGeometry(m);
+	const intrinsic::Geometry G = intrinsic::compute(m);
+	const edgeconn::Geometry E = edgeconn::compute(m, G);
+	const Methods M{ m, g, G };
+	const double h = meanEdgeLength(m);
+	const std::vector<Eigen::VectorXcd> u = solveAll(m, g, G, E, h * h, source, value);
+	// the source vector, as each method puts it in the first face of the source, carried exactly to every face
+	int f0, a0;
+	firstCorner(m, source, f0, a0);
+	std::vector<Vector3d> exact[4];
+	for (int k = 0; k < 4; ++k) exact[k] = unfoldFrom(m, g, f0, M.of(k, f0, a0, value));
+	Errors err[4];
+	std::ofstream out;
+	if (!csv.empty()) { out.open(csv); out << "x1,y1,z1,x2,y2,z2,x3,y3,z3,ux,uy,uz,error_extrinsic\n"; }
+	for (Face& f : m.getFaces()) {
+		Vertex* v[3];
+		Edge* hh[3];
+		intrinsic::faceCorners(f, v, hh);
+		double worst = 0;
+		for (int a = 0; a < 3; ++a)
+			for (int k = 0; k < 4; ++k) {
+				const double d = angleDeg(M.of(k, f.ID, a, u[k](v[a]->ID)), exact[k][f.ID]);
+				err[k].add(d);
+				if (k == 0) worst = std::max(worst, d);
+			}
+		if (!csv.empty()) {
+			for (int a = 0; a < 3; ++a) out << v[a]->p.x() << "," << v[a]->p.y() << "," << v[a]->p.z() << ",";
+			out << exact[1][f.ID].x() << "," << exact[1][f.ID].y() << "," << exact[1][f.ID].z() << "," << worst << "\n";
+		}
+	}
+	printf("== %s (%d vertices, largest interior angle defect %.0e degrees):", name, m.numVertices(), largestDefect(G));
+	for (int k = 0; k < 4; ++k) printf(" %s mean %.3g max %.3g;", methodName[k], err[k].average(), err[k].max);
+	printf(" degrees\n");
+}
+
+/// The worked examples of Part III.
+static void workedExamplesIntrinsic(const std::string& dir) {
+	printf("== Worked example 3: the triangle of Worked example 1 from its three lengths\n");
+	{
+		intrinsic::FaceGeometry g;
+		g.length[0] = 2.0; g.length[1] = std::sqrt(6.0); g.length[2] = std::sqrt(2.0);   // l12, l23, l31
+		const double l12 = g.length[0], l23 = g.length[1], l13 = g.length[2];
+		printf("  Gram matrix from lengths: [%g %g; %g %g]\n", l12 * l12, 0.5 * (l12 * l12 + l13 * l13 - l23 * l23),
+		       0.5 * (l12 * l12 + l13 * l13 - l23 * l23), l13 * l13);
+		intrinsic::layOut(g);
+		printf("  Heron: area = %.6f; angles %.4f %.4f %.4f degrees\n", g.area, g.angle[0] * 180 / M_PI,
+		       g.angle[1] * 180 / M_PI, g.angle[2] * 180 / M_PI);
+		printf("  layout: (%g, %g), (%g, %g), (%.6f, %.6f)\n", g.x[0].x(), g.x[0].y(), g.x[1].x(), g.x[1].y(), g.x[2].x(), g.x[2].y());
+		for (int a = 0; a < 3; ++a) printf("  grad phi_%d = (%.6f, %.6f), |grad|^2 = %.6f\n", a + 1, g.grad[a].x(), g.grad[a].y(),
+		                                   g.grad[a].squaredNorm());
+		printf("  stiffness A grad phi_a . grad phi_b:\n");
+		for (int a = 0; a < 3; ++a)
+			printf("    %9.6f %9.6f %9.6f\n", g.area * g.grad[a].dot(g.grad[0]), g.area * g.grad[a].dot(g.grad[1]),
+			       g.area * g.grad[a].dot(g.grad[2]));
+	}
+	// a vertex with five neighbours: the apex of a pyramid over a regular pentagon, upright and then leaning
+	for (int pass = 0; pass < 2; ++pass) {
+		const double lean = pass == 0 ? 0.0 : 0.4;
+		const std::string obj = dir + "/pyramid.obj";
+		{
+			std::ofstream out(obj);
+			out.precision(17);
+			const double h = std::sqrt(std::pow(2.0 * std::sin(M_PI / 5.0), 2) - 1.0);   // equilateral faces when upright
+			out << "v " << lean << " 0 " << h << "\n";
+			for (int k = 0; k < 5; ++k) out << "v " << std::cos(2 * M_PI * k / 5) << " " << std::sin(2 * M_PI * k / 5) << " 0\n";
+			for (int k = 0; k < 5; ++k) out << "f 1 " << k + 2 << " " << (k + 1) % 5 + 2 << "\n";
+		}
+		Mesh mesh;
+		mesh.readOBJ(obj.c_str());
+		std::remove(obj.c_str());
+		mesh.computeNormals();
+		const Geometry g = computeGeometry(mesh);
+		const intrinsic::Geometry G = intrinsic::compute(mesh);
+		const Vertex& apex = mesh.vertexAt(0);
+		const intrinsic::VertexGeometry& va = G.vertices[0];
+		printf("== Worked example %d: the apex of a pyramid over a pentagon, %s\n", 4 + pass, pass == 0 ? "upright" : "leaning");
+		printf("  angle sum %.4f degrees, defect %.4f degrees, s = %.6f, vertex normal (%.4f, %.4f, %.4f)\n",
+		       va.totalAngle * 180 / M_PI, 360 - va.totalAngle * 180 / M_PI, va.scale, apex.n.x(), apex.n.y(), apex.n.z());
+		// the corners in counterclockwise order from the reference edge, where each method puts them in the vertex plane
+		struct Corner { double alpha, cone, rolled; };
+		std::vector<Corner> corners;
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);   // the apex is the first vertex of every face
+			const double alpha = G.faces[f.ID].angle[0];
+			const double cone = std::fmod(G.outAngle.at(h[0]) + va.totalAngle, va.totalAngle);
+			// Part II: roll the face into the plane of the vertex normal and read the direction of its first edge
+			const Vector3d d = ga::rotorBetween(g.faceNormal[f.ID], apex.n).rotate((v[1]->p - v[0]->p).normalized());
+			double rolled = std::atan2(g.vertexT[0].cross(d).dot(apex.n), g.vertexT[0].dot(d));
+			if (rolled < -1e-9) rolled += 2 * M_PI;
+			corners.push_back({ alpha, cone, rolled });
+		}
+		std::sort(corners.begin(), corners.end(), [](const Corner& a, const Corner& b) { return a.cone < b.cone; });
+		double rhoDifference = 0;
+		for (Face& f : mesh.getFaces()) {
+			const double rhoI = std::arg(G.faces[f.ID].rho[0]);
+			const double rhoE = std::arg(ga::connection(g.vertexT[0], apex.n, g.faceT[f.ID], g.faceNormal[f.ID]));
+			rhoDifference = std::max(rhoDifference, std::abs(std::arg(std::polar(1.0, rhoI - rhoE))) * 180 / M_PI);
+		}
+		printf("  largest difference of the two connections rho at the apex: %.3e degrees\n", rhoDifference);
+		printf("  corner  alpha    | intrinsic: from   width  | extrinsic: from   width   gap to the next (degrees)\n");
+		const double deg = 180 / M_PI;
+		for (size_t k = 0; k < corners.size(); ++k) {
+			const Corner& c = corners[k];
+			const Corner& n = corners[(k + 1) % corners.size()];
+			double gap = n.rolled - (c.rolled + c.alpha);
+			while (gap > M_PI) gap -= 2 * M_PI;
+			while (gap < -M_PI) gap += 2 * M_PI;
+			printf("  %zu      %7.3f   |  %8.3f  %7.3f     |  %8.3f  %7.3f   %7.3f\n", k, c.alpha * deg, va.scale * c.cone * deg,
+			       va.scale * c.alpha * deg, c.rolled * deg, c.alpha * deg, gap * deg);
+		}
+	}
+}
+
+/// The worked examples of Parts IV and V.
+static void workedExamplesEdge(const std::string& dir) {
+	// the upright pyramid of Worked example 4: edge transports and face holonomies
+	const std::string obj = dir + "/pyramid.obj";
+	{
+		std::ofstream out(obj);
+		out.precision(17);
+		const double h = std::sqrt(std::pow(2.0 * std::sin(M_PI / 5.0), 2) - 1.0);
+		out << "v 0 0 " << h << "\n";
+		for (int k = 0; k < 5; ++k) out << "v " << std::cos(2 * M_PI * k / 5) << " " << std::sin(2 * M_PI * k / 5) << " 0\n";
+		for (int k = 0; k < 5; ++k) out << "f 1 " << k + 2 << " " << (k + 1) % 5 + 2 << "\n";
+	}
+	Mesh mesh;
+	mesh.readOBJ(obj.c_str());
+	std::remove(obj.c_str());
+	mesh.computeNormals();
+	const intrinsic::Geometry G = intrinsic::compute(mesh);
+	const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+	const double deg = 180 / M_PI;
+	printf("== Worked example 6: the edge connection of the upright pyramid\n");
+	{
+		Face& f = mesh.faceAt(0);
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(f, v, h);
+		auto turn = [](double x) { return std::fmod(std::fmod(x, 360.0) + 360.0, 360.0); };   // in [0, 360)
+		auto half = [&](double x) { const double t = turn(x); return t > 180 ? t - 360 : t; };   // in (-180, 180]
+		double sum = 0;
+		for (int a = 0; a < 3; ++a) {
+			const double rho = half(E.transport.at(h[a]) * deg);
+			sum += rho;
+			printf("  edge %d -> %d: phi_ab = %7.3f, phi_ba = %7.3f, rho_ab = %7.3f degrees\n", v[a]->ID, v[(a + 1) % 3]->ID,
+			       turn(edgeconn::vertexAngle(G, h[a]) * deg), turn(edgeconn::vertexAngle(G, h[a]->pair) * deg), rho);
+		}
+		printf("  sum of the three transports %.3f degrees; holonomy Omega_f = sum (s - 1) alpha = %.3f degrees\n", sum,
+		       E.holonomy[0] * deg);
+		double total = 0;
+		for (double o : E.holonomy) total += o;
+		printf("  the five face holonomies add up to %.3f degrees, the angle defect of the apex\n", total * deg);
+		// the curved element of the face, in the gauge of the face (no vertex frames), against the flat one
+		Complex one[3][3], L[3][3], L0[3][3];
+		for (int a = 0; a < 3; ++a) for (int b = 0; b < 3; ++b) one[a][b] = 1.0;
+		edgeconn::curvedElement(G.faces[0], E.holonomy[0], one, 8, L);
+		edgeconn::curvedElement(G.faces[0], 0.0, one, 8, L0);
+		printf("  kappa = Omega_f / A_f = %.6f; the integrals of the curved element (left) and the flat one (right):\n",
+		       E.holonomy[0] / G.faces[0].area);
+		for (int a = 0; a < 3; ++a)
+			printf("    %8.5f%+8.5fi %8.5f%+8.5fi %8.5f%+8.5fi   | %8.5f %8.5f %8.5f\n", L[a][0].real(), L[a][0].imag(),
+			       L[a][1].real(), L[a][1].imag(), L[a][2].real(), L[a][2].imag(), L0[a][0].real(), L0[a][1].real(), L0[a][2].real());
+	}
+	printf("== Worked example 7: discrete exterior calculus on the triangle of Worked example 1\n");
+	{
+		intrinsic::FaceGeometry g;
+		g.length[0] = 2.0; g.length[1] = std::sqrt(6.0); g.length[2] = std::sqrt(2.0);
+		intrinsic::layOut(g);
+		// edges 1->2, 2->3, 3->1 opposite to the vertices 3, 1, 2
+		const char* name[3] = { "12", "23", "31" };
+		for (int a = 0; a < 3; ++a)
+			printf("  *1 on edge %s = cot(%.4f deg) / 2 = %.6f\n", name[a], g.angle[(a + 2) % 3] * deg, 0.5 / std::tan(g.angle[(a + 2) % 3]));
+		Eigen::Matrix3d d0;   // rows: edges 12, 23, 31; columns: vertices 1, 2, 3
+		d0 << -1, 1, 0, 0, -1, 1, 1, 0, -1;
+		Eigen::Vector3d star1;
+		for (int a = 0; a < 3; ++a) star1(a) = 0.5 / std::tan(g.angle[(a + 2) % 3]);
+		const Eigen::Matrix3d L = d0.transpose() * star1.asDiagonal() * d0;
+		printf("  d0^T *1 d0 =\n");
+		for (int a = 0; a < 3; ++a) printf("    %9.6f %9.6f %9.6f\n", L(a, 0), L(a, 1), L(a, 2));
+		// the circumcenter of the layout, and the distances to the edge midpoints: the dual edge pieces
+		const Eigen::Vector2d A = g.x[0], B = g.x[1], C = g.x[2];
+		const double D = 2 * (A.x() * (B.y() - C.y()) + B.x() * (C.y() - A.y()) + C.x() * (A.y() - B.y()));
+		const Eigen::Vector2d cc((A.squaredNorm() * (B.y() - C.y()) + B.squaredNorm() * (C.y() - A.y()) + C.squaredNorm() * (A.y() - B.y())) / D,
+		                         (A.squaredNorm() * (C.x() - B.x()) + B.squaredNorm() * (A.x() - C.x()) + C.squaredNorm() * (B.x() - A.x())) / D);
+		printf("  circumcenter of the layout (%.6f, %.6f); distance to the midpoints of 12, 23, 31: %.6f %.6f %.6f\n", cc.x(), cc.y(),
+		       (cc - 0.5 * (A + B)).norm(), (cc - 0.5 * (B + C)).norm(), (cc - 0.5 * (C + A)).norm());
+	}
+	printf("== Worked example 8: d^nabla d^nabla on a face of the upright pyramid\n");
+	{
+		const Complex H = std::polar(1.0, E.holonomy[0]);
+		printf("  1 - e^{i Omega_f} = %.6f %+.6fi, |1 - e^{i Omega_f}| = %.6f = 2 sin(Omega_f / 2)\n", (1.0 - H).real(), (1.0 - H).imag(),
+		       std::abs(1.0 - H));
+		// check with the matrices: d^nabla on 0-forms, then on 1-forms, around the face 0 of the pyramid
+		Face& f = mesh.faceAt(0);
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(f, v, h);
+		Complex psi[3] = { Complex(0.3, -0.7), Complex(1.1, 0.2), Complex(-0.4, 0.5) }, eta[3];
+		for (int a = 0; a < 3; ++a) eta[a] = psi[(a + 1) % 3] - std::polar(1.0, E.transport.at(h[a])) * psi[a];   // in the frame of the end
+		const Complex r0 = std::polar(1.0, E.transport.at(h[0])), r1 = std::polar(1.0, E.transport.at(h[1])),
+		              r2 = std::polar(1.0, E.transport.at(h[2]));
+		const Complex dd = eta[2] + r2 * eta[1] + r2 * r1 * eta[0];   // all carried to the first vertex
+		printf("  for psi = (%.1f%+.1fi, %.1f%+.1fi, %.1f%+.1fi): (d d psi)_f = %.6f%+.6fi, (1 - e^{i Omega_f}) psi_1 = %.6f%+.6fi\n",
+		       psi[0].real(), psi[0].imag(), psi[1].real(), psi[1].imag(), psi[2].real(), psi[2].imag(), dd.real(), dd.imag(),
+		       ((1.0 - r2 * r1 * r0) * psi[0]).real(), ((1.0 - r2 * r1 * r0) * psi[0]).imag());
+	}
+}
+
 int main(int argc, char** argv) {
 	const std::string dir = argc > 1 ? argv[1] : "../fem-basic-2d/data";
 	workedExamples();
@@ -341,6 +884,86 @@ int main(int argc, char** argv) {
 		}
 		printf("== Sphere (%d vertices, mean edge %.4f): angle to exact transport within 3/4 of the way to the antipode: "
 		       "mean %.3f, max %.3f degrees\n", mesh.numVertices(), h, sum / count, worst);
+	}
+
+	// --- Part III: the intrinsic connection ---------------------------------------------------------------------
+	workedExamplesIntrinsic(dir);
+	workedExamplesEdge(dir);
+	{   // the sphere under refinement
+		std::ofstream out(dir + "/sphere_convergence.csv");
+		out << "levels,vertices,h,defect,holonomy,mean_extrinsic,max_extrinsic,mean_intrinsic,max_intrinsic,mean_curved,max_curved,"
+		       "mean_dec,max_dec\n";
+		for (int levels = 1; levels <= 5; ++levels) {
+			Errors err[4];
+			double h, defect, face;
+			int nv;
+			sphereAll(dir, levels, err, h, nv, defect, face);
+			printf("== Sphere, %5d vertices, h = %.4f, largest defect %5.2f, largest face holonomy %5.2f:", nv, h, defect, face);
+			out << levels << "," << nv << "," << h << "," << defect << "," << face;
+			for (int k = 0; k < 4; ++k) {
+				printf(" %s %.3f/%.3f", methodName[k], err[k].average(), err[k].max);
+				out << "," << err[k].average() << "," << err[k].max;
+			}
+			printf(" degrees (mean/max)\n");
+			out << "\n";
+		}
+	}
+	{   // the cactus: how far apart are the connections?
+		Mesh mesh;
+		mesh.readOBJ("cactus1.obj");
+		mesh.CenterAndNormalize();
+		mesh.computeNormals();
+		const Geometry g = computeGeometry(mesh);
+		const intrinsic::Geometry G = intrinsic::compute(mesh);
+		const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+		const Methods M{ mesh, g, G };
+		const double h = meanEdgeLength(mesh);
+		int source = 0;
+		for (Vertex& v : mesh.getVertices())
+			if (v.p.norm() < 2.5e-2 || v.p.z() > 0.83) { source = v.ID; break; }
+		// all coordinates are angles from the same reference edge, so the same value is given to all
+		const Complex value = std::polar(1.0, 2.0 * M_PI / 3.0);
+		const std::vector<Eigen::VectorXcd> u = solveAll(mesh, g, G, E, h * h, source, value);
+		double faceHolonomy = 0, totalHolonomy = 0;
+		for (double o : E.holonomy) { faceHolonomy = std::max(faceHolonomy, std::abs(o) * 180 / M_PI); totalHolonomy += o; }
+		printf("== Cactus: total curvature %.6f, 2 pi chi = %.6f, sum of face holonomies %.6f, largest defect %.1f, largest "
+		       "face holonomy %.1f degrees\n", totalCurvature(G), 2.0 * M_PI * (mesh.numVertices() - mesh.numEdges() + mesh.numFaces()),
+		       totalHolonomy, largestDefect(G), faceHolonomy);
+		const int pairs[3][2] = { { 0, 1 }, { 1, 2 }, { 2, 3 } };
+		std::ofstream out(dir + "/cactus_intrinsic.csv");
+		out << "difference_deg,magnitude,difference_curved,difference_dec\n";
+		std::vector<double> perVertex[3];
+		for (int p = 0; p < 3; ++p) {
+			std::vector<double> corners;
+			perVertex[p].assign(mesh.numVertices(), 0.0);
+			for (Face& f : mesh.getFaces()) {
+				Vertex* v[3];
+				Edge* hh[3];
+				intrinsic::faceCorners(f, v, hh);
+				for (int a = 0; a < 3; ++a) {
+					const int i = v[a]->ID, k = pairs[p][0], l = pairs[p][1];
+					corners.push_back(angleDeg(M.of(k, f.ID, a, u[k](i)), M.of(l, f.ID, a, u[l](i))));
+					perVertex[p][i] = std::max(perVertex[p][i], corners.back());
+				}
+			}
+			std::sort(corners.begin(), corners.end());
+			printf("   %s vs %s, corner by corner: median %.2f, 90%% %.2f, max %.2f degrees\n", methodName[pairs[p][0]],
+			       methodName[pairs[p][1]], corners[corners.size() / 2], corners[corners.size() * 9 / 10], corners.back());
+		}
+		for (int i = 0; i < mesh.numVertices(); ++i)
+			out << perVertex[0][i] << "," << std::abs(u[1](i)) << "," << perVertex[1][i] << "," << perVertex[2][i] << "\n";
+	}
+	{   // folded sheets: exact bendings of a flat sheet
+		const int nx = 48, ny = 16, strip = 4;
+		const std::string obj = dir + "/sheet.obj";
+		writeSheet(obj, nx, ny, strip, 0.0);
+		foldExperiment("Flat sheet        ", obj, (ny / 2) * (nx + 1) + nx / 4, std::polar(1.0, M_PI / 3.0), "");
+		writeSheet(obj, nx, ny, strip, 30.0);
+		foldExperiment("Parallel folds    ", obj, (ny / 2) * (nx + 1) + nx / 4, std::polar(1.0, M_PI / 3.0), "");
+		const int mx = 24, my = 16;
+		writeMiura(obj, mx, my, 1.0 / 12, 0.6 / 12, 0.6 / 12, 1.0 / 12);
+		foldExperiment("Miura-ori fold    ", obj, (my / 2) * (mx + 1) + mx / 2, std::polar(1.0, M_PI / 3.0),
+		               dir + "/miura_faces.csv");
 	}
 	return 0;
 }

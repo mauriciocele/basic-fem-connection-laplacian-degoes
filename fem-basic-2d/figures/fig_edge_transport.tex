@@ -1,0 +1,23 @@
+% transport along an edge: the vector keeps its angle gamma to the edge
+\begin{tikzpicture}[scale=1.5]
+  \draw[very thick] (0,0) -- (3,0);
+  \foreach \p/\n in {0/a, 3/b} {\draw[gray!50, dashed] (\p,0) circle (0.75); \fill (\p,0) circle (1.3pt);}
+  \node[below left] at (0,0) {$a$};
+  \node[below right] at (3,0) {$b$};
+  % frames of the two vertex planes
+  \draw[-{Stealth[length=2mm]}, gray!70] (0,0) -- (-35:0.75) node[below, font=\scriptsize] {$\varphi = 0$};
+  \draw[-{Stealth[length=2mm]}, gray!70] (3,0) -- ++(110:0.75) node[above, font=\scriptsize] {$\varphi = 0$};
+  % the edge direction at each end, in the vertex angles
+  \draw[blue!60!black] (0,0) ++(-35:0.45) arc (-35:0:0.45);
+  \node[blue!60!black, font=\scriptsize] at (-18:0.62) {$\varphi_{ab}$};
+  \draw[blue!60!black] (3,0) ++(110:0.3) arc (110:180:0.3);
+  \node[blue!60!black, font=\scriptsize] at ($(3,0)+(150:0.5)$) {$\varphi_{ba}$};
+  % the vector and its angle to the edge, the same at both ends
+  \draw[-{Stealth[length=2mm]}, very thick, green!45!black] (0,0) -- (55:0.7) node[above, font=\scriptsize] {$\psi_a$};
+  \draw[red!70!black] (0,0) ++(0:0.3) arc (0:55:0.3);
+  \node[red!70!black, font=\scriptsize] at (28:0.42) {$\gamma$};
+  \draw[-{Stealth[length=2mm]}, very thick, green!45!black] (3,0) -- ++(55:0.7) node[above, font=\scriptsize] {$e^{\mathsf T \rho_{ab}} \psi_a$};
+  \draw[red!70!black] (3,0) ++(0:0.3) arc (0:55:0.3);
+  \node[red!70!black, font=\scriptsize] at ($(3,0)+(28:0.42)$) {$\gamma$};
+  \draw[gray!60, -{Stealth[length=1.5mm]}] (3,0) -- (3.55,0) node[right, font=\scriptsize] {$\varphi_{ba} + \pi$};
+\end{tikzpicture}

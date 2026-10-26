@@ -1,18 +1,52 @@
 \begin{thebibliography}{1}
 
+\bibitem{doCarmo1976}
+M.~P. do~Carmo.
+\newblock {\em Differential Geometry of Curves and Surfaces}.
+\newblock Prentice-Hall, 1976.
+
+\bibitem{Doran2003}
+C.~Doran and A.~Lasenby.
+\newblock {\em Geometric Algebra for Physicists}.
+\newblock Cambridge University Press, 2003.
+
+\bibitem{HestenesSobczyk1984}
+D.~Hestenes and G.~Sobczyk.
+\newblock {\em Clifford Algebra to Geometric Calculus: A Unified Language for
+  Mathematics and Physics}.
+\newblock D. Reidel, 1984.
+
+\bibitem{Knoppel2013}
+F.~Kn\"oppel, K.~Crane, U.~Pinkall, and P.~Schr\"oder.
+\newblock Globally optimal direction fields.
+\newblock {\em ACM Transactions on Graphics}, 32(4):59:1--59:10, 2013.
+
 \bibitem{Langtangen2014}
 H.~P. Langtangen.
 \newblock Introduction to finite element methods.
 \newblock 2014.
 
-\bibitem{Basic2DHeatEquationFEM}
+\bibitem{Liu2016}
+B.~Liu, Y.~Tong, F.~De~Goes, and M.~Desbrun.
+\newblock Discrete connection and covariant derivative for vector field
+  analysis and design.
+\newblock {\em ACM Transactions on Graphics}, 35(3):23:1--23:17, 2016.
+
+\bibitem{ConnectionLaplacianFEM}
 M.~C. Lopez~Belon.
 \newblock Project on github.
-\newblock Available at {https://github.com/mauriciocele/basic-fem-heat-2d}, 2024.
+\newblock Available at
+  {https://github.com/mauriciocele/basic-fem-connection-laplacian-degoes},
+  2024.
 
 \bibitem{Sayas2015}
 F.-J. Sayas.
 \newblock A gentle introduction to the finite element method.
 \newblock 2015.
+
+\bibitem{Sharp2019}
+N.~Sharp, Y.~Soliman, and K.~Crane.
+\newblock The vector heat method.
+\newblock {\em ACM Transactions on Graphics}, 38(3):24:1--24:19, 2019.
 
 \end{thebibliography}

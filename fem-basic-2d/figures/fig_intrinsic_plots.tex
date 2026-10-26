@@ -1,0 +1,18 @@
+% the sphere under refinement with both connections, and the difference of the two on the cactus
+\begin{tikzpicture}
+  \begin{loglogaxis}[width=0.48\textwidth, height=5cm, xlabel={vertices}, ylabel={angle to exact transport ($^\circ$)},
+      tick label style={font=\scriptsize}, label style={font=\footnotesize}, legend style={font=\tiny, at={(0.02,0.02)}, anchor=south west}, legend cell align=left,
+      ymin=0.04, ymax=8]
+    \addplot[red!70!black, mark=*, mark size=1.2pt] table[x=vertices, y=mean_extrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[green!45!black, mark=square*, mark size=1.2pt] table[x=vertices, y=mean_intrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[red!70!black, dashed, mark=o, mark size=1.2pt] table[x=vertices, y=max_extrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[green!45!black, dashed, mark=square, mark size=1.2pt] table[x=vertices, y=max_intrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \legend{extrinsic mean, intrinsic mean, extrinsic max, intrinsic max}
+  \end{loglogaxis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+  \begin{semilogxaxis}[width=0.48\textwidth, height=5cm, xlabel={$|u_i|$ (the source has $|u| = 1$)}, ylabel={intrinsic vs extrinsic ($^\circ$)},
+      tick label style={font=\scriptsize}, label style={font=\footnotesize}, ymin=0, ymax=25, x dir=reverse]
+    \addplot[only marks, mark=*, mark size=0.6pt, blue!70!black] table[x=magnitude, y=difference_deg, col sep=comma] {data/cactus_intrinsic.csv};
+  \end{semilogxaxis}
+\end{tikzpicture}

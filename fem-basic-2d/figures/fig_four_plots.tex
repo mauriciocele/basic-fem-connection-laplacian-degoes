@@ -1,0 +1,21 @@
+% the sphere under refinement with the four connections: mean and largest error
+\begin{tikzpicture}
+  \begin{loglogaxis}[width=0.48\textwidth, height=5cm, xlabel={vertices}, ylabel={mean error ($^\circ$)},
+      tick label style={font=\scriptsize}, label style={font=\footnotesize}, legend style={font=\tiny, at={(0.98,0.98)}, anchor=north east},
+      legend cell align=left]
+    \addplot[red!70!black, mark=*, mark size=1.2pt] table[x=vertices, y=mean_extrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[green!45!black, mark=square*, mark size=1.2pt] table[x=vertices, y=mean_intrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[orange!80!black, mark=triangle*, mark size=1.5pt] table[x=vertices, y=mean_curved, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[blue!70!black, mark=diamond*, mark size=1.5pt] table[x=vertices, y=mean_dec, col sep=comma] {data/sphere_convergence.csv};
+    \legend{extrinsic (II), intrinsic (III), curved (IV), DEC (V)}
+  \end{loglogaxis}
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+  \begin{loglogaxis}[width=0.48\textwidth, height=5cm, xlabel={vertices}, ylabel={largest error ($^\circ$)},
+      tick label style={font=\scriptsize}, label style={font=\footnotesize}]
+    \addplot[red!70!black, mark=*, mark size=1.2pt] table[x=vertices, y=max_extrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[green!45!black, mark=square*, mark size=1.2pt] table[x=vertices, y=max_intrinsic, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[orange!80!black, mark=triangle*, mark size=1.5pt] table[x=vertices, y=max_curved, col sep=comma] {data/sphere_convergence.csv};
+    \addplot[blue!70!black, mark=diamond*, mark size=1.5pt] table[x=vertices, y=max_dec, col sep=comma] {data/sphere_convergence.csv};
+  \end{loglogaxis}
+\end{tikzpicture}

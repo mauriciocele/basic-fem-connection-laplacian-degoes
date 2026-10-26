@@ -1,0 +1,28 @@
+% one corner (alpha = 60 degrees, the second corner of the cone of Figure fig:cone_rescale) in its face and in the plane of the vertex
+\begin{tikzpicture}[scale=1.6]
+  \filldraw[draw=gray!70, fill=gray!12] (0,0) -- (0:1.3) -- (60:1.3) -- cycle;
+  \draw[-{Stealth[length=2mm]}, gray!60] (0,0) -- (0:1.6) node[right] {$t_f$};
+  \draw[-{Stealth[length=2mm]}, very thick, green!45!black] (0,0) -- (30:1.05) node[right] {bisector, $30^\circ$};
+  \draw[red!70!black] (0.35,0) arc (0:60:0.35);
+  \node[red!70!black, font=\scriptsize] at (15:0.5) {$\alpha$};
+  \node[font=\scriptsize] at (60:1.45) {$60^\circ$};
+  \node[font=\scriptsize, below] at (0.65,0) {edge $e$, $\beta_e = 0^\circ$};
+  \fill (0,0) circle (1.2pt) node[left] {$i$};
+  \node[below, font=\footnotesize, align=center] at (0.65,-0.45) {in the face $f$: directions\\from $0^\circ$ to $60^\circ$};
+\end{tikzpicture}\hfill
+\begin{tikzpicture}[scale=1.6]
+  \fill[blue!8] (0,0) -- (72:1.3) arc (72:144:1.3) -- cycle;
+  \draw[blue!60!black] (0,0) -- (72:1.3) node[right, font=\scriptsize] {$72^\circ = s_i \theta_e$};
+  \draw[blue!60!black] (0,0) -- (144:1.3) node[left, font=\scriptsize] {$144^\circ$};
+  \draw[dashed, gray!70!black] (0,0) -- (78:1.3);
+  \draw[dashed, gray!70!black] (0,0) -- (138:1.3);
+  \draw[red!70!black] (72:0.55) arc (72:78:0.55);
+  \draw[red!70!black] (138:0.55) arc (138:144:0.55);
+  \node[red!70!black, font=\tiny] at (68:0.68) {$6^\circ$};
+  \node[red!70!black, font=\tiny] at (150:0.66) {$6^\circ$};
+  \draw[-{Stealth[length=2mm]}, very thick, green!45!black] (0,0) -- (108:1.0);
+  \node[green!35!black, font=\scriptsize, fill=white, inner sep=1pt] at (108:1.13) {bisector, $108^\circ$};
+  \draw[-{Stealth[length=2mm]}, gray!60] (0,0) -- (0:1.0) node[right, font=\scriptsize] {$\varphi = 0$};
+  \fill (0,0) circle (1.2pt) node[below] {$i$};
+  \node[below, font=\footnotesize, align=center] at (0,-0.4) {in the plane of the vertex: the sector\\$s_i \alpha = 72^\circ$ wide (blue); the face, turned\\by $-\rho_i^f = 78^\circ$, covers $78^\circ$ to $138^\circ$ (dashed)};
+\end{tikzpicture}

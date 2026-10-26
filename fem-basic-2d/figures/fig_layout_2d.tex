@@ -1,0 +1,17 @@
+% the triangle of Worked example 1 laid out in the plane from its three lengths
+\begin{tikzpicture}[scale=1.7]
+  \filldraw[draw=blue!60!black, fill=blue!10, line width=0.6pt] (0,0) -- (2,0) -- (0,1.4142) -- cycle;
+  \draw[gray!60, -{Stealth[length=2mm]}] (-0.2,0) -- (2.45,0) node[right] {$t_f$};
+  \draw[gray!60, -{Stealth[length=2mm]}] (0,-0.2) -- (0,1.75);
+  \fill (0,0) circle (1.1pt) node[below left] {$\bar x_1$};
+  \fill (2,0) circle (1.1pt) node[below] {$\bar x_2$};
+  \fill (0,1.4142) circle (1.1pt) node[right=2pt] {$\bar x_3$};
+  \node[below, font=\scriptsize] at (1,0) {$\ell_{12}$};
+  \node[left, font=\scriptsize] at (0,0.71) {$\ell_{13}$};
+  \node[above right, font=\scriptsize] at (1,0.71) {$\ell_{23}$};
+  \draw[red!70!black] (0.25,0) arc (0:90:0.25);
+  \node[red!70!black, font=\scriptsize] at (45:0.4) {$\alpha_1$};
+  \draw[red!70!black] (1.72,0) arc (180:144.74:0.28);
+  \node[red!70!black, font=\scriptsize] at (1.5,0.11) {$\alpha_2$};
+  \node[font=\scriptsize, align=left, anchor=north west] at (0.15,-0.32) {$\bar x_1 = (0, 0)$, $\bar x_2 = (\ell_{12}, 0)$,\\ $\bar x_3 = \ell_{13} (\cos\alpha_1, \sin\alpha_1)$};
+\end{tikzpicture}

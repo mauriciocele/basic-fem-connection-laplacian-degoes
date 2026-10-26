@@ -1,0 +1,29 @@
+% discrete forms on one triangle: values at vertices, differences on edges, circulation on the face
+\begin{tikzpicture}[scale=1.9]
+  \filldraw[draw=gray!70, fill=gray!8] (0,0) -- (2,0) -- (0.9,1.5) -- cycle;
+  \draw[-{Stealth[length=2mm]}, thick] (0,0) -- (1.05,0);
+  \draw[-{Stealth[length=2mm]}, thick] (2,0) -- (1.42,0.79);
+  \draw[-{Stealth[length=2mm]}, thick] (0.9,1.5) -- (0.42,0.7);
+  \fill (0,0) circle (1.2pt) node[below left] {$f_1$};
+  \fill (2,0) circle (1.2pt) node[below right] {$f_2$};
+  \fill (0.9,1.5) circle (1.2pt) node[above] {$f_3$};
+  \node[below, font=\scriptsize] at (1,0) {$f_2 - f_1$};
+  \node[right, font=\scriptsize] at (1.5,0.8) {$f_3 - f_2$};
+  \node[left, font=\scriptsize] at (0.4,0.8) {$f_1 - f_3$};
+  \node[font=\scriptsize, align=center] at (0.95,0.5) {sum $= 0$};
+  \node[below, font=\footnotesize] at (1,-0.3) {$d_1 d_0 f = 0$};
+\end{tikzpicture}\hfill
+\begin{tikzpicture}[scale=1.9]
+  \filldraw[draw=gray!70, fill=orange!10] (0,0) -- (2,0) -- (0.9,1.5) -- cycle;
+  \draw[-{Stealth[length=2mm]}, thick] (0,0) -- (1.05,0);
+  \draw[-{Stealth[length=2mm]}, thick] (2,0) -- (1.42,0.79);
+  \draw[-{Stealth[length=2mm]}, thick] (0.9,1.5) -- (0.42,0.7);
+  \fill (0,0) circle (1.2pt) node[below left] {$\psi_1$};
+  \fill (2,0) circle (1.2pt) node[below right] {$\psi_2$};
+  \fill (0.9,1.5) circle (1.2pt) node[above] {$\psi_3$};
+  \node[below, font=\scriptsize] at (1,0) {$\psi_2 - r_{12}\psi_1$};
+  \node[right, font=\scriptsize] at (1.5,0.8) {$\psi_3 - r_{23}\psi_2$};
+  \node[left, font=\scriptsize] at (0.4,0.8) {$\psi_1 - r_{31}\psi_3$};
+  \node[font=\scriptsize, align=center] at (0.95,0.5) {carried to $1$\\and summed:\\$(1 - e^{\mathsf T \Omega_f})\psi_1$};
+  \node[below, font=\footnotesize] at (1,-0.3) {$d^\nabla d^\nabla \psi \neq 0$: curvature};
+\end{tikzpicture}
