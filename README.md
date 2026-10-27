@@ -20,3 +20,10 @@ cd ../fem-basic-2d/figures && python3 make_figures.py ../data  # 3D figures as T
 The notes, `fem-basic-2d/fembasic2d.tex`, derive the method from the PDE to the code (Part I, matrices) and again
 in geometric algebra with the intrinsic geometry made explicit (Part II); build them with pdflatex and bibtex from
 `fem-basic-2d/` (the code listings are read from `../src`).
+
+Parts III to V build the method from the edge lengths alone (`src/IntrinsicConnection.h`), move the curvature into the
+faces with an edge connection and a curved element (`src/EdgeConnection.h`), and derive discrete exterior calculus.
+Part VI, "How the Pieces Fit", is a map of all of them: one pipeline, the three choices that distinguish the methods,
+where each keeps the curvature, the exact relation between corner and edge transport, the Weitzenboeck identity, a
+concept map, a master table and a guide to choosing and extending a method. Its numbers are printed by `ga_fem`
+(worked examples 9 and 10, the cactus check, and the rotation field on the sphere, `data/killing_energy.csv`).

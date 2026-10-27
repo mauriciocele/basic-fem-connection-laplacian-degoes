@@ -7,7 +7,7 @@
 	     n x n complex Hermitian system (Part II), and compares the two;
 	  3. solves the same problem on a sphere, where parallel transport along great circles is known exactly
 	     (it is the smallest rotor from the source to the point), and measures the error;
-	  4. writes CSV files for the figures of the text into the directory given as argument.
+	  4. writes CSV files for the figures of the text into the directory given as argument, and checks Part VI (end of main).
 
 	Build, from src/:
 	  c++ -std=c++17 -O2 -I<eigen> ga_fem.cpp HalfEdge/Mesh.cpp -o ga_fem && ./ga_fem ../fem-basic-2d/data
@@ -812,6 +812,301 @@ static void workedExamplesEdge(const std::string& dir) {
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// Part VI: how the pieces fit. The leaning pyramid traced through the four methods, the corner transport of Part III
+// written as the edge transport of Part IV plus a correction, and the energies of a rotation field on the sphere.
+// ---------------------------------------------------------------------------------------------------------------
+
+/// The pyramid of Worked examples 4 and 5: the apex over a regular pentagon of radius 1, moved by `lean` along x.
+static void loadPyramid(Mesh& mesh, const std::string& dir, double lean) {
+	const std::string obj = dir + "/pyramid.obj";
+	{
+		std::ofstream out(obj);
+		out.precision(17);
+		const double h = std::sqrt(std::pow(2.0 * std::sin(M_PI / 5.0), 2) - 1.0);   // equilateral faces when upright
+		out << "v " << lean << " 0 " << h << "\n";
+		for (int k = 0; k < 5; ++k) out << "v " << std::cos(2 * M_PI * k / 5) << " " << std::sin(2 * M_PI * k / 5) << " 0\n";
+		for (int k = 0; k < 5; ++k) out << "f 1 " << k + 2 << " " << (k + 1) % 5 + 2 << "\n";
+	}
+	mesh.readOBJ(obj.c_str());
+	std::remove(obj.c_str());
+	mesh.computeNormals();
+}
+
+/// An angle in degrees, wrapped to (-180, 180].
+static double wrapDeg(double radians) { return std::arg(std::polar(1.0, radians)) * 180.0 / M_PI; }
+
+/// The corner connections e^{T rho_a^f} of a face, with the extrinsic rule (k = 0, Part II) or the intrinsic one (k = 1,
+/// Part III).
+static void cornerConnections(Mesh& mesh, const Geometry& g, const intrinsic::Geometry& G, int k, const Face& f, Complex rho[3]) {
+	Vertex* v[3];
+	Edge* h[3];
+	intrinsic::faceCorners(f, v, h);
+	for (int a = 0; a < 3; ++a)
+		rho[a] = k == 0 ? ga::connection(g.vertexT[v[a]->ID], v[a]->n, g.faceT[f.ID], g.faceNormal[f.ID]) : G.faces[f.ID].rho[a];
+}
+
+/// Section 40: the corner transport from v[a] to v[a+1] through the face of h[a], divided by the edge transport of the
+/// same half edge. Returns its angle and the prediction of Proposition corner_edge, -[(s_a - 1) alpha_a + (s_b - 1) alpha_b]/2.
+static void cornerOverEdge(const intrinsic::Geometry& G, const edgeconn::Geometry& E, const Edge* e, const Complex rho[3],
+                           double& measured, double& predicted) {
+	Vertex* v[3];
+	Edge* h[3];
+	intrinsic::faceCorners(*e->face, v, h);
+	int a = 0;
+	while (h[a] != e) ++a;
+	const int b = (a + 1) % 3;
+	const Complex corner = rho[a] * std::conj(rho[b]);   // from v[a] into the face, then out to v[b]
+	measured = std::arg(corner * std::polar(1.0, -E.transport.at(e)));
+	const intrinsic::FaceGeometry& fg = G.faces[e->face->ID];
+	predicted = -0.5 * ((G.vertices[v[a]->ID].scale - 1) * fg.angle[a] + (G.vertices[v[b]->ID].scale - 1) * fg.angle[b]);
+}
+
+/// Section 46, the running example: the leaning pyramid through every step of the pipeline, with the four methods.
+static void workedExamplesPieces(const std::string& dir) {
+	const double deg = 180 / M_PI;
+	for (int pass = 0; pass < 2; ++pass) {
+		const double lean = pass == 0 ? 0.0 : 0.4;
+		Mesh mesh;
+		loadPyramid(mesh, dir, lean);
+		const Geometry g = computeGeometry(mesh);
+		const intrinsic::Geometry G = intrinsic::compute(mesh);
+		const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+		const intrinsic::VertexGeometry& apex = G.vertices[0];
+		printf("== Worked example %d: the %s pyramid through the pipeline\n", 9 + pass, pass == 0 ? "upright" : "leaning");
+		printf("  geometry: Theta = %.3f, defect kappa = %.3f degrees, s = %.6f\n", apex.totalAngle * deg,
+		       (2 * M_PI - apex.totalAngle) * deg, apex.scale);
+		// step 2 and 3: the corner connections of the apex (II, III) and the edge transports leaving the apex (IV, V)
+		printf("  face  alpha_apex | rho II   rho III  | edge 0->k: rho_ab (IV, V) | Omega_f (IV, V) | (s-1) alpha (III)\n");
+		double sumOmega = 0;
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);   // the apex is v[0] of every face
+			Complex rhoII[3], rhoIII[3];
+			cornerConnections(mesh, g, G, 0, f, rhoII);
+			cornerConnections(mesh, g, G, 1, f, rhoIII);
+			sumOmega += E.holonomy[f.ID];
+			printf("  %d     %7.3f      | %7.3f  %7.3f  | 0->%d: %8.3f               | %7.3f         | %7.3f\n", f.ID,
+			       G.faces[f.ID].angle[0] * deg, wrapDeg(std::arg(rhoII[0])), wrapDeg(std::arg(rhoIII[0])), v[1]->ID,
+			       wrapDeg(E.transport.at(h[0])), E.holonomy[f.ID] * deg, (apex.scale - 1) * G.faces[f.ID].angle[0] * deg);
+		}
+		printf("  the face holonomies add up to %.3f degrees, the defect of the apex\n", sumOmega * deg);
+		// step 3, the transports between two vertices: along each edge apex -> base k, through the face to its left (f)
+		// and to its right (g), with the corner connections of II and III, against the edge transport of IV and V
+		printf("  edge 0->k | III through f, g minus edge transport (predicted)        | loop f,g: II      III\n");
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			const Edge* e = h[0];             // apex -> v[1], face f to its left
+			const Edge* back = e->pair;       // v[1] -> apex, face g to its left
+			Complex rf[2][3], rg[2][3];
+			for (int k = 0; k < 2; ++k) {
+				cornerConnections(mesh, g, G, k, f, rf[k]);
+				cornerConnections(mesh, g, G, k, *back->face, rg[k]);
+			}
+			double mf, pf, mg, pg;
+			cornerOverEdge(G, E, e, rf[1], mf, pf);
+			cornerOverEdge(G, E, back, rg[1], mg, pg);   // from v[1] to the apex; reversed, its angle changes sign
+			// the loop apex -> f -> v[1] -> g -> apex, with the corner connections of each method
+			double loop[2];
+			for (int k = 0; k < 2; ++k) {
+				Vertex* w[3];
+				Edge* hg[3];
+				intrinsic::faceCorners(*back->face, w, hg);
+				int a = 0;
+				while (hg[a] != back) ++a;   // w[a] = v[1], w[a+1] = apex
+				const Complex viaF = rf[k][0] * std::conj(rf[k][1]);                    // apex -> v[1] through f
+				const Complex viaG = rg[k][a] * std::conj(rg[k][(a + 1) % 3]);          // v[1] -> apex through g
+				loop[k] = std::arg(viaF * viaG);
+			}
+			printf("  0->%d      | f: %8.4f (%8.4f)   g: %8.4f (%8.4f)              | %8.4f  %8.4f\n", v[1]->ID, mf * deg, pf * deg,
+			       -mg * deg, -pg * deg, loop[0] * deg, loop[1] * deg);
+		}
+		// step 5, the element: the entry (apex, v[1]) of the element matrix of face 0 with the four methods
+		{
+			Face& f = mesh.faceAt(0);
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			const intrinsic::FaceGeometry& fg = G.faces[0];
+			Complex rho[2][3], entry[4], transportBA[3][3], L[3][3];
+			for (int k = 0; k < 2; ++k) {
+				cornerConnections(mesh, g, G, k, f, rho[k]);
+				entry[k] = fg.area * fg.grad[0].dot(fg.grad[1]) * rho[k][1] * std::conj(rho[k][0]);
+			}
+			for (int a = 0; a < 3; ++a)
+				for (int b = 0; b < 3; ++b) transportBA[a][b] = a == b ? Complex(1.0) : std::polar(1.0, E.transport.at(halfEdge(h, b, a)));
+			edgeconn::curvedElement(fg, E.holonomy[0], transportBA, 8, L);
+			entry[2] = L[0][1];
+			entry[3] = fg.area * fg.grad[0].dot(fg.grad[1]) * transportBA[0][1];
+			printf("  element of face 0, entry (apex, %d):", v[1]->ID);
+			for (int k = 0; k < 4; ++k) printf(" %s %.5f at %.3f deg;", methodName[k], std::abs(entry[k]), wrapDeg(std::arg(entry[k])));
+			printf(" diagonal IV %.5f vs flat %.5f\n", L[0][0].real(), fg.area * fg.grad[0].squaredNorm());
+		}
+		// step 7, the solution: source at the apex, all four methods, compared corner by corner in the faces
+		{
+			const Methods M{ mesh, g, G };
+			const double h = meanEdgeLength(mesh);
+			const Complex value = std::polar(1.0, 2.0 * M_PI / 3.0);
+			const std::vector<Eigen::VectorXcd> u = solveAll(mesh, g, G, E, h * h, 0, value);
+			double worst[4] = { 0, 0, 0, 0 };
+			for (Face& f : mesh.getFaces()) {
+				Vertex* v[3];
+				Edge* hh[3];
+				intrinsic::faceCorners(f, v, hh);
+				for (int a = 1; a < 3; ++a)   // the base corners
+					for (int k = 0; k < 4; ++k)
+						worst[k] = std::max(worst[k], angleDeg(M.of(k, f.ID, a, u[k](v[a]->ID)), M.of(1, f.ID, a, u[1](v[a]->ID))));
+			}
+			printf("  solution (source at the apex): largest angle to III at the base corners:");
+			for (int k = 0; k < 4; ++k) printf(" %s %.3f;", methodName[k], worst[k]);
+			printf(" degrees; |u| at base vertex 1: %.4f\n", std::abs(u[1](1)));
+		}
+	}
+	// Proposition corner_edge on a large mesh: the corner transport of III is the edge transport of IV turned by half the
+	// stretching of the two corners at the ends of the edge
+	{
+		Mesh mesh;
+		mesh.readOBJ("cactus1.obj");
+		mesh.CenterAndNormalize();
+		mesh.computeNormals();
+		const Geometry g = computeGeometry(mesh);
+		const intrinsic::Geometry G = intrinsic::compute(mesh);
+		const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+		double worst = 0, largest = 0, loopSum = 0;
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			Complex rho[3];
+			cornerConnections(mesh, g, G, 1, f, rho);
+			for (int a = 0; a < 3; ++a) {
+				double m, p;
+				cornerOverEdge(G, E, h[a], rho, m, p);
+				worst = std::max(worst, std::abs(wrapDeg(m - p)));
+				largest = std::max(largest, std::abs(m) * deg);
+				loopSum += m;   // each edge twice, once per face: the sum of all the edge loops of III
+			}
+		}
+		printf("== Cactus: corner transport (III) = edge transport (IV) turned by -[(s_a-1)alpha_a + (s_b-1)alpha_b]/2: largest "
+		       "deviation %.2e degrees (largest correction %.2f degrees); sum of all edge loops %.6f = -2 pi chi = %.6f\n", worst,
+		       largest, loopSum, -2.0 * M_PI * (mesh.numVertices() - mesh.numEdges() + mesh.numFaces()));
+	}
+}
+
+/// Section 43: the rotation field U(x) = e_z x x on the unit sphere. Its Dirichlet energy int |grad U|^2 = 8 pi / 3, its
+/// Hodge energy int (div U)^2 + (curl U)^2 = 16 pi / 3, and their difference int K |U|^2 = 8 pi / 3 (Weitzenboeck). The
+/// first is computed with the four connection Laplacians, the second with scalar DEC on 1-forms, the third with the
+/// angle defects.
+static void killingEnergies(const std::string& dir) {
+	std::ofstream out(dir + "/killing_energy.csv");
+	out << "vertices,extrinsic,intrinsic,curved,dec,hodge,divergence,curvature\n";
+	const Vector3d z(0, 0, 1);
+	for (int levels = 1; levels <= 5; ++levels) {
+		const std::string obj = dir + "/icosphere_k.obj";
+		writeIcosphere(obj, levels);
+		Mesh mesh;
+		mesh.readOBJ(obj.c_str());
+		std::remove(obj.c_str());
+		mesh.computeNormals();
+		const Geometry g = computeGeometry(mesh);
+		const intrinsic::Geometry G = intrinsic::compute(mesh);
+		const edgeconn::Geometry E = edgeconn::compute(mesh, G);
+		const int n = mesh.numVertices();
+		auto U = [&](int i) { const Vector3d x = mesh.vertexAt(i).p.normalized(); return Vector3d(z.cross(x)); };
+		// the spinor coordinates of U in each method's vertex planes. Part II: the vertex frame. Parts III to V: the
+		// direction of U in each face, carried back to the vertex plane by the method's own rule, averaged over the corners.
+		std::vector<Eigen::VectorXcd> psi(4, Eigen::VectorXcd::Zero(n));
+		for (int i = 0; i < n; ++i) {
+			const Vector3d u = U(i);
+			psi[0](i) = Complex(g.vertexFrame[i].col(0).dot(u), g.vertexFrame[i].col(1).dot(u));
+		}
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			for (int a = 0; a < 3; ++a) {
+				const int i = v[a]->ID;
+				const Vector3d u = U(i);
+				const double beta = std::atan2(g.faceNormal[f.ID].cross(g.faceT[f.ID]).dot(u), g.faceT[f.ID].dot(u));
+				const double w = G.faces[f.ID].angle[a];
+				psi[1](i) += w * std::polar(1.0, beta - std::arg(G.faces[f.ID].rho[a]));
+				psi[2](i) += w * std::polar(1.0, beta - G.faces[f.ID].edgeAngle[a] + edgeconn::vertexAngle(G, h[a]));
+			}
+		}
+		for (int i = 0; i < n; ++i) {
+			const double m = U(i).norm();
+			for (int k = 1; k <= 2; ++k) psi[k](i) = m * std::polar(1.0, std::arg(psi[k](i)));
+		}
+		psi[3] = psi[2];
+		// the four stiffness matrices, without dt and without boundary rows
+		std::vector<std::map<std::pair<int, int>, Complex>> L(3);
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			const intrinsic::FaceGeometry& fg = G.faces[f.ID];
+			Complex rho[2][3], transportBA[3][3], C[3][3];
+			for (int k = 0; k < 2; ++k) cornerConnections(mesh, g, G, k, f, rho[k]);
+			for (int a = 0; a < 3; ++a)
+				for (int b = 0; b < 3; ++b) transportBA[a][b] = a == b ? Complex(1.0) : std::polar(1.0, E.transport.at(halfEdge(h, b, a)));
+			edgeconn::curvedElement(fg, E.holonomy[f.ID], transportBA, 8, C);
+			for (int a = 0; a < 3; ++a)
+				for (int b = 0; b < 3; ++b) {
+					const double s = fg.area * fg.grad[a].dot(fg.grad[b]);
+					for (int k = 0; k < 2; ++k) L[k][{ v[a]->ID, v[b]->ID }] += s * (a == b ? Complex(1.0) : rho[k][b] * std::conj(rho[k][a]));
+					L[2][{ v[a]->ID, v[b]->ID }] += C[a][b];
+				}
+		}
+		double energy[4];
+		for (int k = 0; k < 3; ++k) {
+			Complex e = 0;
+			for (const auto& [ij, value] : L[k]) e += std::conj(psi[k](ij.first)) * value * psi[k](ij.second);
+			energy[k] = e.real();
+		}
+		std::vector<double> star0;
+		const Eigen::SparseMatrix<Complex> Ldec = decform::laplacian(mesh, G, E, star0);
+		energy[3] = (psi[3].adjoint() * (Ldec * psi[3]))(0).real();
+		// the Hodge energy of the 1-form U^flat: eta_ab = int_ab U . dx = z . (x_a x x_b), exact along the chord
+		std::map<const Edge*, double> eta;
+		for (const Edge* e : mesh.getEdges()) eta[e] = z.dot(e->vertex->p.cross(e->pair->vertex->p));
+		double curl = 0, divergence = 0, curvature = 0;
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(f, v, h);
+			const double circulation = eta[h[0]] + eta[h[1]] + eta[h[2]];   // d1 eta, the integral of curl U over the face
+			curl += circulation * circulation / G.faces[f.ID].area;         // *2 = 1 / A_f
+		}
+		std::vector<double> codiff(n, 0.0);   // d0^T *1 eta: minus the integral of div U over the dual cell
+		auto cotOpposite = [&](const Edge* e) {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(*e->face, v, h);
+			int k = 0;
+			while (h[k] != e) ++k;
+			return 1.0 / std::tan(G.faces[e->face->ID].angle[(k + 2) % 3]);
+		};
+		for (const Edge* e : mesh.getEdges()) {
+			if (e->vertex->ID > e->pair->vertex->ID) continue;
+			const double w = 0.5 * (cotOpposite(e) + cotOpposite(e->pair)) * eta[e];
+			codiff[e->pair->vertex->ID] += w;
+			codiff[e->vertex->ID] -= w;
+		}
+		for (int i = 0; i < n; ++i) {
+			divergence += codiff[i] * codiff[i] / star0[i];
+			curvature += (2.0 * M_PI - G.vertices[i].totalAngle) * U(i).squaredNorm();
+		}
+		printf("== Rotation field on the sphere, %5d vertices: int |grad U|^2: II %.5f, III %.5f, IV %.5f, V %.5f (8 pi/3 = %.5f); "
+		       "Hodge %.5f + %.1e (16 pi/3 = %.5f); sum kappa |U|^2 = %.5f\n", n, energy[0], energy[1], energy[2], energy[3],
+		       8 * M_PI / 3, curl, divergence, 16 * M_PI / 3, curvature);
+		out << n << "," << energy[0] << "," << energy[1] << "," << energy[2] << "," << energy[3] << "," << curl + divergence << ","
+		    << divergence << "," << curvature << "\n";
+	}
+}
+
 int main(int argc, char** argv) {
 	const std::string dir = argc > 1 ? argv[1] : "../fem-basic-2d/data";
 	workedExamples();
@@ -965,5 +1260,9 @@ int main(int argc, char** argv) {
 		foldExperiment("Miura-ori fold    ", obj, (my / 2) * (mx + 1) + mx / 2, std::polar(1.0, M_PI / 3.0),
 		               dir + "/miura_faces.csv");
 	}
+
+	// --- Part VI: how the pieces fit ------------------------------------------------------------------------------
+	workedExamplesPieces(dir);
+	killingEnergies(dir);
 	return 0;
 }

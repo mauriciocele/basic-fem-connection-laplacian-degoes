@@ -1,0 +1,32 @@
+% corner transport (left) and edge transport (right) on the two faces f, g of an edge ij, and the loops that measure their curvature
+\begin{tikzpicture}[scale=1.35]
+  \coordinate (i) at (0,0); \coordinate (j) at (2.6,0); \coordinate (k) at (1.15,1.75); \coordinate (l) at (1.45,-1.6);
+  \coordinate (cf) at (1.25,0.58); \coordinate (cg) at (1.35,-0.53);
+  \filldraw[draw=gray!70, fill=green!6] (i) -- (j) -- (k) -- cycle;
+  \filldraw[draw=gray!70, fill=green!6] (i) -- (l) -- (j) -- cycle;
+  \draw[thick, gray!60!black] (i) -- (j);
+  \foreach \v/\c/\lab/\pos in {i/cf/{\rho_i^f}/above left, j/cf/{\rho_j^f}/above right, i/cg/{\rho_i^g}/below left, j/cg/{\rho_j^g}/below right}
+    \draw[-{Stealth[length=1.8mm]}, green!45!black, thick, shorten <=2pt, shorten >=2pt] (\v) -- (\c) node[midway, \pos, font=\scriptsize, inner sep=1pt] {$\lab$};
+  \fill[green!35!black] (cf) circle (1.4pt) node[above=2pt, font=\scriptsize] {$f$};
+  \fill[green!35!black] (cg) circle (1.4pt) node[below=2pt, font=\scriptsize] {$g$};
+  \draw[red!70!black, dashed, thick, -{Stealth[length=1.8mm]}] (0.45,0.06) .. controls (1.1,0.42) and (1.6,0.42) .. (2.15,0.06);
+  \draw[red!70!black, dashed, thick, -{Stealth[length=1.8mm]}] (2.15,-0.06) .. controls (1.6,-0.4) and (1.1,-0.4) .. (0.45,-0.06);
+  \node[red!60!black, font=\scriptsize] at (3.05,-0.35) {$H_{ij}$};
+  \fill (i) circle (1.3pt) node[left] {$i$}; \fill (j) circle (1.3pt) node[right] {$j$};
+  \fill (k) circle (1.3pt) node[above] {$k$}; \fill (l) circle (1.3pt) node[below] {$l$};
+  \node[font=\footnotesize, align=center, text width=4.6cm] at (1.3,-2.35) {\textbf{corner transport} (II, III): vertex to face. Around a face it closes; from $i$ to $j$ through $f$ and back through $g$ it turns by $H_{ij}$};
+\end{tikzpicture}\hfill
+\begin{tikzpicture}[scale=1.35]
+  \coordinate (i) at (0,0); \coordinate (j) at (2.6,0); \coordinate (k) at (1.15,1.75); \coordinate (l) at (1.45,-1.6);
+  \filldraw[draw=gray!70, fill=orange!10] (i) -- (j) -- (k) -- cycle;
+  \filldraw[draw=gray!70, fill=orange!10] (i) -- (l) -- (j) -- cycle;
+  \foreach \u/\v/\lab/\pos in {i/j/{r_{ij}}/below, j/k/{r_{jk}}/above right, k/i/{r_{ki}}/above left}
+    \draw[-{Stealth[length=2mm]}, orange!60!black, very thick, shorten <=3pt, shorten >=3pt] (\u) -- (\v) node[midway, \pos, font=\scriptsize] {$\lab$};
+  \draw[-{Stealth[length=1.6mm]}, orange!50!black] (1.25,0.55) ++(-20:0.3) arc (-20:250:0.3);
+  \node[orange!40!black, font=\scriptsize] at (1.25,0.55) {$\Omega_f$};
+  \draw[-{Stealth[length=1.6mm]}, orange!50!black] (1.35,-0.55) ++(20:0.3) arc (20:290:0.3);
+  \node[orange!40!black, font=\scriptsize] at (1.35,-0.55) {$\Omega_g$};
+  \fill (i) circle (1.3pt) node[left] {$i$}; \fill (j) circle (1.3pt) node[right] {$j$};
+  \fill (k) circle (1.3pt) node[above] {$k$}; \fill (l) circle (1.3pt) node[below] {$l$};
+  \node[font=\footnotesize, align=center, text width=4.6cm] at (1.3,-2.35) {\textbf{edge transport} (IV, V): vertex to vertex. One transport per edge, shared by $f$ and $g$; around a face it turns by $\Omega_f = d\rho$};
+\end{tikzpicture}

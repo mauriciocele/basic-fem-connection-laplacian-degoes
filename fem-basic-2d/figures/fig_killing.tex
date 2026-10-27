@@ -1,0 +1,27 @@
+% the rotation field U = e_z x x on the unit sphere, and the errors of its energies under refinement
+\begin{tikzpicture}[scale=1.2]
+  \shade[ball color=gray!10] (0,0) circle (1);
+  \draw[gray!70] (0,0) circle (1);
+  \foreach \z in {-0.7,-0.35,0,0.35,0.7} {
+    \pgfmathsetmacro{\r}{sqrt(1-\z*\z)}
+    \draw[gray!50] (0,\z) ellipse ({\r} and {0.28*\r});
+    \foreach \t in {-60,-20,20,60} {
+      \pgfmathsetmacro{\x}{\r*sin(\t)} \pgfmathsetmacro{\y}{\z - 0.28*\r*cos(\t)}
+      \pgfmathsetmacro{\dx}{0.42*\r*cos(\t)} \pgfmathsetmacro{\dy}{0.42*0.28*\r*sin(\t)}
+      \draw[-{Stealth[length=1.4mm]}, red!70!black, thick] (\x,\y) -- ++(\dx,\dy);}}
+  \draw[-{Stealth[length=1.6mm]}, blue!70!black, thick] (0,1) -- (0,1.45) node[above, font=\scriptsize] {$e_z$};
+  \node[font=\scriptsize, align=center] at (0,-1.45) {$U(x) = e_z \times x$\\ $|U| = \sin\vartheta$, $\nabla U = \cos\vartheta\, J$};
+\end{tikzpicture}\hfill
+\begin{tikzpicture}
+  \begin{loglogaxis}[width=0.7\textwidth, height=6.2cm, xlabel={vertices}, ylabel={error of the energy},
+      tick label style={font=\scriptsize}, label style={font=\footnotesize}, legend style={font=\tiny, at={(0.5,-0.22)}, anchor=north}, legend columns=2,
+      legend cell align=left]
+    \addplot[red!70!black, mark=*, mark size=1.2pt] table[x=vertices, y expr=abs(\thisrow{extrinsic}-8.377580409572781), col sep=comma] {data/killing_energy.csv};
+    \addplot[green!45!black, mark=square*, mark size=1.2pt, densely dashed] table[x=vertices, y expr=abs(\thisrow{intrinsic}-8.377580409572781), col sep=comma] {data/killing_energy.csv};
+    \addplot[orange!80!black, mark=triangle*, mark size=1.5pt] table[x=vertices, y expr=abs(\thisrow{curved}-8.377580409572781), col sep=comma] {data/killing_energy.csv};
+    \addplot[blue!70!black, mark=diamond*, mark size=1.5pt] table[x=vertices, y expr=abs(\thisrow{dec}-8.377580409572781), col sep=comma] {data/killing_energy.csv};
+    \addplot[black, mark=o, mark size=1.3pt, thick] table[x=vertices, y expr=abs(\thisrow{hodge}-16.755160819145562), col sep=comma] {data/killing_energy.csv};
+    \addplot[gray, dotted, thick, domain=42:10242] {1.2*42/x};
+    \legend{$\int|\nabla U|^2$: extrinsic (II), intrinsic (III), curved (IV), DEC (V), Hodge $\int (\mathrm{div})^2 + (\mathrm{curl})^2$, slope $-1$: $O(h^2)$}
+  \end{loglogaxis}
+\end{tikzpicture}

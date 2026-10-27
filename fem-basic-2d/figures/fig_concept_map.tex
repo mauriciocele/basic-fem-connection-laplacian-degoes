@@ -1,0 +1,96 @@
+% the concept map of the whole text: smooth concepts on top, discrete ones below, each arrow a statement proved in the text
+\begin{tikzpicture}[x=1cm, y=1cm,
+    n/.style={draw=gray!70, rounded corners=2pt, align=center, font=\scriptsize, inner sep=3pt, text width=3.5cm, minimum height=0.95cm, fill=white},
+    smooth/.style={n, fill=gray!10},
+    geo/.style={n, fill=yellow!14},
+    ext/.style={n, fill=red!9},
+    int/.style={n, fill=green!9},
+    edg/.style={n, fill=orange!13},
+    dec/.style={n, fill=blue!8},
+    new/.style={n, fill=violet!8},
+    ar/.style={-{Stealth[length=1.7mm]}, gray!55!black},
+    dis/.style={ar, densely dashed, thick, gray!45!black},
+    lab/.style={font=\tiny, fill=white, inner sep=0.8pt, text=black!70}]
+  % ---------------------------------------------------------------- the smooth surface
+  \fill[gray!4, rounded corners=4pt] (-2.3, 1.05) rectangle (15.2, -3.75);
+  \node[font=\footnotesize\bfseries, anchor=west] at (-2.2, 0.78) {the smooth surface};
+  \node[smooth] (S1) at (0, 0)       {surface, metric, tangent plane $T_x\Omega$};
+  \node[smooth] (S2) at (0, -1.5)    {frame $t$, spinor $\psi$, $U = t\psi$, (\ref{eqn:ga_spinor})};
+  \node[smooth] (S6) at (0, -3.0)    {Gauss--Bonnet $\int K\, dA = 2\pi\chi$};
+  \node[smooth] (S3) at (6.45, 0)    {Levi-Civita connection $\nabla_X U = P(D_X U)$, (\ref{eqn:covariant})};
+  \node[smooth] (S4) at (6.45, -1.5) {Cartan: connection form $\omega$, $D = d + \omega \mathsf T$, (\ref{eqn:ga_covariant}), (\ref{eqn:structure})};
+  \node[smooth] (S5) at (6.45, -3.0) {parallel transport, holonomy, curvature $K\,dA = -d\omega$};
+  \node[smooth] (S7) at (12.9, 0)    {Dirichlet energy $\int |\nabla U|^2$, (\ref{eqn:dirichlet})};
+  \node[smooth] (S8) at (12.9, -1.5) {connection Laplacian $\nabla^*\nabla$, (\ref{eqn:green})};
+  \node[smooth] (S9) at (12.9, -3.0) {Hodge Laplacian $\nabla^*\nabla + K$, (\ref{eqn:weitzenbock})};
+  \draw[ar] (S1) -- (S2);
+  \draw[ar] (S1) -- node[lab, above] {project $D$} (S3);
+  \draw[ar] (S2) -- node[lab, above] {in a frame} (S4);
+  \draw[ar] (S3) -- (S4);
+  \draw[ar] (S4) -- node[lab, right] {$D_{\dot\gamma}\psi = 0$} (S5);
+  \draw[ar] (S5) -- node[lab, above] {Stokes} (S6);
+  \draw[ar] (S3) -- node[lab, above] {norm} (S7);
+  \draw[ar] (S7) -- node[lab, right] {Green} (S8);
+  \draw[ar] (S8) -- node[lab, right] {Weitzenb\"ock} (S9);
+  % ---------------------------------------------------------------- the mesh
+  \node[font=\footnotesize\bfseries, anchor=west] at (-2.2, -4.35) {the triangle mesh};
+  % column 1: the geometry of the faces
+  \node[geo] (G1) at (0, -5.4)    {edge lengths $\ell_{ij}$ (III--V); positions $x_i$ (I, II)};
+  \node[geo] (G2) at (0, -6.95)   {Gram $G_f$, Heron, angles, layout, (\ref{eqn:gram})--(\ref{eqn:layout})};
+  \node[geo] (G3) at (0, -8.5)    {hat gradients, cotangent weights, (\ref{eqn:intrinsic_gradient}), Prop.~\ref{prop:cotangent}};
+  \node[geo] (G4) at (0, -10.05)  {angle defect $\kappa_i = 2\pi - \Theta_i$, (\ref{eqn:defect}); $\sum \kappa_i = 2\pi\chi$};
+  % column 2: corner transports
+  \node[ext] (E1) at (4.3, -5.4)  {vertex normal $n_i$, rolled plane (II), (\ref{eqn:vertex_normal})};
+  \node[ext] (E2) at (4.3, -6.95) {corner transport by rolling, $\rho_i^f$ (II), (\ref{eqn:ga_connection})};
+  \node[int] (I2) at (4.3, -8.5)  {corner transport by bisectors, $\rho_i^f$ (III), (\ref{eqn:intrinsic_rho})};
+  \node[int] (I3) at (4.3, -10.05) {curvature on the edge loops $H_{ij}$ (III), (\ref{eqn:edge_loop})};
+  % column 3: the stretched planes and edge transports
+  \node[int] (I1) at (8.6, -5.4)  {cone angles, stretched plane, $s_i = 2\pi/\Theta_i$ (III--V), (\ref{eqn:scale})};
+  \node[edg] (D1) at (8.6, -6.95) {edge transport $\rho_{ab}$, keep the angle to the edge (IV, V), (\ref{eqn:edge_transport})};
+  \node[new] (P1) at (8.6, -8.5)  {corner $=$ edge $+$ half the stretching, Prop.~\ref{prop:corner_edge}};
+  \node[edg] (D2) at (8.6, -10.05) {face holonomy $\Omega_f = d\rho = \sum (s - 1)\alpha$, (\ref{eqn:face_holonomy})};
+  % column 4: elements and the solve
+  \node[int] (F1) at (12.9, -5.4)  {flat element with corner phases (II, III), (\ref{eqn:intrinsic_element})};
+  \node[edg] (F2) at (12.9, -6.95) {curved element, $\kappa = \Omega_f / A_f$ (IV), (\ref{eqn:curved_element})};
+  \node[dec] (F3) at (12.9, -8.5)  {DEC, $(d^\nabla)^H \star_1 d^\nabla$ (V), (\ref{eqn:dec_energy})};
+  \node[geo] (F4) at (12.9, -10.05) {Hermitian $\mathrm L$, lumped $\mathrm M$, $(\mathrm M + \Delta t\, \mathrm L)\psi = \mathrm M\psi^0$};
+  % within column 1
+  \draw[ar] (G1) -- node[lab, right] {law of cosines} (G2);
+  \draw[ar] (G2) -- node[lab, right] {quarter turn} (G3);
+  \draw[ar] (G3) -- node[lab, right, pos=0.3] {angles at $i$} (G4);
+  % geometry to the vertex planes
+  \draw[ar] (G1) -- (E1);
+  \draw[ar] (G2.north east) -- node[lab, pos=0.42] {cone} (I1.south west);
+  % within the corner and edge columns
+  \draw[ar] (E1) -- (E2);
+  \draw[ar] (I1) -- (D1);
+  \draw[ar] (I1.south west) -- (I2.north east);
+  \draw[ar] (I2) -- (P1);
+  \draw[ar] (D1) -- (P1);
+  \draw[ar] (I2) -- node[lab, right, pos=0.3] {two faces of an edge} (I3);
+  \draw[ar] (P1) -- node[lab, right, pos=0.3] {sum around $f$} (D2);
+  \draw[ar] (G4) -- (I3);
+  \draw[ar] (I3) -- (D2);
+  % transports to the elements
+  \draw[ar] (E2.north east) -- (F1.south west);
+  \draw[ar] (I2.north east) to[out=70, in=-90] (6.45, -7.4) to[out=90, in=180] (9.4, -6.18) -- (10.6, -6.18) to[out=0, in=200] (F1.south west);
+  \draw[ar] (D1) -- (F2);
+  \draw[ar] (D2.east) to[out=0, in=-90] (10.75, -9.2) -- (10.75, -7.6) to[out=90, in=180] (F2.west);
+  \draw[ar] (F2) -- node[lab, right] {$\kappa \to 0$ in the integral} (F3);
+  \draw[ar] (F3) -- (F4);
+  \draw[ar] (F1.east) to[out=-10, in=10, looseness=1.4] (F4.east);
+  \draw[ar] (G3.south east) to[out=-10, in=180] (6.4, -9.42) -- (11.6, -9.42) to[out=0, in=-90] (F3.south);
+  % ---------------------------------------------------------------- smooth to discrete
+  \draw[dis] (S1.west) to[out=190, in=170, looseness=1.15] node[lab, left] {sample} (G1.west);
+  \draw[dis] (S6.south east) to[out=-60, in=90] (2.15, -4.7) -- (2.15, -9.15) to[out=-90, in=45] (G4.north east);
+  \draw[dis] (S4.east) .. controls (9.7, -1.7) and (9.4, -4.3) .. node[lab, pos=0.55, right] {discretize} (I1.north);
+  \draw[dis] (S8.east) to[out=0, in=0, looseness=1.3] node[lab, right] {Galerkin} (F1.east);
+  % ---------------------------------------------------------------- legend
+  \node[ext, text width=1.6cm, minimum height=0.5cm] at (-1.1, -11.5) {Part II};
+  \node[int, text width=1.6cm, minimum height=0.5cm] at (0.9, -11.5) {Part III};
+  \node[edg, text width=1.6cm, minimum height=0.5cm] at (2.9, -11.5) {Part IV};
+  \node[dec, text width=1.6cm, minimum height=0.5cm] at (4.9, -11.5) {Part V};
+  \node[geo, text width=2.0cm, minimum height=0.5cm] at (7.1, -11.5) {all parts};
+  \node[new, text width=2.0cm, minimum height=0.5cm] at (9.5, -11.5) {Part VI};
+  \node[smooth, text width=2.0cm, minimum height=0.5cm] at (11.9, -11.5) {smooth};
+\end{tikzpicture}

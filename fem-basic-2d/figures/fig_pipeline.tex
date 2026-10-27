@@ -1,0 +1,24 @@
+% the pipeline shared by all five parts; the three highlighted steps are where the methods differ
+\begin{tikzpicture}[x=1cm, y=1cm,
+    box/.style={draw=gray!70, fill=gray!6, rounded corners=2pt, minimum width=4.9cm, minimum height=0.95cm, align=center, font=\footnotesize},
+    choice/.style={box, fill=yellow!20, draw=orange!70!black, thick},
+    note/.style={anchor=west, align=left, font=\scriptsize, text width=7.0cm},
+    flow/.style={-{Stealth[length=2mm]}, thick, gray!60!black}]
+  \node[box]    (g) at (0,  0.0)  {1. geometry of the mesh\\ positions $x_i$, or edge lengths $\ell_{ij}$};
+  \node[choice] (p) at (0, -1.45) {2. vertex planes\\ where the unknown $\psi_i \in \mathbb C$ lives};
+  \node[choice] (t) at (0, -2.9)  {3. transport\\ how $\psi_i$ is compared with $\psi_j$};
+  \node[box]    (k) at (0, -4.35) {4. curvature\\ what the transport fails to close};
+  \node[box]    (d) at (0, -5.8)  {5. covariant derivative of a trial field\\ $D\psi$, a tangent-valued 1-form};
+  \node[choice] (e) at (0, -7.25) {6. element matrix\\ $\mathrm L^f_{ab} = \int_f \overline{D(\phi_a \ldots)} \cdot D(\phi_b \ldots)$};
+  \node[box]    (a) at (0, -8.7)  {7. assembly, mass, Dirichlet row, solve\\ $(\mathrm M + \Delta t\, \mathrm L)\, \psi = \mathrm M \psi^0$};
+  \node[box]    (s) at (0, -10.15) {8. normalize and draw\\ $\psi_i / |\psi_i|$, lifted back to $\R^3$};
+  \foreach \u/\v in {g/p, p/t, t/k, k/d, d/e, e/a, a/s} \draw[flow] (\u) -- (\v);
+  \node[note] at (2.75,  0.0)  {Parts~I,~II read the positions; III--V only the lengths. Everything a face contributes is a function of its Gram matrix $G_f$ (Prop.~\ref{prop:metric_only}).};
+  \node[note] at (2.75, -1.45) {\textbf{Choice A.} II: the plane orthogonal to the vertex normal, (\ref{eqn:vertex_normal}). III--V: the cone of angles stretched by $s_i = 2\pi/\Theta_i$, (\ref{eqn:scale}).};
+  \node[note] at (2.75, -2.9)  {\textbf{Choice B.} II, III: corner transport $\rho_i^f$, vertex $\to$ face, (\ref{eqn:ga_connection}), (\ref{eqn:intrinsic_rho}). IV, V: edge transport $\rho_{ab}$, vertex $\to$ vertex, (\ref{eqn:edge_transport}).};
+  \node[note] at (2.75, -4.35) {A consequence of 2 and 3, not a choice. Always $2\pi\chi$ in total (Gauss--Bonnet); II, III keep it at the vertices, IV, V in the faces (Section~\ref{section:map_curvature}).};
+  \node[note] at (2.75, -5.8)  {Inside a face, II, III and V treat the face as flat, $D = \nabla$; IV gives it a curved connection, $D = \nabla - \mathsf T A$, (\ref{eqn:symmetric_gauge}).};
+  \node[note] at (2.75, -7.25) {\textbf{Choice C.} Flat element with corner phases (II, III), (\ref{eqn:intrinsic_element}); curved element (IV), (\ref{eqn:curved_element}); flat element with edge phases (V, DEC), (\ref{eqn:dec_entries}).};
+  \node[note] at (2.75, -8.7)  {The same in every part: lumped mass $A_f/3$, the Dirichlet row of the source, sparse LU (Section~\ref{section:solve}).};
+  \node[note] at (2.75, -10.15) {The same in every part. The positions return only here, to draw (\code{lift}).};
+\end{tikzpicture}

@@ -1,0 +1,19 @@
+% the methods of Parts I-V as the cells of a grid: vertex planes (rows) times transport (columns), with the element in each cell
+\begin{tikzpicture}[x=1cm, y=1cm,
+    cell/.style={draw=gray!60, minimum width=5.4cm, minimum height=2.3cm, align=center, font=\scriptsize, text width=5.0cm},
+    head/.style={font=\footnotesize\bfseries, align=center, text width=5.2cm}]
+  \node[head] at (0, 1.6)   {B: corner transport\\[-1pt] \normalfont\scriptsize vertex $\to$ face, one angle $\rho_i^f$ per corner};
+  \node[head] at (5.8, 1.6) {B: edge transport\\[-1pt] \normalfont\scriptsize vertex $\to$ vertex, one angle $\rho_{ab}$ per edge};
+  \node[head, rotate=90, text width=2.6cm] at (-3.25, 0)    {A: extrinsic planes\\[-1pt] \normalfont\scriptsize orthogonal to $n_i$};
+  \node[head, rotate=90, text width=2.6cm] at (-3.25, -2.6) {A: intrinsic planes\\[-1pt] \normalfont\scriptsize angles $\times\, 2\pi/\Theta_i$};
+  \node[cell, fill=red!7] at (0, 0) {\textbf{Parts I, II} (matrices, GA)\\[2pt] element: flat, phase $e^{\mathsf T(\rho_b^f - \rho_a^f)}$\\ curvature: at the vertices, in the gaps of the rolled corners\\ exact on bent flat meshes: parallel folds only};
+  \node[cell, fill=gray!4, dashed] at (5.8, 0) {\textbf{not built}\\[2pt] keep the angle to the edge projected into each vertex plane\\ curvature: in the faces\\ spurious holonomy on bent flat meshes};
+  \node[cell, fill=green!7] at (0, -2.6) {\textbf{Part III}\\[2pt] element: flat, phase $e^{\mathsf T(\rho_b^f - \rho_a^f)}$\\ curvature: at the vertices, $(s_i - 1)\alpha$ in each corner\\ exact on bent flat meshes: yes};
+  \node[draw=gray!60, minimum width=5.4cm, minimum height=2.3cm] at (5.8, -2.6) {};
+  \node[draw=gray!60, fill=orange!10, minimum width=2.7cm, minimum height=2.3cm, align=center, font=\scriptsize, text width=2.45cm] at (4.45, -2.6)
+    {\textbf{Part IV}\\[2pt] curved element, $\kappa = \Omega_f / A_f$\\ curvature: spread inside every face\\ conforming};
+  \node[draw=gray!60, fill=blue!7, minimum width=2.7cm, minimum height=2.3cm, align=center, font=\scriptsize, text width=2.45cm] at (7.15, -2.6)
+    {\textbf{Part V}, DEC\\[2pt] flat element, edge phases\\ curvature: on the face boundary only\\ a variational crime};
+  \draw[-{Stealth[length=1.6mm]}, blue!60!black] (5.55, -3.95) to[bend right=25] node[below, font=\tiny] {$\kappa \to 0$ inside the integral} (6.6, -3.95);
+  \node[font=\scriptsize, align=center, text width=11.4cm] at (2.9, -5.05) {Choice C, the element, follows from B: corner transport puts the three values in one flat frame, so the flat element is the only one; edge transport around a face closes with $e^{\mathsf T\Omega_f}$, so the element must either curve (IV) or ignore it (V). Fitting a flat frame to edge transports gives corner transport again (Section~\ref{section:map_choices}).};
+\end{tikzpicture}

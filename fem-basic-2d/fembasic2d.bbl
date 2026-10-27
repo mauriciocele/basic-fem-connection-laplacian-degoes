@@ -1,14 +1,47 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{Chun2012}
+S.~Chun.
+\newblock Method of moving frames to solve conservation laws on curved
+  surfaces.
+\newblock {\em Journal of Scientific Computing}, 53(2):268--294, 2012.
+
+\bibitem{Clelland2017}
+J.~N. Clelland.
+\newblock {\em From {F}renet to {C}artan: The Method of Moving Frames}, volume
+  178 of {\em Graduate Studies in Mathematics}.
+\newblock American Mathematical Society, 2017.
+
+\bibitem{deGoes2015}
+F.~de~Goes, M.~Desbrun, and Y.~Tong.
+\newblock Vector field processing on triangle meshes.
+\newblock In {\em SIGGRAPH Asia 2015 Courses}. ACM, 2015.
 
 \bibitem{doCarmo1976}
 M.~P. do~Carmo.
 \newblock {\em Differential Geometry of Curves and Surfaces}.
 \newblock Prentice-Hall, 1976.
 
+\bibitem{doCarmo1994}
+M.~P. do~Carmo.
+\newblock {\em Differential Forms and Applications}.
+\newblock Universitext. Springer, 1994.
+
 \bibitem{Doran2003}
 C.~Doran and A.~Lasenby.
 \newblock {\em Geometric Algebra for Physicists}.
 \newblock Cambridge University Press, 2003.
+
+\bibitem{DziukElliott2013}
+G.~Dziuk and C.~M. Elliott.
+\newblock Finite element methods for surface {PDEs}.
+\newblock {\em Acta Numerica}, 22:289--396, 2013.
+
+\bibitem{Hansbo2020}
+P.~Hansbo, M.~G. Larson, and K.~Larsson.
+\newblock Analysis of finite element methods for vector {L}aplacians on
+  surfaces.
+\newblock {\em IMA Journal of Numerical Analysis}, 40(3):1652--1701, 2020.
 
 \bibitem{HestenesSobczyk1984}
 D.~Hestenes and G.~Sobczyk.
@@ -39,14 +72,31 @@ M.~C. Lopez~Belon.
   {https://github.com/mauriciocele/basic-fem-connection-laplacian-degoes},
   2024.
 
+\bibitem{Petersen2016}
+P.~Petersen.
+\newblock {\em Riemannian Geometry}, volume 171 of {\em Graduate Texts in
+  Mathematics}.
+\newblock Springer, third edition, 2016.
+
 \bibitem{Sayas2015}
 F.-J. Sayas.
 \newblock A gentle introduction to the finite element method.
 \newblock 2015.
 
+\bibitem{SharpSolimanCrane2019}
+N.~Sharp, Y.~Soliman, and K.~Crane.
+\newblock Navigating intrinsic triangulations.
+\newblock {\em ACM Transactions on Graphics}, 38(4):55:1--55:16, 2019.
+
 \bibitem{Sharp2019}
 N.~Sharp, Y.~Soliman, and K.~Crane.
 \newblock The vector heat method.
 \newblock {\em ACM Transactions on Graphics}, 38(3):24:1--24:19, 2019.
+
+\bibitem{Vaxman2016}
+A.~Vaxman, M.~Campen, O.~Diamanti, D.~Panozzo, D.~Bommes, K.~Hildebrandt, and
+  M.~Ben-Chen.
+\newblock Directional field synthesis, design, and processing.
+\newblock {\em Computer Graphics Forum}, 35(2):545--572, 2016.
 
 \end{thebibliography}

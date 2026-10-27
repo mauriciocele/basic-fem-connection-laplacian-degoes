@@ -9,6 +9,7 @@
 \newtheorem{rem}[thm]{Remark}
 \newtheorem{example}[thm]{Worked example}
 \numberwithin{equation}{section}
+\renewcommand{\thepart}{\Roman{part}}
 
 \usepackage[noadjust]{cite}
 \usepackage{amsfonts}
@@ -26,6 +27,8 @@
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{adjustbox}
+\newlength{\portraitwidth}
+\AtBeginDocument{\setlength{\portraitwidth}{\textwidth}}
 \lstset{language=C++, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{blue!60!black}, commentstyle=\color{green!40!black}\itshape, columns=fullflexible, frame=single, framerule=0.3pt, rulecolor=\color{gray!50}, tabsize=4, numbers=left, numberstyle=\tiny\color{gray}, breaklines=true, xleftmargin=1.5em}
 \usepackage{hyperref}
 
@@ -50,7 +53,7 @@
 \date{October 25, 2026}
 
 \begin{abstract}
-We derive, step by step, a program that spreads a tangent vector given at one point of a triangle mesh to every other point, so that the result at each point is the parallel transport of the given vector. The method is the vector heat method: diffuse the vector by the heat equation for tangent vector fields, whose operator is the connection Laplacian, and keep only the direction of the result. We start from the partial differential equation and go all the way down to the linear system that the code solves: the covariant derivative and the Levi-Civita connection of a surface, Green's identity for tangent fields, the backward Euler step, the weak form, the finite element space of piecewise linear tangent fields, the discrete parallel transport that makes that space possible, the gradients of the shape functions on a triangle embedded in space, the element stiffness and mass matrices, their assembly, the boundary condition, and the solution. Every step is motivated, every formula is derived, and every formula that the code evaluates is matched with the function that evaluates it, so that the text can be read side by side with the implementation \cite{ConnectionLaplacianFEM}. A second part derives the same method in geometric algebra, where the tangent plane is a bivector, coordinates are complex numbers of that plane, parallel transport is a rolling rotor and the connection Laplacian becomes a complex Hermitian matrix, and it clarifies which parts of the computation are intrinsic to the curved surface. A third part removes the last extrinsic ingredient, the tangent plane of a vertex, and builds the whole method from the edge lengths of the mesh alone: the metric of a face is its Gram matrix, the plane of a vertex is the cone of its angles rescaled to a full turn, and the connection matches the bisectors of the corners; the result is exact on bent and folded meshes. A fourth part moves the curvature from the vertices into the faces, with the connection as a discrete 1-form on the edges and a finite element whose connection is curved inside each face, and a fifth part builds discrete exterior calculus from the beginning and shows that its connection Laplacian is that finite element with the curvature terms dropped.
+We derive, step by step, a program that spreads a tangent vector given at one point of a triangle mesh to every other point, so that the result at each point is the parallel transport of the given vector. The method is the vector heat method: diffuse the vector by the heat equation for tangent vector fields, whose operator is the connection Laplacian, and keep only the direction of the result. We start from the partial differential equation and go all the way down to the linear system that the code solves: the covariant derivative and the Levi-Civita connection of a surface, Green's identity for tangent fields, the backward Euler step, the weak form, the finite element space of piecewise linear tangent fields, the discrete parallel transport that makes that space possible, the gradients of the shape functions on a triangle embedded in space, the element stiffness and mass matrices, their assembly, the boundary condition, and the solution. Every step is motivated, every formula is derived, and every formula that the code evaluates is matched with the function that evaluates it, so that the text can be read side by side with the implementation \cite{ConnectionLaplacianFEM}. A second part derives the same method in geometric algebra, where the tangent plane is a bivector, coordinates are complex numbers of that plane, parallel transport is a rolling rotor and the connection Laplacian becomes a complex Hermitian matrix, and it clarifies which parts of the computation are intrinsic to the curved surface. A third part removes the last extrinsic ingredient, the tangent plane of a vertex, and builds the whole method from the edge lengths of the mesh alone: the metric of a face is its Gram matrix, the plane of a vertex is the cone of its angles rescaled to a full turn, and the connection matches the bisectors of the corners; the result is exact on bent and folded meshes. A fourth part moves the curvature from the vertices into the faces, with the connection as a discrete 1-form on the edges and a finite element whose connection is curved inside each face, and a fifth part builds discrete exterior calculus from the beginning and shows that its connection Laplacian is that finite element with the curvature terms dropped. A sixth part is a map of the whole: one pipeline shared by all the methods, the three choices that distinguish them, where each keeps the curvature of the mesh, an exact formula relating the corner transport of the third part to the edge transport of the fourth, the connection form and vector-valued forms in every part, Cartan's moving frames as the common language of the methods with a sketch of a curved element of degree two built on them, the Weitzenb\"ock identity that separates the connection Laplacian from the Hodge Laplacian, the extrinsic finite element method of numerical analysis, a concept map, a master table, and a guide to choosing and extending a method.
 \end{abstract}
 
 \maketitle
@@ -71,7 +74,7 @@ This text derives a finite element implementation of that idea \cite{ConnectionL
 \item the element matrices, computed triangle by triangle (Sections~\ref{section:gradients}--\ref{section:element});
 \item the assembly of the global matrices, the boundary condition, and the solution of the linear system (Sections~\ref{section:assembly}--\ref{section:solve}).
 \end{enumerate}
-The ingredient that is not in the scalar method is the connection: tangent vectors at different vertices live in different planes and cannot be added before they are brought into a common plane. Section~\ref{section:transport} shows how the code does that, and Section~\ref{section:galerkin} shows that this is exactly where the Levi-Civita connection enters the finite element method. Table~\ref{tab:map} at the end of Part~\ref{part:matrix} lists every formula with the function of \code{FEM.cpp} that evaluates it. Part~\ref{part:ga} repeats the derivation in the language of geometric algebra, where frames become a single vector, coordinates become complex numbers of the tangent plane, transports become rotors, and the gradients of the shape functions become a reciprocal frame; it also separates what is intrinsic to the curved surface from what depends on its embedding in space. Part~\ref{part:intrinsic} builds the same method from the edge lengths alone, slowly and with every derivation, and compares the two connections on a folded sheet, a sphere and the cactus. Part~\ref{part:edge} transports along the edges instead, puts the curvature into the faces and derives the finite element that goes with it, and Part~\ref{part:dec} explains discrete exterior calculus slowly and places it among the others.
+The ingredient that is not in the scalar method is the connection: tangent vectors at different vertices live in different planes and cannot be added before they are brought into a common plane. Section~\ref{section:transport} shows how the code does that, and Section~\ref{section:galerkin} shows that this is exactly where the Levi-Civita connection enters the finite element method. Table~\ref{tab:map} at the end of Part~\ref{part:matrix} lists every formula with the function of \code{FEM.cpp} that evaluates it. Part~\ref{part:ga} repeats the derivation in the language of geometric algebra, where frames become a single vector, coordinates become complex numbers of the tangent plane, transports become rotors, and the gradients of the shape functions become a reciprocal frame; it also separates what is intrinsic to the curved surface from what depends on its embedding in space. Part~\ref{part:intrinsic} builds the same method from the edge lengths alone, slowly and with every derivation, and compares the two connections on a folded sheet, a sphere and the cactus. Part~\ref{part:edge} transports along the edges instead, puts the curvature into the faces and derives the finite element that goes with it, and Part~\ref{part:dec} explains discrete exterior calculus slowly and places it among the others. Part~\ref{part:map} is a map of all five, meant to be read on its own: a reader who returns to this text after a long time may want to start there.
 
 %%% ======================================================================
 \part{The Derivation with Matrices}
@@ -169,7 +172,7 @@ because $X (U \cdot V) = D_X U \cdot V + U \cdot D_X V$, and the normal parts of
 \label{eqn:covariant_frame}
 T^T \nabla_X U = X \cdot \nabla u + \omega(X)\, u, \qquad \omega(X) = T^T D_X T .
 \end{equation}
-The first term is the ordinary derivative of the coordinates; the second corrects for the turning of the frame. The $2 \times 2$ matrix $\omega(X)$ is skew-symmetric, because differentiating $T^T T = I$ gives $\omega + \omega^T = 0$: it is $\begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix}$, an infinitesimal rotation by the angle $\theta(X)$, the \emph{connection form} of the frame \cite{Liu2016}. On a flat piece of surface with a constant frame, $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple.
+The first term is the ordinary derivative of the coordinates; the second corrects for the turning of the frame. The $2 \times 2$ matrix $\omega(X)$ is skew-symmetric, because differentiating $T^T T = I$ gives $\omega + \omega^T = 0$: it is $\begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix}$, an infinitesimal rotation by the angle $\theta(X)$, the \emph{connection form} of the frame \cite{Liu2016}. On a flat piece of surface with a constant frame, $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple. Computing with a frame field that is carried along the surface, and recording the turning of the frame in $\omega$, is \emph{Cartan's method of moving frames} \cite{doCarmo1994, Clelland2017}; Section~\ref{section:map_cartan} shows that every part of this text is a choice of frames and of their connection form.
 
 \subsection{Parallel transport}
 
@@ -876,7 +879,7 @@ where the scalar $\omega(a)$, linear in $a$, is the rate at which the frame turn
 \nabla_a (t \psi) = t\, \big( a \cdot \nabla \psi + \omega(a)\, \mathsf T\, \psi \big) = t\, D_a \psi, \qquad D_a = a \cdot \nabla + \omega(a)\, \mathsf T ,
 \end{equation}
 where $a \cdot \nabla \psi = (a \cdot \nabla u_1) + (a \cdot \nabla u_2)\, \mathsf T$ differentiates the two coefficients, and $\omega \mathsf T \psi = \omega (u_1 \mathsf T - u_2)$ collects the terms $u_1 \nabla_a t + u_2 \nabla_a b$.
-On spinor coordinates, the Levi-Civita connection is the ordinary derivative plus a multiplication by $\omega \mathsf T$: an infinitesimal rotation. In the language of physics, $\psi$ is a charged field and $\omega \mathsf T$ a $U(1)$ gauge potential; the connection Laplacian is the corresponding \emph{magnetic} Laplacian, and the curvature of the connection, the ``magnetic field'', is $d\omega$, the Gaussian curvature times the area form \cite{Knoppel2013}.
+On spinor coordinates, the Levi-Civita connection is the ordinary derivative plus a multiplication by $\omega \mathsf T$: an infinitesimal rotation. In the language of physics, $\psi$ is a charged field and $\omega \mathsf T$ a $U(1)$ gauge potential; the connection Laplacian is the corresponding \emph{magnetic} Laplacian, and the curvature of the connection, the ``magnetic field'', is $d\omega$, which with the orientation $b = t\mathsf T = n \times t$ used here is minus the Gaussian curvature times the area form, $d\omega = -K\, dA$ \cite{Knoppel2013} (Remark~\ref{rem:structure}).
 
 \subsection{Frame independence}
 
@@ -886,6 +889,15 @@ The frame $t$ is arbitrary, and nothing physical may depend on it. Rotating the 
 D'_a \psi' = e^{-\mathsf T \theta}\, D_a \psi ,
 \end{equation}
 as one checks by differentiating $e^{-\mathsf T \theta} \psi$: the extra term $-(a \cdot \nabla \theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ is cancelled by the extra term $(a \cdot \nabla\theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ of $\omega'$. So $\nabla U = t\, D\psi = t' D'\psi'$ is the same tangent object in both frames, $|D\psi|$ is frame independent, and so are the Dirichlet energy, the connection Laplacian and the solution of the heat equation. In the discrete setting this is the cancellation of the face frame in $(R_i^f)^T R_j^f$ and the statement that changing a vertex frame $t_i$ rotates the computed $u_i$ by the opposite angle and changes nothing else: the arrow $t_i \hat\psi_i$ drawn by the code is independent of the choice of $t_i$ in \code{computeVertexTangentSpace}.
+
+\begin{rem}[Cartan's structure equations]
+\label{rem:structure}
+Write $\theta^1, \theta^2$ for the \emph{coframe} of the frame $(t, b)$, the 1-forms $\theta^1(X) = t\cdot X$ and $\theta^2(X) = b \cdot X$, so that $X = \theta^1(X)\, t + \theta^2(X)\, b$ and $dA = \theta^1 \wedge \theta^2$. Then
+\begin{equation*}
+d\theta^1 = \omega \wedge \theta^2, \qquad d\theta^2 = -\,\omega\wedge\theta^1, \qquad d\omega = -K\, \theta^1 \wedge \theta^2 .
+\end{equation*}
+The first two determine $\omega$ from the coframe, hence from the metric alone, which is the Levi-Civita theorem in Cartan's form; the third says that the curvature is the exterior derivative of the connection form. On the unit sphere with $t = \partial_\vartheta$, $\theta^1 = d\vartheta$, $\theta^2 = \sin\vartheta\, d\varphi$, and the equations give $\omega = \cos\vartheta\, d\varphi$ and $d\omega = -\sin\vartheta\, d\vartheta \wedge d\varphi = -dA$, so $K = 1$. Section~\ref{section:map_cartan} proves the equations and uses them to build every element of this text, and a curved one.
+\end{rem}
 \begin{figure}[t]
 \centering
 \adjustbox{max width=\linewidth}{\input{figures/fig_gauge}}
@@ -1329,6 +1341,8 @@ The transport from a face $f$ into its neighbor $g$ around the vertex $i$ can be
 \end{equation*}
 $(1 - s_i)$ times the cone angle from the bisector of $f$ to that of $g$. Going once around the vertex, the cone angles between consecutive bisectors add up to $\Theta_i$, so the extra rotations add up to $(1 - s_i)\, \Theta_i = \Theta_i - 2\pi = -\kappa_i$. The unfolding, on the other hand, comes back rotated by the holonomy of the vertex, the angle defect $\kappa_i$ (Section~\ref{section:ga_intrinsic}). The two cancel: through the plane of the vertex, a vector comes back unchanged, as it must, since the vertex plane is one plane. The vertex plane does not ignore the curvature; it accounts for it by correcting the transport between consecutive faces, each by a share of the defect proportional to the angle crossed.
 
+In the language of moving frames (Section~\ref{section:map_cartan}), this part uses a frame that is constant on each face, the $x$ axis of its layout, and one frame at each vertex, the reference edge of its stretched cone. The connection form vanishes inside every face, and the corner angles $\rho_i^f$ are the \emph{transition functions} between the frame of a vertex and the frames of its faces, the discrete counterpart of the change of frame~(\ref{eqn:ga_gauge}).
+
 %%% ----------------------------------------------------------------------
 \section{The Finite Element Method, Unchanged}
 \label{section:int_fem}
@@ -1559,7 +1573,7 @@ Inside the face, interpolate the vertex values after carrying each one to the po
 \label{eqn:curved_trial}
 u(x) = \sum_a \phi_a(x)\, e^{\mathsf T\theta_a(x)}\, u_a, \qquad \theta_a(x) = \kappa\, \mathcal A(c, \bar x_a, x).
 \end{equation}
-At the vertex $b$ it takes the value $u_b$, since $\phi_a(\bar x_b) = \delta_{ab}$ and $\theta_b(\bar x_b) = 0$. On the edge from $a$ to $b$ only $\phi_a$ and $\phi_b$ are nonzero, and if the two values agree, $u_b$ being the transport of $u_a$, the interpolant is the parallel field along the edge (the two transported values coincide on the segment, because the signed areas add up along it). So the trace of $u$ on an edge depends only on the two vertex values and the transport of that edge, which both faces share: the element is conforming. (Along a curve a connection can always be written without rotation, so the two faces' different frames on the edge are related by a change of gauge.)
+At the vertex $b$ it takes the value $u_b$, since $\phi_a(\bar x_b) = \delta_{ab}$ and $\theta_b(\bar x_b) = 0$. On the edge from $a$ to $b$ only $\phi_a$ and $\phi_b$ are nonzero, and if the two values agree, $u_b$ being the transport of $u_a$, the interpolant is the parallel field along the edge (the two transported values coincide on the segment, because the signed areas add up along it). So the trace of $u$ on an edge depends only on the two vertex values and the transport of that edge, which both faces share: the element is conforming. (Along a curve a connection can always be written without rotation, so the two faces' different frames on the edge are related by a change of gauge.) In Cartan's terms (Section~\ref{section:map_cartan}), the face carries the frame of its layout with the connection form $\omega(X) = -A \cdot X$, whose curvature is $d\omega = -\operatorname{curl} A\; dA = -\kappa\, dA$: a moving frame whose curvature is prescribed, rather than computed from a curved geometry. The angles $\sigma_a$ are the transitions from the vertex frames into it, and $\theta_a(x)$ is the angle of parallel transport in it. Section~\ref{section:map_cartan} replaces the prescribed curvature by the true curvature of a curved element.
 
 \subsection{The covariant derivative of a trial function}
 
@@ -1728,7 +1742,7 @@ A vector field at the vertices is a list of spinor coordinates $\psi_a$, each in
 \label{eqn:dnabla}
 (d^\nabla \psi)_{ab} = \psi_b - r_{ab}\, \psi_a ,
 \end{equation}
-the \emph{covariant exterior derivative}, a discrete 1-form with values in the plane of the end vertex $b$. It is zero exactly when $\psi_b$ is the parallel transport of $\psi_a$. As a matrix it is $d_0$ with the entry $-1$ of each row replaced by $-r_{ab}$.
+the \emph{covariant exterior derivative}, a discrete 1-form with values in the plane of the end vertex $b$. It is zero exactly when $\psi_b$ is the parallel transport of $\psi_a$. As a matrix it is $d_0$ with the entry $-1$ of each row replaced by $-r_{ab}$. In a moving frame (Section~\ref{section:map_cartan}), the equation of a parallel field, $d\psi + \omega\mathsf T\psi = 0$, integrates along the edge to $\psi_b = e^{-\mathsf T\int_a^b \omega}\, \psi_a$, (\ref{eqn:rho_omega}); so $d^\nabla\psi$ measures, at $b$, how far $\psi_b$ is from the value that the moving frame equation carries from $a$.
 
 \subsection{The energy and the connection Laplacian}
 
@@ -1848,7 +1862,776 @@ coarsest sphere, mean & $0.28^\circ$ & $0.33^\circ$ & $0.33^\circ$ & $0.41^\circ
 \end{tabular}
 \end{table}
 
-For the vector heat method on reasonable meshes the four agree to a fraction of a degree, and the simplest, DEC, is a fine choice: its matrix is one product of three sparse matrices. The other parts explain what that matrix is. It is a finite element method (Part~\ref{part:dec}) that drops the curvature terms of Part~\ref{part:edge}; it works in the vertex planes of Part~\ref{part:intrinsic}; and those planes replace the vertex normals of Parts~\ref{part:matrix} and~\ref{part:ga}, which are exact on a folded flat mesh only when the folds are parallel.
+For the vector heat method on reasonable meshes the four agree to a fraction of a degree, and the simplest, DEC, is a fine choice: its matrix is one product of three sparse matrices. The other parts explain what that matrix is. It is a finite element method (Part~\ref{part:dec}) that drops the curvature terms of Part~\ref{part:edge}; it works in the vertex planes of Part~\ref{part:intrinsic}; and those planes replace the vertex normals of Parts~\ref{part:matrix} and~\ref{part:ga}, which are exact on a folded flat mesh only when the folds are parallel. Part~\ref{part:map} puts all of this on one page, and goes further.
+
+
+%%% ======================================================================
+\part{How the Pieces Fit}
+\label{part:map}
+
+The five parts were written one after another, each answering a question that the previous one left open: Part~\ref{part:matrix} derived the method, Part~\ref{part:ga} asked what is intrinsic, Part~\ref{part:intrinsic} removed the extrinsic ingredient, Part~\ref{part:edge} moved the curvature into the faces, and Part~\ref{part:dec} explained discrete exterior calculus. Read in that order they are a story. Coming back to them after a long time, a reader needs something else: a map. What is the skeleton that all five share? Where exactly do they differ, and why there and nowhere else? How are the concepts (connection, connection form, holonomy, curvature, 1-forms, the Laplacians) related to each other? Which of the methods should be used for a new problem, and what can go wrong?
+
+This part is that map. It adds no new discretization. It puts the existing ones side by side, proves two facts that join them, and places the whole family among the other ways of computing with vector fields on surfaces. The two facts are Proposition~\ref{prop:corner_edge}, which says exactly how the corner transport of Part~\ref{part:intrinsic} differs from the edge transport of Part~\ref{part:edge}, and the Weitzenb\"ock identity~(\ref{eqn:weitzenbock}), which says how the connection Laplacian of this text differs from the Hodge Laplacian of differential forms. Both are checked numerically by \code{ga\_fem}.
+
+Every section begins with a short summary and points back to where the details are, so that the sections can be read in any order:
+\begin{itemize}
+\item the common skeleton of all the methods: Section~\ref{section:map_pipeline};
+\item the three choices that make them different, and why there are only three: Section~\ref{section:map_choices};
+\item where each method keeps the curvature of the mesh: Section~\ref{section:map_curvature};
+\item corner transport against edge transport, exactly: Section~\ref{section:map_transport};
+\item the connection form, in every part: Section~\ref{section:map_form};
+\item Cartan's moving frames as the common language of Parts~\ref{part:matrix} to~\ref{part:edge}, and a sketch of a curved element of degree two built on them: Section~\ref{section:map_cartan};
+\item vector-valued forms, scalar 1-forms, the Hodge Laplacian and the Weitzenb\"ock identity: Section~\ref{section:map_forms};
+\item the standard method of numerical analysis, which needs no discrete connection at all: Section~\ref{section:map_extrinsic};
+\item what matrices, geometric algebra and complex numbers each contribute: Section~\ref{section:map_notation};
+\item one small mesh traced through every step with every method: Section~\ref{section:map_example};
+\item the concept map, the master table and the list of symbols: Sections~\ref{section:map_concepts} and~\ref{section:map_tables};
+\item which method to choose, how to extend it to a new problem, and the mistakes to avoid: Section~\ref{section:map_choose}.
+\end{itemize}
+
+%%% ----------------------------------------------------------------------
+\section{One Pipeline for All the Methods}
+\label{section:map_pipeline}
+
+\paragraph{Summary.} All five parts run the same eight steps (Figure~\ref{fig:pipeline}). Five of them are identical in every part. The methods differ only in steps 2, 3 and 6: where the unknown vector of a vertex lives, how the vectors of two vertices are compared, and which element matrix integrates the energy.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_pipeline}}
+\caption{The pipeline that every part of this text follows. The highlighted steps are the only ones in which the methods differ (Section~\ref{section:map_choices}); step 4 is not a choice but a consequence of steps 2 and 3.}
+\label{fig:pipeline}
+\end{figure}
+
+\paragraph{The problem.} Given a tangent vector at one vertex of a triangle mesh, find at every other vertex the vector obtained by parallel transport along the shortest path. The vector heat method (Section~\ref{section:pde}) answers it by one backward Euler step of the heat equation for tangent fields, $(I + \Delta t\, \nabla^*\nabla)\, U = U^0$, followed by normalization. Everything in this text is a way of discretizing $\nabla^*\nabla$, the connection Laplacian, with one complex unknown per vertex.
+
+\paragraph{Step 1: the geometry of the mesh.} What is read from the mesh. Parts~\ref{part:matrix} and~\ref{part:ga} read the positions $x_i$, and compute normals, frames and rotations of space from them. Parts~\ref{part:intrinsic} to~\ref{part:dec} read only the edge lengths $\ell_{ij}$. The difference is smaller than it looks: by Proposition~\ref{prop:metric_only}, everything a single face contributes (area, gradients of the hat functions, the scalar stiffness and mass) depends on the positions only through the Gram matrix $G_f = B^T B$, which the three lengths determine~(\ref{eqn:gram}). The positions carry, in addition, how the faces are tilted with respect to each other in space. That extra information is used in one place only: step 2 of Parts~\ref{part:matrix} and~\ref{part:ga}.
+
+\paragraph{Step 2: the vertex planes.} The unknown at vertex $i$ is a tangent vector, stored as a complex number $\psi_i$, a length and an angle. An angle needs a plane to be measured in, and a vertex of a mesh has no tangent plane (Section~\ref{section:int_vertex}): its directions form a circle of total angle $\Theta_i$, not $2\pi$. So each method must \emph{invent} a plane for every vertex. Part~\ref{part:ga} takes the plane orthogonal to the vertex normal~(\ref{eqn:vertex_normal}) and rolls each face rigidly into it. Parts~\ref{part:intrinsic} to~\ref{part:dec} take the cone of directions and stretch every angle by $s_i = 2\pi/\Theta_i$~(\ref{eqn:scale}). In both, the angle $\varphi = 0$ is the reference edge \code{vi.edge}, so that $\psi_i$ means the same thing (``this many degrees from the reference edge'') in all the methods, and their solutions can be compared.
+
+\paragraph{Step 3: the transport.} Two numbers $\psi_i$ and $\psi_j$ live in two different planes and cannot be subtracted until one of them is carried into the plane of the other. The rule that carries them is the discrete connection. Parts~\ref{part:matrix} to~\ref{part:intrinsic} carry each vertex value into each face around it, one angle $\rho_i^f$ per \emph{corner} $(i, f)$; two vertices of a face are then compared inside the face. Parts~\ref{part:edge} and~\ref{part:dec} carry a vertex value directly into the plane of a neighbor, one angle $\rho_{ab}$ per \emph{edge}. Section~\ref{section:map_transport} compares the two exactly.
+
+\paragraph{Step 4: the curvature.} A transport that is followed around a closed loop comes back turned by some angle, its \emph{holonomy}, and that angle is the curvature enclosed by the loop. Which loops close and which do not is decided by steps 2 and 3, not chosen separately. The total is always the same, $2\pi\chi$ on a closed mesh, because of the discrete Gauss--Bonnet theorem (Section~\ref{section:int_vertex}); what changes from method to method is \emph{where} it is kept (Section~\ref{section:map_curvature}).
+
+\paragraph{Step 5: the covariant derivative of a trial field.} The finite element method interpolates the vertex values inside each face and differentiates the result. The derivative is the covariant derivative $D\psi = d\psi + \omega \mathsf T \psi$ of Part~\ref{part:ga}, with the connection form $\omega$ of the face. If the transport of step 3 makes the face flat, $\omega = 0$ inside it and $D$ is the ordinary gradient; that is the case in Parts~\ref{part:matrix} to~\ref{part:intrinsic}, and also, by decision rather than necessity, in Part~\ref{part:dec}. Part~\ref{part:edge} gives the face the curved connection~(\ref{eqn:symmetric_gauge}).
+
+\paragraph{Step 6: the element matrix.} The integral of $|D\psi|^2$ over a face, written as a Hermitian $3 \times 3$ matrix in the three vertex values. For a flat face it is always the scalar cotangent element with a phase on every entry: $\mathrm L^f_{ab} = A_f\, \nabla\phi_a \cdot \nabla\phi_b\; e^{\mathsf T \delta_{ab}}$, where $e^{\mathsf T\delta_{ab}}$ is the transport from $b$ to $a$ that the method uses \emph{in that face}. The curved element of Part~\ref{part:edge} changes the integrand itself.
+
+\paragraph{Steps 7 and 8: assembly, solve, draw.} The same in every part. The element matrices are added into an $n \times n$ Hermitian matrix $\mathrm L$; the lumped mass is $\mathrm M_{ii} = \frac13 \sum_{f \ni i} A_f$; the backward Euler step $(\mathrm M + \Delta t\, \mathrm L)\psi = \mathrm M \psi^0$ is scaled by $\mathrm M^{-1}$, the row of the source is replaced by the prescribed value, and the system is solved by sparse LU (Section~\ref{section:solve}). Finally $\psi_i / |\psi_i|$ is drawn, which needs the positions again (the function \code{lift}, Section~\ref{section:int_fem}).
+
+\paragraph{Why so few steps differ.} The weak form, the Galerkin method, linear hat functions, assembly and the solver are standard finite element machinery, the same as for the scalar heat equation \cite{Sayas2015, Langtangen2014}. The only ingredient that the scalar method does not have is the comparison of vectors at different points, the connection, and every difference between the methods is a different way of discretizing it.
+
+%%% ----------------------------------------------------------------------
+\section{Three Choices, and One That Is Not a Choice}
+\label{section:map_choices}
+
+\paragraph{Summary.} The methods are the cells of a small grid (Figure~\ref{fig:choices}): choice A, the vertex planes (extrinsic or intrinsic), times choice B, the transport (corner or edge), with choice C, the element, nearly forced by B. The notation (matrices, geometric algebra, complex numbers) is not a fourth choice: it changes no number.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_choices}}
+\caption{The methods of this text as cells of a grid. Rows: choice A, how a vertex gets a plane. Columns: choice B, what the transport connects. Inside each cell, choice C, the element, and the consequences: where the curvature lives, and whether a mesh that is bent but intrinsically flat is treated exactly. The empty cell is discussed in Section~\ref{section:map_choices}.}
+\label{fig:choices}
+\end{figure}
+
+\subsection{Choice A: how a vertex gets a plane}
+
+\emph{Extrinsic} (Parts~\ref{part:matrix}, \ref{part:ga}): the plane orthogonal to the vertex normal, with each face rolled into it by the smallest rotation of space. It uses one piece of information more than the lengths, the tilt of the faces. That information helps when the mesh samples a smooth surface whose normals it approximates well (the coarse spheres of Section~\ref{section:int_experiments}, where Part~\ref{part:ga} is the most accurate), and it hurts when the tilt is not related to the intrinsic geometry, as on the Miura-ori, where it produces errors of up to $21.9^\circ$ on a mesh that is isometric to a flat sheet. The construction fails when a face normal is opposite to the vertex normal.
+
+\emph{Intrinsic} (Parts~\ref{part:intrinsic} to~\ref{part:dec}): the cone of directions stretched by $s_i = 2\pi/\Theta_i$. It uses only the lengths, so it gives the same answer on all isometric meshes: exactly the answer of the flat sheet on every bent flat mesh. It never fails for non-degenerate triangles.
+
+\subsection{Choice B: what the transport connects}
+
+\emph{Corner transport} (Parts~\ref{part:matrix} to~\ref{part:intrinsic}): an angle $\rho_i^f$ for every pair of a vertex and a face around it. A vertex value is carried into a face; two vertex values meet inside the face. \emph{Edge transport} (Parts~\ref{part:edge}, \ref{part:dec}): an angle $\rho_{ab}$ for every oriented edge, with $\rho_{ba} = -\rho_{ab}$ (up to whole turns). A vertex value is carried directly into the plane of a neighbor. Section~\ref{section:map_transport} shows that the two differ by a small, explicit correction, and Section~\ref{section:map_form} that only the second is a discrete 1-form of the mesh.
+
+\subsection{Choice C: the element, nearly forced by B}
+
+With corner transport, the three values of a face are carried into one flat frame of that face, and around the face the transports compose to the identity: $(\rho_a - \rho_b) + (\rho_b - \rho_c) + (\rho_c - \rho_a) = 0$. There is nothing to curve, and the element is the flat one~(\ref{eqn:intrinsic_element}). With edge transport, the three transports around a face compose to $e^{\mathsf T\Omega_f}$, which is not the identity, and no flat frame of the face can agree with all three of them (Section~\ref{section:edge_element}). Then there are exactly three things one can do:
+\begin{enumerate}
+\item give the face a connection with total curvature $\Omega_f$, and integrate the energy of the curved trial functions: the curved element of Part~\ref{part:edge}, conforming, with quadrature;
+\item keep the flat element but put the edge transport of each pair on its entry anyway: DEC, Part~\ref{part:dec}, a variational crime of order $\Omega_f$;
+\item choose for each corner the angle $\sigma_a^f$ that makes a flat frame agree with the three edges as well as possible. But a choice of one angle per corner \emph{is} a corner transport, and its own transports around the face close; the mismatch with the edge transports puts the curvature back at the vertices. This option is corner transport again, and nothing new.
+\end{enumerate}
+So the element is not an independent choice: B decides it, except for the decision between options 1 and 2.
+
+\subsection{The empty cell}
+
+Extrinsic planes with edge transport were not built in this text. They are easy to define: keep the angle of a vector to the edge, as in~(\ref{eqn:edge_transport}), but measure the angle of the edge in each vertex plane after projecting the edge into that plane. The face holonomies would then add up to $2\pi\chi$ as long as the projected edges keep their order around each vertex. On a bent flat mesh, however, the projected angles differ from the true ones, so the faces would get holonomies that the paper does not have, and the method would not be exact on the Miura-ori. The extrinsic error moves from the vertices into the faces; it does not disappear. Since the purpose of Part~\ref{part:edge} was a method that is exact on bent flat meshes, this cell was left empty.
+
+\subsection{The notation is not a choice}
+
+Part~\ref{part:matrix} writes every transport as a real $2 \times 2$ rotation, Part~\ref{part:ga} as a unit complex number of the face plane $e^{\mathsf T\rho}$ computed with rotors of space, and Parts~\ref{part:intrinsic} to~\ref{part:dec} as a \code{std::complex}. On the cactus the real and the complex systems agree to $6 \cdot 10^{-16}$ (Section~\ref{section:ga_code}). The notation decides how clearly the method can be explained and how much code is needed, not which numbers come out. Section~\ref{section:map_notation} says what each notation is good for.
+
+%%% ----------------------------------------------------------------------
+\section{Where the Curvature Lives}
+\label{section:map_curvature}
+
+\paragraph{Summary.} Every method keeps the whole curvature of the mesh, $2\pi\chi$; they differ in where they put it. Parts~\ref{part:matrix} and~\ref{part:ga} put it at the vertices, in the gaps between the rolled corners, unevenly, according to the tilt of the faces. Part~\ref{part:intrinsic} puts it at the vertices, in every corner in proportion to its angle. Part~\ref{part:edge} puts the same shares inside the faces, spread evenly. Part~\ref{part:dec} keeps the same shares on the boundaries of the faces, and treats the inside as flat (Figure~\ref{fig:curvature_moves}).
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_curvature_moves}}
+\caption{The leaning pyramid of Example~\ref{ex:int_leaning}, seen from its apex, with an angle defect of $69.5^\circ$; corners counterclockwise from the reference edge (blue). Each method keeps the $69.5^\circ$ somewhere else (red numbers, adding up to $69.5^\circ$ in every panel). II: in the gaps between the corners rolled into the plane of the vertex normal. III: in every corner, stretched by $s_i = 1.2391$. IV: the same shares, as the holonomies of the five faces, spread evenly inside each face (the shade is the density $\kappa = \Omega_f/A_f$). V: the same holonomies, kept only in the transports around each face.}
+\label{fig:curvature_moves}
+\end{figure}
+
+\paragraph{The upright pyramid.} The apex of the pyramid over a regular pentagon with equilateral faces (Example~\ref{ex:int_pyramid}) has five corners of $60^\circ$, $\Theta = 300^\circ$, a defect of $60^\circ$ and $s = 1.2$. Part~\ref{part:ga} rolls the five faces into the horizontal plane and leaves five gaps of $12^\circ$. Part~\ref{part:intrinsic} stretches each corner to $72^\circ$: each absorbs $12^\circ$. Part~\ref{part:edge} computes the edge transports~(\ref{eqn:edge_transport}), and each face gets the holonomy $\Omega_f = (s - 1)\cdot 60^\circ = 12^\circ$~(\ref{eqn:face_holonomy}). The base vertices are on the boundary ($s = 1$) and contribute nothing. Five times $12^\circ$ is $60^\circ$ in all four methods, and by symmetry it is distributed in the same way; the methods agree here, and the program finds the four solutions with the source at the apex equal to rounding at every base corner.
+
+\paragraph{The leaning pyramid.} Moving the apex by $0.4$ breaks the symmetry (Example~\ref{ex:int_leaning}): the defect is $69.47^\circ$, $s = 1.2391$, and the corners are $70.49^\circ$, $70.49^\circ$, $51.37^\circ$, $46.81^\circ$, $51.37^\circ$. Part~\ref{part:intrinsic} gives each corner $(s - 1)\alpha$: $16.85^\circ$, $16.85^\circ$, $12.28^\circ$, $11.19^\circ$, $12.28^\circ$. Part~\ref{part:edge} gives each face the holonomy $\Omega_f = \sum_v (s_v - 1)\alpha_v$, and since the base vertices have $s = 1$, these are the same five numbers, now attached to the faces. Part~\ref{part:ga} leaves the gaps $23.66^\circ$, $15.18^\circ$, $7.72^\circ$, $7.72^\circ$, $15.18^\circ$, which depend on how far each face is tilted from the vertex normal. With the source at the apex, the solutions of Parts~\ref{part:intrinsic} and~\ref{part:edge} differ at the base corners by $0.09^\circ$ at most, DEC differs from Part~\ref{part:intrinsic} by $0.97^\circ$, and Part~\ref{part:ga} by $10.9^\circ$.
+
+\paragraph{The sum is fixed, the place is not.} In all four methods the total over a closed mesh is $2\pi\chi$. For Parts~\ref{part:intrinsic} to~\ref{part:dec} this is the discrete Gauss--Bonnet theorem, because $\sum_f \Omega_f = \sum_v (s_v - 1)\Theta_v = \sum_v \kappa_v$ (Section~\ref{section:edge_transport}). For Part~\ref{part:ga} the gaps around each vertex add up to its defect (Section~\ref{section:int_vertex}). So the methods do not disagree about \emph{how much} curvature the mesh has; they disagree about \emph{where} inside a one-ring it is. On a fine mesh of a smooth surface the defect of every vertex is small, $s_i \to 1$, all the shares shrink, and the place stops mattering: that is why all four converge to the same answer (Figure~\ref{fig:four_plots}). On a coarse, strongly curved mesh the place is a modeling decision, worth a few degrees on the cactus (Section~\ref{section:dec_results}).
+
+\paragraph{Consequences of the place.} Three facts of the earlier parts follow from this section alone.
+\begin{itemize}
+\item \emph{Exactness on bent flat meshes.} If every vertex is flat, $\Theta_i = 2\pi$, the intrinsic shares are all zero and there is no curvature anywhere for Parts~\ref{part:intrinsic} to~\ref{part:dec}: they are exact. The gaps of Part~\ref{part:ga} cancel in total at such a vertex but not one by one, unless all the faces are rolled about one line, which is why only the parallel folds are exact for it.
+\item \emph{The accuracy of DEC on coarse meshes.} DEC knows $\Omega_f$ only through the transports on the boundary of the face; the trial functions inside are flat. The terms it drops are of order $\Omega_f$, so it is the least accurate method when the faces hold large holonomies, the coarse spheres, and the difference disappears when they do not (Section~\ref{section:dec_results}).
+\item \emph{The cost of a curved face.} Spreading $\Omega_f$ inside the face, Part~\ref{part:edge}, makes the element conforming but requires quadrature, and on the vector heat method it buys nothing over Part~\ref{part:intrinsic}. On the energy of a smooth field it buys a factor of seven to ten in accuracy (Section~\ref{section:map_forms}).
+\end{itemize}
+
+%%% ----------------------------------------------------------------------
+\section{Corner Transport and Edge Transport, Exactly}
+\label{section:map_transport}
+
+\paragraph{Summary.} The corner transport of Part~\ref{part:intrinsic}, followed from a vertex into a face and out to another vertex, is the edge transport of Part~\ref{part:edge} along the same edge, turned by half the stretching of the two corners at the ends of the edge in that face (Proposition~\ref{prop:corner_edge}). The two faces of an edge turn it in opposite directions, so the corner transport along an edge depends on the face it goes through, and the difference between the two faces, $H_{ij}$, is where Part~\ref{part:intrinsic} keeps its curvature.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_corner_edge}}
+\caption{Left: corner transport connects every vertex with every face around it (green). Around one face it closes, but going from $i$ to $j$ through $f$ and coming back through $g$ turns a vector by $H_{ij}$, (\ref{eqn:edge_loop}). Right: edge transport connects neighboring vertices directly (orange), with one transport per edge that both faces share; around a face it turns by $\Omega_f$.}
+\label{fig:corner_edge}
+\end{figure}
+
+\subsection{Two vertices compared through a face}
+
+In the face $f$, the value $\psi_b$ of vertex $b$ is carried into the face by $e^{\mathsf T\rho_b^f}$ and from there into the plane of vertex $a$ by $e^{-\mathsf T\rho_a^f}$. So corner transport defines, for every face and every pair of its vertices, a vertex-to-vertex transport
+\begin{equation}
+\label{eqn:corner_vertex}
+\text{from } b \text{ to } a \text{ through } f: \quad e^{\mathsf T(\rho_b^f - \rho_a^f)} ,
+\end{equation}
+the phase that the element~(\ref{eqn:intrinsic_element}) puts on its entry $(a, b)$. An interior edge $ab$ has two faces, so it gets two transports, one through each, and nothing makes them equal. Edge transport instead fixes one transport per edge, $e^{\mathsf T\rho_{ab}}$, which both faces use. How far apart are the two? The answer is short.
+
+\begin{prop}
+\label{prop:corner_edge}
+Let $f$ be the face to the left of the half edge from $a$ to $b$, with corner angles $\alpha_a^f$ at $a$ and $\alpha_b^f$ at $b$, and let $s_a, s_b$ be the scales~(\ref{eqn:scale}) of the two vertices. Then the corner transport of Part~\ref{part:intrinsic} from $a$ to $b$ through $f$ and the edge transport of Part~\ref{part:edge} are related by
+\begin{equation}
+\label{eqn:corner_edge}
+\rho_a^f - \rho_b^f = \rho_{ab} - \tfrac12 \big[ (s_a - 1)\, \alpha_a^f + (s_b - 1)\, \alpha_b^f \big] .
+\end{equation}
+Through the face $g$ to the right of the half edge the sign of the correction is reversed: $\rho_a^g - \rho_b^g = \rho_{ab} + \tfrac12 \big[ (s_a - 1)\, \alpha_a^g + (s_b - 1)\, \alpha_b^g \big]$.
+\end{prop}
+\begin{proof}
+Let $c$ be the third vertex of $f$, so that $a, b, c$ are counterclockwise. Measure angles at each vertex with the cone angles $\theta$ of~(\ref{eqn:cone_angle}), and write $\theta_{ab}$ for the cone angle at $a$ of the half edge from $a$ to $b$. The corner of $f$ at $a$ begins at the edge to $b$: in the cone of $a$ it is the interval $[\theta_{ab}, \theta_{ab} + \alpha_a^f]$. The corner of $f$ at $b$ begins at the edge to $c$ and ends at the edge to $a$: it is $[\theta_{bc}, \theta_{bc} + \alpha_b^f]$, with $\theta_{ba} = \theta_{bc} + \alpha_b^f$. In the face frame let $\beta_{ab}$ and $\beta_{bc}$ be the directions of the edges from $a$ to $b$ and from $b$ to $c$; walking counterclockwise around the face, the direction turns left by $\pi - \alpha_b^f$ at $b$, so $\beta_{bc} = \beta_{ab} + \pi - \alpha_b^f$. By~(\ref{eqn:intrinsic_rho}),
+\begin{equation*}
+\rho_a^f = \beta_{ab} + \tfrac12\alpha_a^f - s_a\big(\theta_{ab} + \tfrac12\alpha_a^f\big), \qquad
+\rho_b^f = \beta_{bc} + \tfrac12\alpha_b^f - s_b\big(\theta_{bc} + \tfrac12\alpha_b^f\big),
+\end{equation*}
+and by~(\ref{eqn:edge_transport}), with $\varphi = s\theta$, $\rho_{ab} = s_b\theta_{ba} + \pi - s_a\theta_{ab}$. Subtract, and replace $\beta_{bc}$ and $\theta_{ba}$:
+\begin{align*}
+(\rho_a^f - \rho_b^f) - \rho_{ab}
+&= \beta_{ab} - \beta_{bc} - \pi + \tfrac12 (1 - s_a)\alpha_a^f - \tfrac12\alpha_b^f + s_b\theta_{bc} + \tfrac12 s_b \alpha_b^f - s_b \theta_{ba} \\
+&= (\alpha_b^f - 2\pi) + \tfrac12 (1 - s_a)\alpha_a^f - \tfrac12\alpha_b^f - s_b \alpha_b^f + \tfrac12 s_b\alpha_b^f \\
+&= -\tfrac12 (s_a - 1)\alpha_a^f - \tfrac12 (s_b - 1)\alpha_b^f - 2\pi ,
+\end{align*}
+which is~(\ref{eqn:corner_edge}) up to a whole turn. For $g$, apply this to the half edge from $b$ to $a$, which has $g$ to its left, and use $\rho_{ba} \equiv -\rho_{ab}$.
+\end{proof}
+
+The proposition is checked by \code{ga\_fem}: on every half edge of the cactus the two sides of~(\ref{eqn:corner_edge}) agree to $1.4 \cdot 10^{-13}$ degrees, while the corrections themselves reach $13.5^\circ$. The check divides the corner transport through the face by the edge transport of the same half edge, and compares the angle of the quotient with the prediction:
+\lstinputlisting[firstline=849, lastline=863, firstnumber=849]{../src/ga_fem.cpp} On the upright pyramid every correction along an edge from the apex is $\mp 6^\circ$, half of the stretching $(1.2 - 1)\cdot 60^\circ$ of the apex corner (the base corners have $s = 1$).
+
+\paragraph{Reading the proposition.} In words: carrying a vector from $a$ into $f$ and out to $b$, Part~\ref{part:intrinsic} keeps its angle to the edge $ab$, as the edge transport does, except that each corner is stretched, and the edge sits at the side of the stretched corner, displaced by half the stretching (Figure~\ref{fig:corner_map}). So:
+\begin{enumerate}
+\item On a flat vertex, $s = 1$, there is no correction: corner transport and edge transport are the same rule, the unfolding.
+\item Summed around the face $f$, every corner appears twice, at the start of one edge and at the end of another, and the corrections add up to $-\sum_v (s_v - 1)\alpha_v^f = -\Omega_f$: exactly what is needed to cancel the holonomy of the edge transport, so that corner transport closes around every face, as it must.
+\item The element~(\ref{eqn:intrinsic_element}) of Part~\ref{part:intrinsic} and the DEC element of Part~\ref{part:dec} have the same moduli, and their phases differ on every entry by the correction~(\ref{eqn:corner_edge}). DEC is Part~\ref{part:intrinsic} with the corrections removed; Part~\ref{part:edge} removes them too, and puts the curvature into the trial functions instead.
+\end{enumerate}
+
+\subsection{The edge loop: where Part III keeps its curvature}
+
+Go from $a$ to $b$ through $f$ and come back from $b$ to $a$ through $g$ (Figure~\ref{fig:corner_edge}, left). By the proposition, the vector comes back turned by
+\begin{equation}
+\label{eqn:edge_loop}
+H_{ab} = \tfrac12 \big[ (s_a - 1)(\alpha_a^f + \alpha_a^g) + (s_b - 1)(\alpha_b^f + \alpha_b^g) \big] ,
+\end{equation}
+the transport through $g$ minus the transport through $f$. This is the curvature of corner transport: it is not on the faces, where corner transport closes, but on the loops that cross an edge from one face to the other. Each vertex contributes, to each of its edges, half the stretching of the two corners on either side of that edge. Summing over the edges of a closed mesh, every corner is counted once for each of its two sides, so
+\begin{equation}
+\label{eqn:edge_loop_sum}
+\sum_{\text{edges}} H_{ab} = \sum_v (s_v - 1)\, \Theta_v = \sum_v \kappa_v = 2\pi\chi ,
+\end{equation}
+which the program finds on the cactus, $4\pi$ to all digits. On the leaning pyramid the five edges from the apex have $H = 16.85^\circ$, $14.57^\circ$, $11.74^\circ$, $11.74^\circ$, $14.57^\circ$ (each the mean of the shares of its two faces), adding up to the defect $69.47^\circ$. The same loop with the corner transport of Part~\ref{part:ga} turns by $23.66^\circ$, $15.18^\circ$, $7.72^\circ$, $7.72^\circ$, $15.18^\circ$: exactly the gaps between the rolled corners on either side of each edge. (At the base vertices, which have two faces each, the vertex normal lies in the plane of the two face normals, so both faces are rolled about the common edge, rolling is unfolding there, and there is no gap.)
+
+\begin{rem}
+\label{rem:incidence}
+Corner angles are not a 1-form of the mesh, but they are a 1-form of another graph: the graph whose nodes are the vertices and the faces of the mesh, with a link from each vertex to each face around it. A change of the frame of vertex $i$ by $\theta_i$ and of face $f$ by $\theta_f$ changes $\rho_i^f$ by $\theta_i - \theta_f$, a discrete gradient on that graph (Section~\ref{section:map_form}). Its smallest cycles are $a \to f \to b \to g \to a$, one for each edge of the mesh, and their holonomies are the $H_{ab}$. The faces of the mesh are not cycles of that graph, which is why corner transport has no holonomy on them and why the identities of discrete exterior calculus, $d^\nabla d^\nabla = 1 - e^{\mathsf T\Omega_f}$ on the faces (Section~\ref{section:dec_vector}), have no counterpart for it.
+\end{rem}
+
+\subsection{What the choice means for a new problem}
+
+If a problem is naturally stated on edges, with prescribed holonomies, singularities of a direction field placed in faces, a discrete gauge to be fixed, or a 1-form to be integrated, build it on edge transport (Parts~\ref{part:edge}, \ref{part:dec}), where those objects exist. If a problem is naturally stated as an energy of a field, with new terms to be added and integrated face by face, build it on corner transport (Part~\ref{part:intrinsic}), where every face is flat and every integral is the scalar one with a phase. The proposition is the bridge: either set of angles can be computed from the other with~(\ref{eqn:corner_edge}).
+
+%%% ----------------------------------------------------------------------
+\section{The Connection Form, Part by Part}
+\label{section:map_form}
+
+\paragraph{Summary.} The connection form $\omega$ is the infinitesimal version of the transport: how fast a frame turns, measured against parallel transport. It appears in every part, but discretized differently: as zero inside the flat faces (Parts~\ref{part:matrix} to~\ref{part:intrinsic}, \ref{part:dec}), as a finite rotation per corner (Parts~\ref{part:matrix} to~\ref{part:intrinsic}), as a discrete 1-form on the edges, $\rho_{ab} = -\int_a^b \omega$ (Parts~\ref{part:edge}, \ref{part:dec}), and as a smooth 1-form $A$ inside each face (Part~\ref{part:edge}). Table~\ref{tab:connection_form} lists them.
+
+\paragraph{The smooth definition, again.} In a frame field $t$, a tangent field is $U = t\psi$, and the covariant derivative becomes $D_X\psi = X\cdot\nabla\psi + \omega(X)\,\mathsf T\psi$, (\ref{eqn:ga_covariant}): the change of the coordinate, corrected by the turning $\omega(X)$ of the frame. It appeared first in Part~\ref{part:matrix} as the skew $2 \times 2$ matrix of~(\ref{eqn:covariant_frame}). A field is parallel along a curve $\gamma$ from $p$ to $q$ when $D_{\dot\gamma}\psi = 0$, that is $\dot\psi = -\omega(\dot\gamma)\,\mathsf T\psi$, so
+\begin{equation}
+\label{eqn:rho_omega}
+\psi(q) = e^{-\mathsf T \int_\gamma \omega}\; \psi(p) :
+\end{equation}
+the transport along a curve, in coordinates, is the exponential of minus the integral of the connection form along it. This is the bridge between the infinitesimal object $\omega$ and the finite angles $\rho$ of the discrete methods.
+
+\begin{table}[t]
+\centering
+\caption{The connection form in each part of the text: what represents it, where it lives, and where the curvature, $d\omega$, ends up.}
+\label{tab:connection_form}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.12\linewidth} >{\raggedright\arraybackslash}p{0.3\linewidth} >{\raggedright\arraybackslash}p{0.24\linewidth} >{\raggedright\arraybackslash}p{0.26\linewidth}}
+\toprule
+Part & what represents $\omega$ & where it lives & curvature $d\omega$ \\
+\midrule
+smooth & $\omega(X)$, (\ref{eqn:ga_omega}), (\ref{eqn:covariant_frame}) & a 1-form on the surface & $d\omega = -K\, dA$, Remark~\ref{rem:structure} \\
+I, II & $0$ inside each face; finite rotation $R_i^f$, $e^{\mathsf T\rho_i^f}$ by rolling & corners & gaps of the rolled corners, at the vertices \\
+III & $0$ inside each face; $e^{\mathsf T\rho_i^f}$ by bisectors, (\ref{eqn:intrinsic_rho}) & corners (a 1-form of the vertex--face graph, Remark~\ref{rem:incidence}) & $H_{ab}$ on the edge loops, from the vertex defects \\
+IV & $\rho_{ab}$ on the edges, (\ref{eqn:edge_transport}); inside each face $A$ with $\operatorname{curl} A = \kappa$, (\ref{eqn:symmetric_gauge}) & edges, and inside faces & $\Omega_f = d\rho$, spread with density $\Omega_f / A_f$ \\
+V (DEC) & $\rho_{ab}$ on the edges; $0$ inside each face & edges & $\Omega_f = d\rho$, on the face boundary only \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Edge transport is a discrete connection form.} By~(\ref{eqn:rho_omega}) along the straight edge from $a$ to $b$, with the frames of the two vertex planes at its ends, $r_{ab} = e^{\mathsf T\rho_{ab}}$ with $\rho_{ab} \approx -\int_a^b \omega$: one number per oriented edge, changing sign with the orientation, which is what a discrete 1-form is (Section~\ref{section:dec_forms}). In Part~\ref{part:edge}, inside a face, $\omega(X) = -A \cdot X$, so the transport along a segment is $e^{\mathsf T\int A\cdot dx}$, (\ref{eqn:segment_transport}), with the plus sign. (The sign is a convention: $\omega$ measures how the frame turns, $A$ how a parallel vector turns in the frame, and the two are opposite.) The holonomy of a face is then $\Omega_f = \rho_{ab} + \rho_{bc} + \rho_{ca} = (d_1\rho)_f$, the discrete exterior derivative, and by Stokes's theorem it approximates $-\oint\omega = -\int_f d\omega = \int_f K\, dA$, the curvature of the face, by the structure equation $d\omega = -K\, dA$ (Remark~\ref{rem:structure}).
+
+\paragraph{Discrete changes of frame.} The frame of every plane is arbitrary, and a change of frame must change the angles in a way that leaves everything geometric alone, as~(\ref{eqn:ga_gauge}) does in the smooth case. Rotating the frame of vertex $i$ by $\theta_i$, $t_i \to t_i e^{\mathsf T\theta_i}$, changes its coordinates to $\psi_i' = e^{-\mathsf T\theta_i}\psi_i$. Rotating the frame of face $f$ by $\theta_f$ does the same to the coordinates of the face. For the vector of the face, $e^{\mathsf T\rho_i^f}\psi_i$, and the transported value, $r_{ab}\psi_a = \psi_b$, to stay the same geometric vectors, the angles must change as
+\begin{equation}
+\label{eqn:discrete_gauge}
+\rho_i^f \to \rho_i^f + \theta_i - \theta_f, \qquad \rho_{ab} \to \rho_{ab} - (\theta_b - \theta_a) = \rho_{ab} - (d_0\theta)_{ab} .
+\end{equation}
+The second is the discrete form of $\omega \to \omega + d\theta$: the edge angles change by a discrete gradient. Every quantity that is a sum of angles around a closed loop is unchanged: the face holonomies $\Omega_f$, because $d_1 d_0 = 0$; the edge loops $H_{ab}$, because each frame enters once with each sign; and the transport between two vertices through a face, $\rho_b^f - \rho_a^f$, loses its dependence on $\theta_f$, which is the cancellation of the face frame noticed in Section~\ref{section:transport}. The element matrices change by $\mathrm L^f_{ab} \to e^{-\mathsf T\theta_a}\mathrm L^f_{ab}\, e^{\mathsf T\theta_b}$, a diagonal unitary change of basis of the whole system, and the solution by $\psi_i \to e^{-\mathsf T\theta_i}\psi_i$: the vectors drawn are the same.
+
+This has a practical consequence that is easy to forget. The \emph{phases} of the matrix entries depend on the frames, so the phases of two methods can be compared only if they use the same frames. Parts~\ref{part:intrinsic} to~\ref{part:dec} all measure angles from the reference edge in the same stretched cone, so their phases can be compared entry by entry (Section~\ref{section:map_example}). Part~\ref{part:ga} measures from the reference edge \emph{projected} into the plane of the vertex normal, which at a vertex whose reference edge is not in that plane is a different frame; its phases differ from those of Part~\ref{part:intrinsic} by a constant per vertex that means nothing. The quantities that can be compared across all methods are the gauge-invariant ones: the holonomies, the loops $H_{ab}$, the energies, and the vectors that the methods put into the faces (Section~\ref{section:int_experiments}).
+
+%%% ----------------------------------------------------------------------
+\section{Cartan's Moving Frames: One Language for Parts I to IV}
+\label{section:map_cartan}
+
+\paragraph{Summary.} In Cartan's method of moving frames one does not differentiate vectors directly. One chooses an orthonormal frame on each piece of the surface, writes every field by its coordinates in that frame, and keeps track of how the frame turns with one 1-form, the connection form $\omega$. Two equations, the structure equations, compute $\omega$ from the metric and the curvature from $\omega$. Every method of this text is a choice made inside this language: which frame each element and each vertex gets, what $\omega$ is inside an element, and how the frames of neighbors are related (Table~\ref{tab:frames}). The same language gives a way to go beyond flat triangles: a curved element of degree two whose frames turn inside it, sketched at the end of this section.
+
+\subsection{Frames, coframes and the structure equations}
+
+On a piece of the surface, choose a positively oriented orthonormal frame field $(e_1, e_2)$, with $e_2 = n \times e_1 = e_1\mathsf T$; in Part~\ref{part:ga} it was $(t, b)$. Its \emph{coframe} is the pair of 1-forms that read the coordinates of a tangent vector in the frame,
+\begin{equation}
+\label{eqn:coframe}
+\theta^1(X) = e_1 \cdot X, \qquad \theta^2(X) = e_2 \cdot X, \qquad X = \theta^1(X)\, e_1 + \theta^2(X)\, e_2 .
+\end{equation}
+The coframe carries the metric, $|X|^2 = \theta^1(X)^2 + \theta^2(X)^2$, and the area form, $dA = \theta^1\wedge\theta^2$. The frame turns as one moves along the surface, and since it stays orthonormal, the derivative of $e_1$ is a multiple of $e_2$ and conversely:
+\begin{equation}
+\label{eqn:frame_derivative}
+\nabla_X e_1 = \omega(X)\, e_2, \qquad \nabla_X e_2 = -\,\omega(X)\, e_1 .
+\end{equation}
+This $\omega$ is the connection form of~(\ref{eqn:ga_omega}) and~(\ref{eqn:covariant_frame}).
+
+\begin{prop}[Structure equations]
+\label{prop:structure}
+For an orthonormal frame on a surface with Gaussian curvature $K$,
+\begin{equation}
+\label{eqn:structure}
+d\theta^1 = \omega \wedge \theta^2, \qquad d\theta^2 = -\,\omega \wedge \theta^1, \qquad d\omega = -K\, \theta^1 \wedge \theta^2 .
+\end{equation}
+\end{prop}
+\begin{proof}
+For a 1-form $\theta$ and two vector fields, $d\theta(X, Y) = X(\theta(Y)) - Y(\theta(X)) - \theta([X, Y])$. With $\theta^1(Y) = e_1 \cdot Y$ and the metric compatibility~(\ref{eqn:metric_compatible}), $X(e_1\cdot Y) = \nabla_X e_1 \cdot Y + e_1 \cdot \nabla_X Y = \omega(X)\,\theta^2(Y) + e_1\cdot\nabla_X Y$. Subtracting the same with $X$ and $Y$ exchanged, and using that the connection has no torsion, $\nabla_X Y - \nabla_Y X = [X, Y]$ (Section~\ref{section:ga_intrinsic}), the last terms give $\theta^1([X, Y])$ and cancel: $d\theta^1(X, Y) = \omega(X)\theta^2(Y) - \omega(Y)\theta^2(X) = (\omega\wedge\theta^2)(X, Y)$. The same computation with $\nabla_X e_2 = -\omega(X) e_1$ gives the second equation. For the third, compute the curvature on $e_1$, $R(X, Y) e_1 = \nabla_X\nabla_Y e_1 - \nabla_Y\nabla_X e_1 - \nabla_{[X,Y]} e_1$. By~(\ref{eqn:frame_derivative}), $\nabla_X(\omega(Y) e_2) = X(\omega(Y))\, e_2 - \omega(Y)\omega(X)\, e_1$, and the terms in $e_1$ cancel in the antisymmetric combination, leaving $R(X, Y) e_1 = d\omega(X, Y)\, e_2$. The Gaussian curvature is $K = R(e_1, e_2)e_2 \cdot e_1 = -R(e_1, e_2) e_1 \cdot e_2 = -d\omega(e_1, e_2)$ (the curvature operator is antisymmetric), which is the third equation.
+\end{proof}
+
+\paragraph{What the equations say.} The first two determine $\omega$. Writing $d\theta^1 = a\, \theta^1\wedge\theta^2$ and $d\theta^2 = b\, \theta^1\wedge\theta^2$, they give
+\begin{equation}
+\label{eqn:omega_from_coframe}
+\omega = a\, \theta^1 + b\, \theta^2 .
+\end{equation}
+The coframe depends only on the metric and on the choice of $e_1$, so $\omega$ does too: no normal, no ambient space. This is the theorem that the Levi-Civita connection is intrinsic (Section~\ref{section:ga_intrinsic}), in a form that can be computed. The third equation says that the curvature is the exterior derivative of the connection form, so that, by Stokes's theorem, the holonomy around a loop, $-\oint\omega$, is the curvature enclosed, $\int K\, dA$: the fact used in every part, now with its sign.
+
+\begin{example}
+\label{ex:cartan_sphere}
+In the plane with polar coordinates and the frame $e_1 = \partial_r$, $e_2 = \frac1r \partial_\varphi$: $\theta^1 = dr$, $\theta^2 = r\, d\varphi$, $d\theta^1 = 0$, $d\theta^2 = dr \wedge d\varphi = \frac1r \theta^1\wedge\theta^2$, so $a = 0$, $b = \frac1r$, $\omega = d\varphi$ (the radial frame turns by the polar angle) and $d\omega = 0$: the plane is flat. On the unit sphere with colatitude $\vartheta$ and the frame $e_1 = \partial_\vartheta$, $e_2 = \frac{1}{\sin\vartheta}\partial_\varphi$: $\theta^1 = d\vartheta$, $\theta^2 = \sin\vartheta\, d\varphi$, $d\theta^2 = \cos\vartheta\, d\vartheta\wedge d\varphi = \cot\vartheta\; \theta^1\wedge\theta^2$, so $\omega = \cot\vartheta\;\theta^2 = \cos\vartheta\, d\varphi$, and $d\omega = -\sin\vartheta\, d\vartheta\wedge d\varphi = -\theta^1\wedge\theta^2$: $K = 1$. Around the circle of colatitude $\vartheta$ the holonomy is $-\oint\omega = -2\pi\cos\vartheta \equiv 2\pi(1 - \cos\vartheta)$, the area of the cap it bounds, as in Example~\ref{ex:holonomy}. And the frame is singular at the poles, where $d\varphi$ is not defined (Figure~\ref{fig:moving_frames}).
+\end{example}
+
+\paragraph{Changing the frame.} Turning the frame by an angle field $\alpha$, $e_1 \to e_1\cos\alpha + e_2 \sin\alpha$, changes the connection form to $\omega + d\alpha$ and the coordinates of every vector by $e^{-\mathsf T\alpha}$: the change of gauge~(\ref{eqn:ga_gauge}). The curvature $d\omega$ does not change, because $dd\alpha = 0$. Every frame-independent quantity of the text, the energy, the holonomies, the solution as a field of vectors, is invariant for this reason.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_moving_frames}}
+\caption{Moving frames. Left: the frame of colatitude and longitude on the sphere, $e_1 = \partial_\vartheta$ (red), $e_2 = \frac{1}{\sin\vartheta}\partial_\varphi$ (blue), with connection form $\omega = \cos\vartheta\, d\varphi$; it turns faster and faster near the pole, where it is singular. Every frame field on a sphere has singularities (Poincar\'e--Hopf). Right: the piecewise-constant frames of Parts~\ref{part:matrix} to~\ref{part:intrinsic}, one per face (along the first edge, red), with no singularity anywhere; the frames jump across the edges, and the corner angles $\rho_i^f$ record the jumps.}
+\label{fig:moving_frames}
+\end{figure}
+
+\subsection{The energy in a moving frame, and every part as a choice}
+
+With $U = e_1\psi$, the covariant derivative is $\nabla_X U = e_1\, (X\cdot\nabla\psi + \omega(X)\,\mathsf T\psi)$, (\ref{eqn:ga_covariant}), and the Dirichlet energy is $\int |d\psi + \omega\mathsf T\psi|^2\, dA$. A finite element method in this language needs three things on every element: a frame, its connection form inside the element, and the transitions between that frame and the frames in which the unknowns are stored. Table~\ref{tab:frames} lists the choices of this text.
+
+\begin{table}[t]
+\centering
+\caption{Every method of the text as a choice of moving frames: the frame inside an element, its connection form there, the frame of each unknown, and the transition between them.}
+\label{tab:frames}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.1\linewidth} >{\raggedright\arraybackslash}p{0.22\linewidth} >{\raggedright\arraybackslash}p{0.19\linewidth} >{\raggedright\arraybackslash}p{0.21\linewidth} >{\raggedright\arraybackslash}p{0.2\linewidth}}
+\toprule
+method & frame inside an element & $\omega$ inside & frame of the unknowns & transition \\
+\midrule
+I, II & face frame $t_f$, first edge, constant & $0$ & vertex frame from $n_i$ & $\rho_i^f$, rolling \\
+III & $x$ axis of the layout, constant & $0$ & reference edge of the stretched cone & $\rho_i^f$, bisectors \\
+IV & layout frame with prescribed curvature & $-A\cdot X$, $d\omega = -\kappa\, dA$ & stretched cone & $\sigma_a$, and $\theta_a(x)$ inside \\
+V (DEC) & none: the element is not a field & dropped & stretched cone & $\rho_{ab}$ on edges \\
+P2 (below) & frame of the curved element, $e_1 = \partial_1 F / |\partial_1 F|$ & from~(\ref{eqn:omega_from_coframe}), varies & stretched cone at vertices, edge tangent at edge nodes & per node, and parallel transport inside \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Three ways to build a finite element method on moving frames}
+
+\begin{enumerate}
+\item \emph{One constant frame per flat face.} Then $\omega = 0$ inside every face, the energy of a face is the scalar one, and all the geometry goes into the transitions. This is Parts~\ref{part:matrix} to~\ref{part:intrinsic}; Cartan's language adds the explanation of why the element is so simple, and Part~\ref{part:edge} is the variant in which the frame of the face is allowed to turn with a prescribed curvature.
+\item \emph{One frame field for the whole surface.} Store the two components $u^1, u^2$ of the field in a global frame, interpolate each with scalar hat functions, and keep $\omega$ in the energy. No transitions are needed. But a frame field on a closed surface other than a torus must have singularities, by the Poincar\'e--Hopf theorem (the indices of a vector field add up to $\chi$), and $\omega$ blows up at them, as $\cos\vartheta\, d\varphi$ does at the poles. The approach works on a plane domain, a torus or a single parametrized patch; on a sphere it needs several patches with transition rotations between them, which brings back the discrete transports of option 1.
+\item \emph{One frame per curved element.} Let the elements themselves be curved, give each the frame of its own parametrization, compute $\omega$ inside it from~(\ref{eqn:omega_from_coframe}), and relate the frames of neighbors by transitions at the nodes. This is the natural higher-order extension of the text, and the one sketched next. Chun's method of moving frames solves conservation laws on curved surfaces in this way, with a frame per element of high order \cite{Chun2012}.
+\end{enumerate}
+
+\subsection{A curved element of degree two in moving frames: a sketch}
+\label{section:map_p2}
+
+This element has not been implemented; the steps below say how it would be built, and where the choices are. It extends Part~\ref{part:edge}: there, a flat face was given a connection with a prescribed curvature; here, a curved face carries its own frame, and its connection form and curvature are those of its geometry.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_p2_element}}
+\caption{A curved element of degree two. Left: the reference triangle with its six nodes, three vertices and three edge nodes. Middle: its image on the unit sphere under the quadratic map $F$ through six points of the sphere, with the moving frame of the element, $e_1 = \partial_1 F/|\partial_1 F|$ (red) and $e_2 = n \times e_1$ (blue), at a few points: the frame turns inside the element, and its connection form $\omega$ measures how. Right: where the curvature of a mesh of such elements lives: inside the elements ($K\, dA$, shaded), on the edges (the jump $[\kappa_g]$ of the geodesic curvature of the shared edge curve, red), and at the vertices (the angle defect $\kappa_v$ of the curved corners, dot), (\ref{eqn:p2_gauss_bonnet}).}
+\label{fig:p2_element}
+\end{figure}
+
+\paragraph{1. Geometry.} Each element has six nodes, its three vertices and one node on each edge (on a smooth surface, for instance, the midpoint of the edge projected onto the surface). With the barycentric coordinates $\lambda_1 = 1 - \xi_1 - \xi_2$, $\lambda_2 = \xi_1$, $\lambda_3 = \xi_2$ of the reference triangle, the six quadratic shape functions are
+\begin{equation}
+\label{eqn:p2_shape}
+N_a = \lambda_a (2\lambda_a - 1) \quad (a = 1, 2, 3), \qquad N_{ab} = 4\lambda_a\lambda_b \quad (ab = 12, 23, 31),
+\end{equation}
+each equal to $1$ at its node and $0$ at the other five. The element is the image of the map $F(\xi) = \sum_n N_n(\xi)\, x_n$, a curved triangle in space. Its Jacobian $J(\xi) = [\,\partial_1 F \;\; \partial_2 F\,]$ is a $3\times 2$ matrix that varies over the element, its metric is $G(\xi) = J^T J$ (the Gram matrix of Part~\ref{part:intrinsic}, now a function of $\xi$), its area element $\sqrt{\det G}\, d\xi$, and its normal $n = \partial_1F\times\partial_2F / |\partial_1F\times\partial_2F|$. Two neighbors share the three nodes of their common edge, so they share the edge curve exactly: the surface is continuous, but its tangent plane jumps across the edges.
+
+\paragraph{2. Frame and connection form.} The frame of the element is $e_1 = \partial_1 F / |\partial_1 F|$, $e_2 = n \times e_1$: Gram--Schmidt applied to $J$, which depends only on $G$. Its connection form, by~(\ref{eqn:frame_derivative}), has the components
+\begin{equation}
+\label{eqn:p2_omega}
+\omega_k = \omega(\partial_k F) = e_2 \cdot \partial_k e_1 \qquad (k = 1, 2),
+\end{equation}
+computed from the second derivatives of $F$; alternatively, (\ref{eqn:omega_from_coframe}) computes it from $G$ and its first derivatives alone, which makes the element intrinsic for a given metric of the curved element. As a vector of the tangent plane, $\omega(X) = w \cdot X$ with $w = J\, G^{-1} (\omega_1, \omega_2)^T$, the same formula as for the gradients of the hat functions, $\nabla N_n = J\, G^{-1}\hat\nabla N_n$ (Proposition~\ref{prop:gradient}, with $B$ replaced by $J(\xi)$). The curvature inside the element is $K = -(\partial_1\omega_2 - \partial_2\omega_1)/\sqrt{\det G}$, by~(\ref{eqn:structure}).
+
+\paragraph{3. Where the curvature lives.} On a mesh of flat triangles all the curvature is at the vertices. On a mesh of curved elements it lives in three places. Inside each element there is the smooth curvature $K$. On each edge, the edge curve has a geodesic curvature $\kappa_g^K$ seen from one element $K$ and $\kappa_g^L$ seen from the other, each measured towards the inside of its own element; on a smooth surface they cancel, here their sum $[\kappa_g] = \kappa_g^K + \kappa_g^L$ is a curvature concentrated on the edge. At each vertex there is the angle defect $\kappa_v = 2\pi - \Theta_v$ of the curved corners, measured between the tangents of the edge curves. The Gauss--Bonnet theorem of each element, $\int_K K\, dA + \oint_{\partial K}\kappa_g\, ds + \sum (\pi - \alpha) = 2\pi$, summed over a closed mesh with $3F = 2E$, gives
+\begin{equation}
+\label{eqn:p2_gauss_bonnet}
+\sum_K \int_K K\, dA + \sum_e \int_e [\kappa_g]\, ds + \sum_v \kappa_v = 2\pi\chi :
+\end{equation}
+the same total as always, now spread over the three dimensions of the mesh. For flat triangles the first two sums vanish and only the defects remain, which is the setting of Parts~\ref{part:matrix} to~\ref{part:dec}. As the curved mesh is refined on a smooth surface, the edge jumps and the vertex defects shrink, and the curvature moves into the elements, where the frame computes it exactly.
+
+\paragraph{4. Nodes and their planes.} The unknowns are complex numbers $\psi_n$ at the vertices and at the edge nodes, each in a plane of its own. At a vertex, use the stretched cone of Part~\ref{part:intrinsic}, with the angles of the curved corners. At an edge node, the two elements each see half a turn, so the cone is flat ($s = 1$) and needs no stretching; take its reference direction along the tangent of the edge curve. The transition $\rho_n^K$ into the frame of element $K$ is the bisector rule~(\ref{eqn:intrinsic_rho}) at a vertex, and at an edge node the angle of the edge tangent in the frame of $K$.
+
+\paragraph{5. Trial functions: transport, then interpolate.} Following Part~\ref{part:edge}, carry each nodal value from its node to the point $\xi$ by parallel transport inside the element, and then interpolate:
+\begin{equation}
+\label{eqn:p2_trial}
+u_K(\xi) = \sum_n N_n(\xi)\; e^{\mathsf T(\rho_n^K + \vartheta_n(\xi))}\, \psi_n, \qquad \vartheta_n(\xi) = -\int_{\xi_n}^{\xi} \omega ,
+\end{equation}
+with the integral along the straight segment from the node $\xi_n$ to $\xi$ in the reference triangle, as in~(\ref{eqn:rho_omega}); the field is $U = e_1\, u_K$. On an edge, the segment between two of its points runs along the edge, so the transport there is parallel transport along the edge curve, which the two elements agree on up to the jump $[\kappa_g]$. The traces of neighbors therefore agree up to a term proportional to $[\kappa_g]$, which vanishes under refinement on a smooth surface: a variational crime of the kind DEC commits on the faces, here confined to the edges. The cheaper choice $\vartheta_n = 0$, interpolating in the frame of the element without transport, makes the traces depend on how each element's frame turns along the edge, and is not recommended.
+
+\paragraph{6. The covariant derivative and the element matrices.} By the product rule, as in Part~\ref{part:edge},
+\begin{equation}
+\label{eqn:p2_derivative}
+D\big(N_n\, e^{\mathsf T(\rho_n + \vartheta_n)}\big) = e^{\mathsf T(\rho_n + \vartheta_n)}\, \big( \nabla N_n + \mathsf T\, N_n\, (\nabla\vartheta_n + w) \big),
+\end{equation}
+where $\nabla\vartheta_n + w$ plays the role of $w_a = \nabla\theta_a - A$ of~(\ref{eqn:w}) and vanishes at the node $n$. The element matrices are $6 \times 6$ and Hermitian,
+\begin{align}
+\label{eqn:p2_element}
+\mathrm L^K_{ab} &= \int_K e^{\mathsf T(\rho_b + \vartheta_b - \rho_a - \vartheta_a)}\, \overline{(\nabla N_a + \mathsf T N_a (\nabla\vartheta_a + w))} \cdot (\nabla N_b + \mathsf T N_b (\nabla\vartheta_b + w))\, dA, \\
+\mathrm M^K_{ab} &= \int_K e^{\mathsf T(\rho_b + \vartheta_b - \rho_a - \vartheta_a)}\, N_a N_b\, dA, \nonumber
+\end{align}
+integrated with a Gauss rule on the reference triangle, $dA = \sqrt{\det G}\, d\xi$, with a one-dimensional rule for each $\vartheta_n$ at each Gauss point. Two cautions. The integrands are not polynomials (they contain $G^{-1}$, $\sqrt{\det G}$ and the phases), so the rule must be chosen by a convergence test, as in Part~\ref{part:edge}. And the row-sum lumping of~(\ref{eqn:lumped_mass}) fails for quadratic elements, because the vertex functions $N_a$ integrate to zero over a flat triangle: use the consistent mass, or a lumping designed for quadratic elements.
+
+\paragraph{7. Assembly and solution.} Unchanged: the unknowns are the vertex and edge nodes, about four times as many as vertices on a closed mesh ($V + E \approx 4V$), the matrices are assembled element by element into a Hermitian system, and the backward Euler step and the Dirichlet row are those of Section~\ref{section:solve}.
+
+\paragraph{What it would buy, and what it would cost.} For a smooth solution, finite elements of degree two approximate the field to one order higher than linear ones \cite{Sayas2015}, provided the geometry is approximated to the same order, which the curved elements do, and the edge crime of step 5 is small enough; this has not been verified here. The gain matters most where the answer is a smooth field or an energy, as for the rotation field of Section~\ref{section:map_forms}, where even the flat curved element of Part~\ref{part:edge} was seven to ten times more accurate. For the vector heat method itself, the time step and the normalization near the cut locus may limit the accuracy before the element does. The costs are a mesh with edge nodes, quadrature with nested integrals for the transports, the consistent mass, and four times as many unknowns.
+
+%%% ----------------------------------------------------------------------
+\section{Vector-Valued Forms, Scalar 1-Forms, and Two Laplacians}
+\label{section:map_forms}
+
+\paragraph{Summary.} Two different things go by the name of ``1-form'' in this subject. A \emph{tangent-valued} 1-form takes a direction and returns a tangent vector; the covariant derivative $\nabla U$ is one, and every energy of this text is its squared norm. A \emph{scalar} 1-form takes a direction and returns a number; a tangent field $U$ becomes one, $U^\flat = \langle U, \cdot\rangle$, and can then be stored by numbers on the edges and differentiated with $d$, without any connection. The natural Laplacian of scalar 1-forms, the Hodge Laplacian, is not the connection Laplacian: on a surface they differ by the Gaussian curvature, $\Delta_{\mathrm H} = \nabla^*\nabla + K$, the Weitzenb\"ock identity~(\ref{eqn:weitzenbock}). The program checks it on a rotation field of the sphere.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_vector_storage}}
+\caption{Four ways to store a tangent field on a mesh. (a) One complex number per vertex, in a plane invented for that vertex: this text. (b) Three numbers per vertex, a vector of space, which in general leaves the plane of the faces between the vertices: the extrinsic surface finite elements of Section~\ref{section:map_extrinsic}. (c) One number per edge, the integral of the field along it, a scalar 1-form: DEC and Whitney forms. (d) One vector per face, in the plane of the face: face-based methods.}
+\label{fig:vector_storage}
+\end{figure}
+
+\subsection{Four ways to store a field}
+
+Figure~\ref{fig:vector_storage} shows the four discretizations of a tangent field in common use. This text uses (a): its unknowns are the vertex values $\psi_i$, and the connection is what makes them comparable. The other three avoid inventing vertex planes, each in its own way. (b) stores the field in the common space $\R^3$, where vectors at different points can be added, and pays with a field that is not tangent (Section~\ref{section:map_extrinsic}). (c) stores, instead of a vector, how much of it points along each edge: the edge is the same edge for both of its faces, so no transport is needed, and the exterior derivative is exact. (d) stores one vector per face, in the plane of the face, which exists; comparing two neighboring faces needs only the unfolding across their common edge, which is exact and intrinsic. The constraint of this text, unknowns at the vertices, rules out (c) and (d); they are the natural choice for problems built on divergence and curl, and for direction fields with singularities, respectively \cite{Vaxman2016, deGoes2015}.
+
+\subsection{Tangent-valued 1-forms}
+
+The covariant derivative of a tangent field is the map $X \mapsto \nabla_X U$ from tangent vectors to tangent vectors: a 1-form with values in the tangent plane, in a frame the $2 \times 2$ matrix of Section~\ref{section:transport}. The Dirichlet energy~(\ref{eqn:dirichlet}) is its squared norm. In the discrete methods it appears as:
+\begin{itemize}
+\item inside a face of Parts~\ref{part:matrix} to~\ref{part:intrinsic}, the constant matrix $\sum_a (e^{\mathsf T\rho_a^f}\psi_a) \otimes \nabla\phi_a$ of~(\ref{eqn:grad_trial}): a tangent-valued 1-form that is constant on the face;
+\item inside a face of Part~\ref{part:edge}, $\sum_a e^{\mathsf T(\sigma_a + \theta_a)}\psi_a \otimes (\nabla\phi_a + \mathsf T\phi_a w_a)$, which varies across the face;
+\item in DEC, the covariant exterior derivative $(d^\nabla\psi)_{ab} = \psi_b - r_{ab}\psi_a$, (\ref{eqn:dnabla}), ``a discrete 1-form with values in the plane of the end vertex'': it integrates $\nabla U$ along the edge.
+\end{itemize}
+There is one more tangent-valued 1-form behind every formula, although it is rarely named: the identity map $X \mapsto X$, called $dx$ or the \emph{solder form}. Its discrete version is the list of edge vectors $x_b - x_a$, and in the intrinsic parts the Gram matrix $G_f$ is what remains of it once the embedding is forgotten. Any energy of a new problem in this family is a quadratic form in these objects, which is why they are the right interface for extending the method (Section~\ref{section:map_choose}).
+
+\subsection{Scalar 1-forms and the Hodge Laplacian}
+
+The metric turns a tangent field $U$ into the scalar 1-form $U^\flat$, $U^\flat(X) = U \cdot X$. On a mesh, $U^\flat$ is stored by its integrals along the edges, $\eta_{ab} = \int_a^b U \cdot dx$ (Figure~\ref{fig:vector_storage}c). The exterior derivative then gives two derivatives without any connection: $d\eta$, on the faces, the integral of $\operatorname{curl} U$ (Green's theorem), and the codifferential $\delta\eta = -\star_0^{-1} d_0^T \star_1 \eta$, at the vertices, minus the divergence of $U$ averaged over the dual cell (Section~\ref{section:dec_hodge}). The Laplacian of 1-forms is the \emph{Hodge Laplacian} $\Delta_{\mathrm H} = d\delta + \delta d$, whose energy is
+\begin{equation}
+\label{eqn:hodge_energy}
+\int_\Omega \big( (\operatorname{div} U)^2 + (\operatorname{curl} U)^2 \big)\, dA \;\approx\; \sum_f \frac{(d_1\eta)_f^2}{A_f} + \sum_i \frac{\big((d_0^T \star_1 \eta)_i\big)^2}{(\star_0)_{ii}} ,
+\end{equation}
+where $\operatorname{div} U = \tr \nabla U$ and $\operatorname{curl} U$ is the antisymmetric part, $e_2 \cdot \nabla_{e_1} U - e_1 \cdot \nabla_{e_2} U$ in an orthonormal frame. This energy is not the Dirichlet energy $\int |\nabla U|^2$: it measures only the trace and the antisymmetric part of $\nabla U$, not its symmetric traceless part. How the two energies differ is a classical identity.
+
+\subsection{The Weitzenb\"ock identity on a surface}
+
+\begin{prop}
+\label{prop:weitzenbock}
+For a tangent field $U$ on a surface with Gaussian curvature $K$,
+\begin{equation}
+\label{eqn:bochner_pointwise}
+|\nabla U|^2 + K |U|^2 = (\operatorname{div} U)^2 + (\operatorname{curl} U)^2 - \operatorname{div}\big( (\operatorname{div} U)\, U - \nabla_U U \big),
+\end{equation}
+so that on a closed surface
+\begin{equation}
+\label{eqn:weitzenbock}
+\int_\Omega |\nabla U|^2\, dA + \int_\Omega K |U|^2\, dA = \int_\Omega \big( (\operatorname{div} U)^2 + (\operatorname{curl} U)^2 \big)\, dA, \qquad \Delta_{\mathrm H} = \nabla^*\nabla + K .
+\end{equation}
+\end{prop}
+\begin{proof}
+Work in an orthonormal frame at a point, and write $a_{jk} = e_j \cdot \nabla_{e_k} U$ for the entries of the matrix of $\nabla U$. Then $|\nabla U|^2 = \sum_{jk} a_{jk}^2$, $\operatorname{div} U = a_{11} + a_{22}$, $\operatorname{curl} U = a_{21} - a_{12}$, and expanding the squares,
+\begin{equation*}
+(\operatorname{div} U)^2 + (\operatorname{curl} U)^2 = |\nabla U|^2 + 2\,(a_{11}a_{22} - a_{12}a_{21}) = |\nabla U|^2 + 2 \det \nabla U .
+\end{equation*}
+It remains to show that $2\det\nabla U = K|U|^2 + \operatorname{div}\big((\operatorname{div} U)U - \nabla_U U\big)$. Use index notation with summation over repeated indices, $U^j$ the components of $U$ and $\nabla_k U^j$ those of $\nabla U$. The divergence of $(\operatorname{div} U)U$ is $(\nabla_k U^k)^2 + U^k\nabla_k(\operatorname{div} U)$. The divergence of $\nabla_U U = U^k\nabla_k U^j$ is
+\begin{equation*}
+\nabla_j(U^k \nabla_k U^j) = (\nabla_j U^k)(\nabla_k U^j) + U^k \nabla_j \nabla_k U^j .
+\end{equation*}
+Covariant derivatives do not commute, and their commutator is the curvature: $\nabla_j\nabla_k U^j - \nabla_k\nabla_j U^j = \mathrm{Ric}_{kl} U^l$, the Ricci identity \cite{doCarmo1976, Petersen2016}, and on a surface the Ricci tensor is $K$ times the metric. So $U^k\nabla_j\nabla_k U^j = U^k\nabla_k(\operatorname{div} U) + K|U|^2$, and subtracting,
+\begin{equation*}
+\operatorname{div}\big((\operatorname{div} U)U - \nabla_U U\big) = (\tr\nabla U)^2 - \tr\big((\nabla U)^2\big) - K|U|^2 = 2\det\nabla U - K |U|^2,
+\end{equation*}
+using $(\tr A)^2 - \tr(A^2) = 2\det A$ for $2 \times 2$ matrices. This proves~(\ref{eqn:bochner_pointwise}). On a closed surface the divergence integrates to zero, which gives the first part of~(\ref{eqn:weitzenbock}); the second is the same statement for the operators, since the left side is $\int (\nabla^*\nabla U + KU)\cdot U$ by Green's identity~(\ref{eqn:green}) and the right side is $\int \Delta_{\mathrm H} U^\flat \cdot U^\flat$.
+\end{proof}
+
+When does the difference matter? The two operators have the same leading part, $\nabla^*\nabla$, and differ by a term of order zero, the multiplication by $K$. For the short times of the vector heat method the leading part dominates, so both flows carry a vector along the shortest paths to leading order; the term $K$ changes how fast the magnitude decays, by a factor of about $e^{-K\Delta t}$, and the corrections of higher order. For an energy, an eigenvalue or a smoothest field it changes the answer at first order: where $K > 0$ the Hodge energy charges $|U|^2$ more than the Dirichlet energy, where $K < 0$ less, and the minimizers of the two differ wherever the surface is curved. So $\nabla^*\nabla$ is the operator to discretize when the problem is about parallel transport, as here, and $\Delta_{\mathrm H}$ when it is about divergence and curl. (The extra energy of a curved face in Part~\ref{part:edge}, $\frac{\kappa^2}{4}\int \phi^2 |\bar x_a - x|^2$, is a relative of the term $K|U|^2$: both are the energy that curvature adds to a field that is as parallel as it can be.)
+
+\begin{example}
+\label{ex:killing}
+On the unit sphere, $K = 1$, take the rotation about the $z$ axis, $U(x) = e_z \times x$ (Figure~\ref{fig:killing}). At the point of colatitude $\vartheta$, $|U| = \sin\vartheta$. For a tangent direction $X$, $D_X U = e_z \times X$; writing $e_z = (e_z \cdot n)\, n + $ (a tangent vector), the tangent part is $\nabla_X U = (e_z\cdot n)\, n \times X = \cos\vartheta\; J X$, a quarter turn scaled by $\cos\vartheta$. So $\operatorname{div} U = 0$, $\operatorname{curl} U = 2\cos\vartheta$, $|\nabla U|^2 = 2\cos^2\vartheta$, and with $\int_{S^2}\cos^2\vartheta\, dA = \frac{4\pi}{3}$,
+\begin{equation*}
+\int |\nabla U|^2 = \frac{8\pi}{3}, \qquad \int K |U|^2 = \int \sin^2\vartheta = 4\pi - \frac{4\pi}{3} = \frac{8\pi}{3}, \qquad \int (\operatorname{curl} U)^2 = \frac{16\pi}{3} :
+\end{equation*}
+the Dirichlet energy is half of the Hodge energy, and the curvature term is the other half, as~(\ref{eqn:weitzenbock}) requires.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_killing}}
+\caption{Left: the rotation field of Example~\ref{ex:killing}. Right: the errors of its Dirichlet energy, $\psi^H \mathrm L \psi$ with the four connection Laplacians, and of its Hodge energy~(\ref{eqn:hodge_energy}), on the geodesic spheres of 42 to 10242 vertices. All decrease like $h^2$. The curved element of Part~\ref{part:edge} is the most accurate by a factor of seven to ten.}
+\label{fig:killing}
+\end{figure}
+
+\paragraph{The check.} \code{ga\_fem} computes the three integrals on the geodesic spheres of Section~\ref{section:int_experiments}. For the Dirichlet energy it puts the exact field into each method's vertex planes (for Part~\ref{part:ga} by the vertex frame; for Parts~\ref{part:intrinsic} to~\ref{part:dec} by carrying the direction of $U$ in each face back to the vertex with the method's own rule, averaged over the corners) and evaluates $\psi^H \mathrm L\, \psi$. For the Hodge energy it integrates $U^\flat$ along the edges, which is exact here, $\eta_{ab} = \int_a^b (e_z \times x)\cdot dx = e_z \cdot (x_a \times x_b)$ along the straight edge, and evaluates~(\ref{eqn:hodge_energy}) with the matrices of Part~\ref{part:dec}. For the curvature term it uses the angle defects, $\sum_i \kappa_i |U(x_i)|^2$. The Hodge energy and the curvature term, in code:
+\lstinputlisting[firstline=1072, lastline=1101, firstnumber=1072]{../src/ga_fem.cpp}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{r | c c c c | c | c}
+\toprule
+& \multicolumn{4}{c|}{$\int |\nabla U|^2 \to 8\pi/3 = 8.37758$} & Hodge $\to 16\pi/3$ & $\sum \kappa_i |U_i|^2$ \\
+vertices & II & III & IV & V & $= 16.75516$ & \\
+\midrule
+42 & 7.90207 & 7.89790 & 8.31244 & 7.77699 & 15.55458 & 8.37758 \\
+162 & 8.25370 & 8.25269 & 8.36226 & 8.22018 & 16.44170 & 8.37758 \\
+642 & 8.34625 & 8.34597 & 8.37380 & 8.33773 & 16.67571 & 8.37758 \\
+2562 & 8.36972 & 8.36964 & 8.37663 & 8.36758 & 16.73520 & 8.37758 \\
+10242 & 8.37561 & 8.37559 & 8.37734 & 8.37508 & 16.75016 & 8.37758 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Four observations. First, every column converges to its limit, and Hodge minus Dirichlet tends to $8\pi/3$, the curvature term: the identity holds in the limit for all four methods. It does not hold exactly on a coarse mesh (on 42 vertices, Hodge minus DEC is $7.78$), because the discrete Hodge energy and the discrete connection energies are built from different ingredients. Second, the curvature column is exact at every resolution; that is a property of these meshes, not of the method: the angle defects of a mesh with icosahedral symmetry have a second moment $\sum_i \kappa_i x_i x_i^T$ proportional to the identity, so $\sum_i \kappa_i (1 - z_i^2) = 4\pi - \frac13 \cdot 4\pi$ exactly. Third, the divergence part of~(\ref{eqn:hodge_energy}) is $10^{-13}$ on the coarsest sphere and $8 \cdot 10^{-6}$ on the finest, against an exact value of zero. Fourth, and most interesting: on the energy of a smooth field, the curved element of Part~\ref{part:edge} is seven to ten times more accurate than the others (Figure~\ref{fig:killing}), while on the direction of the vector heat method it was not better than Part~\ref{part:intrinsic} (Section~\ref{section:edge_results}). Its trial functions contain the curvature of the face, and the energy of a smooth field on a curved surface is, in part, curvature energy. For problems whose answer is an energy, or an eigenvalue, that difference matters.
+
+%%% ----------------------------------------------------------------------
+\section{The Standard Method of Numerical Analysis Needs No Discrete Connection}
+\label{section:map_extrinsic}
+
+\paragraph{Summary.} In the numerical analysis of partial differential equations on surfaces, the usual finite element method for vector fields stores at every vertex the three components of a vector of $\R^3$, interpolates each with the scalar hat functions, and recovers the covariant derivative by projection, $\nabla_X U = P(D_X U)$ \cite{DziukElliott2013, Hansbo2020}. Vectors at different vertices are then added directly, and no transport is discretized. The price is that the discrete field is not tangent, which must be corrected by a penalty or a Lagrange multiplier, and that the normals used in the projection must be accurate.
+
+\paragraph{The idea.} The Gauss formula~(\ref{eqn:ga_gauss}) says that the covariant derivative of a tangent field is the tangent part of its derivative in space. In space, the connection is trivial: a vector at $x$ and a vector at $y$ are both arrows of $\R^3$ and can be subtracted. So if the field is stored as an $\R^3$-valued function, $U_h = \sum_a \phi_a U_a$ with $U_a \in \R^3$, its derivative is the ordinary derivative of three scalar finite element functions, and the covariant derivative is obtained by projecting with $P = I - n n^T$. The connection is still the Levi-Civita connection of the surface, but it is the one induced from $\R^3$, and it needs no discretization because the connection of $\R^3$ needs none. In this text, Section~\ref{section:galerkin} rejected exactly this interpolation, because the interpolated field is not tangent (Figure~\ref{fig:naive}); this method accepts it and corrects for it.
+
+\begin{figure}[t]
+\centering
+\adjustbox{max width=0.7\linewidth}{\input{figures/fig_extrinsic_fem}}
+\caption{Extrinsic surface finite elements. The vectors $U_a$ and $U_b$ are tangent to the planes of their vertices (blue), which are tilted with respect to the face $f$. Interpolated in $\R^3$, their average at the midpoint $m$ has a component along the face normal (dashed, exaggerated here): the discrete field leaves the surface, and the method must penalize or remove that component.}
+\label{fig:extrinsic_fem}
+\end{figure}
+
+\paragraph{The discrete problem.} A backward Euler step of the vector heat equation becomes: minimize, over the vectors $U_a \in \R^3$,
+\begin{equation}
+\label{eqn:extrinsic_energy}
+\frac12 \int_\Omega |U_h - U^0|^2\, dA + \frac{\Delta t}{2} \int_\Omega \big| P\, (D U_h)\, P \big|^2\, dA + \frac{\tau}{2} \int_\Omega (U_h \cdot n)^2\, dA ,
+\end{equation}
+where $D U_h$ is the $3 \times 3$ matrix of derivatives of the three components along the face, $P$ removes its normal row and column, and $\tau$ is a penalty parameter. Three unknowns per vertex instead of one complex number; the stiffness is the scalar stiffness for each component, mixed by $P$ (Figure~\ref{fig:vector_storage}b).
+
+\paragraph{Where the connection went.} Two subtleties replace the discrete connection, and both are where this method can go wrong.
+\begin{enumerate}
+\item \emph{The field is not tangent.} The penalty $\tau$ is a tuning parameter: too small and the field leaves the surface, too large and the system becomes ill conditioned, or the method locks. A Lagrange multiplier for $U_h \cdot n = 0$ avoids the parameter at the cost of a saddle point system.
+\item \emph{Differentiate first or project first?} For a field that is not exactly tangent, $P\, D(P U_h)\, P = P\, (D U_h)\, P - (U_h \cdot n)\, \mathcal H$, with $\mathcal H = D n$ the shape operator (Weingarten map), as one sees by differentiating $P U_h = U_h - (U_h \cdot n)\, n$. The two formulations differ by a curvature term times the normal component, and each formulation must say which one it means.
+\end{enumerate}
+The analysis of Hansbo, Larson and Larsson \cite{Hansbo2020} shows that, for the optimal rate of convergence, the normal used in the penalty term must be more accurate than the piecewise constant normals of the faces. So the extrinsic information that this text removed in Part~\ref{part:intrinsic} is, in this method, essential: on a bent flat mesh such as the Miura-ori it would inherit errors from its normals, while Parts~\ref{part:intrinsic} to~\ref{part:dec} are exact there.
+
+\paragraph{Where it fits.} It is not Part~\ref{part:matrix}. Part~\ref{part:matrix} uses $\R^3$ only to compute frames and rotations; its unknowns are two numbers per vertex, in a vertex plane, compared through a discrete connection. It is a connection method with extrinsic vertex planes. The extrinsic surface finite element method is the natural choice when the surface is known as a smooth surface (or approximated to higher order), when the problem couples tangential and normal quantities (fluid membranes, shells, moving interfaces), when error estimates are needed, and when general finite element libraries are to be used; the connection methods of this text are the natural choice when the mesh is the only data, when the answer should not depend on bending, when the field must be tangent by construction, and when the structure (holonomy, Gauss--Bonnet, index of singularities) must be exact.
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.3\linewidth} >{\raggedright\arraybackslash}p{0.29\linewidth} >{\raggedright\arraybackslash}p{0.29\linewidth}}
+\toprule
+& discrete connection (II--V) & extrinsic surface FEM \\
+\midrule
+unknowns per vertex & one complex number & three real numbers \\
+tangent by construction & yes & no: penalty or multiplier \\
+geometry it needs & angles (III--V) or normals (II) & accurate normals \\
+intrinsic & III--V yes & no \\
+exact on bent flat meshes & III--V yes & no \\
+general FEM libraries & needs custom phases & out of the box \\
+error analysis & little & mature \cite{DziukElliott2013, Hansbo2020} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%%% ----------------------------------------------------------------------
+\section{Matrices, Geometric Algebra, Complex Numbers}
+\label{section:map_notation}
+
+\paragraph{Summary.} The three notations compute the same numbers (Section~\ref{section:map_choices}). Geometric algebra is indispensable in Part~\ref{part:ga}, where planes of space are tilted against each other; once the method is intrinsic, every plane is an abstract plane, the even part of the algebra of a plane is the complex numbers, and Parts~\ref{part:intrinsic} to~\ref{part:dec} are written with \code{std::complex}. Geometric algebra becomes necessary again in three dimensions, where rotations do not commute.
+
+\paragraph{What each notation does.} Matrices (Part~\ref{part:matrix}) are the most explicit: every number is visible, which is why the code \code{FEM.cpp} was written that way, but a rotation is four numbers and a frame six, and nothing distinguishes the geometric content from the choice of basis. Geometric algebra (Part~\ref{part:ga}) names the objects themselves: the tangent plane is the bivector $\mathsf T = I n$, a rotation of the plane is $e^{\mathsf T\theta}$, a rotation of space taking one plane to another is a rotor, the gradient of a hat function is a vector of the reciprocal frame. The frame-independent content is then visible, and the formulas are shorter. Complex numbers are what remains of geometric algebra in a single plane: with $\mathsf T$ playing the role of $\mathrm i$, the even elements $\alpha + \beta\mathsf T$ multiply exactly as complex numbers do, (\ref{eqn:ga_rotation_plane}).
+
+\paragraph{Why the intrinsic parts need only complex numbers.} In Parts~\ref{part:intrinsic} to~\ref{part:dec} there is no space: a vertex plane is a stretched cone, a face is its layout in $\R^2$. Every rotation is a rotation of a plane, every transport is a multiplication by a unit complex number, and every bivector of the problem is a multiple of the single bivector of the plane. Geometric algebra still gives the right \emph{reading}: the connection form is bivector-valued (it generates rotations), the curvature $\Omega_f$ is a bivector-valued 2-form, and the identity $d^\nabla d^\nabla = 1 - e^{\mathsf T\Omega_f}$ says that the curvature acts on the field by the rotation it generates. But every bivector being a multiple of $\mathsf T$, the code is complex arithmetic. (The remark at the end of Part~\ref{part:intrinsic} relates this reading to the gauge theory of gravity; nothing in the text depends on it.)
+
+\paragraph{When geometric algebra is needed again.} Three situations bring back what Part~\ref{part:ga} had:
+\begin{itemize}
+\item \emph{Three-dimensional frames.} Frame fields in volumes, or the transport of a full frame of space along a surface, are rotations of $\R^3$, rotors of $\Ge_3$ (or unit quaternions). They do not commute, so the holonomy around a loop is no longer an angle that can be added, and the shares of curvature of Section~\ref{section:map_curvature} must be replaced by products of rotors.
+\item \emph{Coupling with extrinsic quantities.} Projections, normals, the shape operator of Section~\ref{section:map_extrinsic}: everything of Part~\ref{part:ga}.
+\item \emph{Fields of higher grade.} Bivector fields (a vorticity, an infinitesimal rotation at every point) and operators that mix grades, such as the vector derivative $\nabla = \nabla\cdot + \nabla\wedge$, whose outer part is the metric-free exterior derivative of DEC.
+\end{itemize}
+A practical design follows: write the core of a method with complex numbers, but behind an interface ``transport'' whose implementation could later be a rotor, so that the same assembly code serves the three-dimensional case.
+
+%%% ----------------------------------------------------------------------
+\section{One Mesh Through Every Step}
+\label{section:map_example}
+
+\paragraph{Summary.} The leaning pyramid of Example~\ref{ex:int_leaning}, traced through the steps of Figure~\ref{fig:pipeline} with the four methods. The program prints every number (Worked examples 9 and 10 of \code{ga\_fem}).
+
+\begin{example}
+\label{ex:map_pyramid}
+The mesh: an apex over a regular pentagon of radius $1$ at height $0.6180$, moved by $0.4$ along $x$; five faces $f = 0, \ldots, 4$, face $f$ with the vertices (apex, $f + 1$, $f + 2$), the base indices taken modulo $5$ in $1, \ldots, 5$. The apex is the only interior vertex.
+
+\emph{Step 1, geometry.} The corner angles at the apex are $70.488^\circ$, $51.373^\circ$, $46.814^\circ$, $51.373^\circ$, $70.488^\circ$ for $f = 0, \ldots, 4$, with $\Theta = 290.534^\circ$, defect $\kappa = 69.466^\circ$.
+
+\emph{Step 2, vertex planes.} Part~\ref{part:ga}: the plane of the vertex normal, which is vertical (Example~\ref{ex:int_leaning}). Parts~\ref{part:intrinsic}--\ref{part:dec}: the cone stretched by $s = 1.239096$. The base vertices are boundary vertices, $s = 1$.
+
+\emph{Step 3, transport.} The corner connections of the apex into its five faces, and the edge transports from the apex to the first base vertex of each face:
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{c c | c c | c | c}
+\toprule
+face & $\alpha$ & $\rho^f$ (II) & $\rho^f$ (III) & edge & $\rho_{ab}$ (IV, V) \\
+\midrule
+0 & $70.488^\circ$ & $-107.296^\circ$ & $-95.767^\circ$ & $0 \to 1$ & $26.828^\circ$ \\
+1 & $51.373^\circ$ & $167.036^\circ$ & $179.177^\circ$ & $0 \to 2$ & $-38.363^\circ$ \\
+2 & $46.814^\circ$ & $107.943^\circ$ & $116.066^\circ$ & $0 \to 3$ & $-107.465^\circ$ \\
+3 & $51.373^\circ$ & $53.408^\circ$ & $57.514^\circ$ & $0 \to 4$ & $177.063^\circ$ \\
+4 & $70.488^\circ$ & $-13.146^\circ$ & $-8.427^\circ$ & $0 \to 5$ & $100.500^\circ$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The numbers of II and III are close but not equal; on the upright pyramid they are equal ($-78^\circ, -150^\circ, 138^\circ, 66^\circ, -6^\circ$). Along the edge $0 \to 1$, the corner transport of Part~\ref{part:intrinsic} through face $0$ is the edge transport turned by $-8.427^\circ$, and through face $4$ turned by $+8.427^\circ$: half of the stretching $(s - 1)\cdot 70.488^\circ = 16.853^\circ$ of the apex corner of each face, as Proposition~\ref{prop:corner_edge} says. Along $0 \to 2$, through faces $1$ and $0$: $-6.142^\circ$ and $+8.427^\circ$.
+
+\emph{Step 4, curvature.} Part~\ref{part:edge} and Part~\ref{part:dec}: the face holonomies $\Omega_f = (s - 1)\alpha$, $16.853^\circ$, $12.283^\circ$, $11.193^\circ$, $12.283^\circ$, $16.853^\circ$, adding up to $69.466^\circ$. Part~\ref{part:intrinsic}: the edge loops~(\ref{eqn:edge_loop}) of the edges $0 \to 1, \ldots, 0 \to 5$, $16.853^\circ$, $14.568^\circ$, $11.738^\circ$, $11.738^\circ$, $14.568^\circ$, adding up to $69.466^\circ$. Part~\ref{part:ga}: the same loops with its own corner transport, $23.662^\circ$, $15.181^\circ$, $7.720^\circ$, $7.720^\circ$, $15.181^\circ$, the gaps of Figure~\ref{fig:curvature_moves}, adding up to $69.466^\circ$.
+
+\emph{Steps 5 and 6, element.} The entry (apex, vertex $1$) of the element matrix of face $0$. Parts~\ref{part:intrinsic} and~\ref{part:dec} have the same modulus, $A_f\,|\nabla\phi_0 \cdot \nabla\phi_1| = 0.52356$, and phases $161.599^\circ$ and $153.172^\circ$: they differ by $8.427^\circ$, the correction of Proposition~\ref{prop:corner_edge}. The curved element of Part~\ref{part:edge} has the modulus $0.52427$ and the phase $163.738^\circ$, and its diagonal entry is $0.74917$ against $0.74794$ for the flat element: the curvature costs energy. (On the upright pyramid the same three phases are $138^\circ$, $132^\circ$ and $141.969^\circ$, and the diagonals $0.57805$ against $0.57735$, Example~\ref{ex:edge_element}.) The phase of Part~\ref{part:ga} is not comparable, because its frames at the base vertices differ (Section~\ref{section:map_form}).
+
+\emph{Steps 7 and 8, solution.} With the source at the apex, $\Delta t = h^2$, the four solutions put into the faces and compared corner by corner at the base: Part~\ref{part:edge} is within $0.09^\circ$ of Part~\ref{part:intrinsic}, DEC within $0.97^\circ$, and Part~\ref{part:ga} differs by up to $10.89^\circ$.
+\end{example}
+
+The example shows in miniature everything that the experiments of Parts~\ref{part:intrinsic} to~\ref{part:dec} show at scale: the same curvature in four places; Parts~\ref{part:intrinsic} and~\ref{part:edge} close together, because they distribute it in the same proportions; DEC a little further, because it drops the curvature inside the faces; and Part~\ref{part:ga} furthest, because it distributes the curvature by the tilt of the faces, which this leaning pyramid makes uneven.
+
+%%% ----------------------------------------------------------------------
+\section{The Concept Map}
+\label{section:map_concepts}
+
+Figure~\ref{fig:concept_map} draws every concept of the text as a node, and every arrow as a statement that the text proves, with the equation where it is proved. The upper band holds the smooth concepts, the lower band their discrete counterparts; the dashed arrows are discretizations. The colors say which part a node belongs to. Three paths through the map are worth following once.
+\begin{itemize}
+\item \emph{From metric to curvature.} Edge lengths give, by the law of cosines, the angles; the angles around a vertex give its defect; the defect, shared in proportion to the angles, gives either the edge loops of Part~\ref{part:intrinsic} or the face holonomies of Part~\ref{part:edge}; and in both cases the total is $2\pi\chi$, the discrete counterpart of Gauss--Bonnet in the upper band.
+\item \emph{From connection to operator.} The connection form, discretized as corner or edge transports, enters the element as phases; the elements, assembled, give the Hermitian connection Laplacian; the Galerkin method links it to the smooth connection Laplacian, and the Weitzenb\"ock identity to the Hodge Laplacian.
+\item \emph{From Part~\ref{part:intrinsic} to DEC.} Corner transport and edge transport differ by Proposition~\ref{prop:corner_edge}; the edge transport gives the curved element; dropping the curvature inside the integral gives DEC.
+\end{itemize}
+
+\begin{figure}[p]
+\centering
+\rotatebox{90}{\begin{minipage}{0.97\textheight}
+\centering
+\adjustbox{max width=\linewidth, max totalheight=0.8\portraitwidth}{\input{figures/fig_concept_map}}
+\caption{The concept map. Upper band: the smooth surface. Lower band: the mesh. Each arrow is a statement proved in the text, labeled with how it is obtained; each node gives the equation where it is defined. Dashed arrows go from a smooth concept to its discretization. Colors: the part to which a node belongs.}
+\label{fig:concept_map}
+\end{minipage}}
+\end{figure}
+
+%%% ----------------------------------------------------------------------
+\section{The Master Table and the Symbols}
+\label{section:map_tables}
+
+Table~\ref{tab:master} lists every concept against every method, with the code that computes it, and Table~\ref{tab:symbols} every symbol, with where it is defined. They replace, for reference, Tables~\ref{tab:map}, \ref{tab:dictionary}, \ref{tab:intrinsic} and~\ref{tab:five}, which remain where they are, each next to its own part.
+
+\begin{table}[p]
+\centering
+\rotatebox{90}{\begin{minipage}{0.97\textheight}
+\centering
+\caption{The master table: every concept of the text, in the smooth setting and in each discrete method, with the function that computes it.}
+\label{tab:master}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.11\linewidth} >{\raggedright\arraybackslash}p{0.12\linewidth} >{\raggedright\arraybackslash}p{0.15\linewidth} >{\raggedright\arraybackslash}p{0.14\linewidth} >{\raggedright\arraybackslash}p{0.14\linewidth} >{\raggedright\arraybackslash}p{0.13\linewidth} >{\raggedright\arraybackslash}p{0.14\linewidth}}
+\toprule
+concept & smooth & I, II (extrinsic) & III (intrinsic) & IV (curved) & V (DEC) & code \\
+\midrule
+input & surface in $\R^3$ & positions $x_i$ & lengths $\ell_{ij}$ & lengths & lengths & \code{intrinsic::compute} \\
+face metric & first fundamental form & $B$, $B^T B$ & $G_f$, (\ref{eqn:gram}) & $G_f$ & $G_f$ & \code{layOut} \\
+area, gradients & $dA$, $\nabla\phi$ & $\frac12|e_1 \times e_2|$, $B(B^TB)^{-1}$ & Heron, layout, (\ref{eqn:heron}), (\ref{eqn:intrinsic_gradient}) & same as III & cotangents, (\ref{eqn:star1}) & \code{layOut}, \code{hatGradients} \\
+tangent plane at a vertex & $T_x\Omega$ & $\perp n_i$, (\ref{eqn:vertex_normal}) & cone $\times\, s_i$, (\ref{eqn:scale}) & same as III & same as III & \code{computeNormals}, \code{scale} \\
+frame, gauge & $t$, $\psi$, (\ref{eqn:ga_spinor}) & projected reference edge & reference edge, $\varphi = 0$ & same as III & same as III & \code{vertexT}, \code{outAngle} \\
+connection & $\nabla_X U = P(D_X U)$ & rolling rotor $Q_{i\to f}$, $\rho_i^f$, (\ref{eqn:ga_connection}) & bisectors, $\rho_i^f$, (\ref{eqn:intrinsic_rho}) & edges, $\rho_{ab}$, (\ref{eqn:edge_transport}) & edges, $\rho_{ab}$ & \code{connection}, \code{rho}, \code{transport} \\
+connection form & $\omega$, (\ref{eqn:ga_covariant}) & 0 in faces & 0 in faces & $\rho_{ab}$; $A$ in faces, (\ref{eqn:symmetric_gauge}) & $\rho_{ab}$; 0 in faces & --- \\
+moving frame & frame field, coframe $\theta^i$, Rem.~\ref{rem:structure} & constant per face; vertex frames from $n_i$ & constant per face; vertex frames from the reference edge & layout frame with $d\omega = -\kappa\, dA$ & vertex frames only & --- \\
+curvature & $K\,dA$ & rolled gaps & edge loops $H_{ab}$, (\ref{eqn:edge_loop}) & $\Omega_f$, density $\Omega_f/A_f$ & $\Omega_f$ on $\partial f$ & \code{holonomy} \\
+Gauss--Bonnet & $\int K = 2\pi\chi$ & gaps sum to defects & (\ref{eqn:edge_loop_sum}) & $\sum_f \Omega_f = 2\pi\chi$ & same as IV & \code{totalCurvature} \\
+trial field & --- & $\sum \phi_a e^{\mathsf T\rho_a^f}\psi_a$, (\ref{eqn:ga_trial}) & same & $\sum\phi_a e^{\mathsf T\theta_a}u_a$, (\ref{eqn:curved_trial}) & none (crime) & --- \\
+covariant derivative & $D\psi$, $\nabla U$ & $\sum \nabla\phi_a\, e^{\mathsf T\rho_a}\psi_a$ & same & $\nabla\phi_a + \mathsf T\phi_a w_a$, (\ref{eqn:w}) & $d^\nabla\psi$, (\ref{eqn:dnabla}) & --- \\
+element & $\int_f |D\psi|^2$ & $A\nabla\phi_a\cdot\nabla\phi_b e^{\mathsf T(\rho_b - \rho_a)}$ & same, (\ref{eqn:intrinsic_element}) & (\ref{eqn:curved_element}), quadrature & $e^{\mathsf T\rho_{ba}} A\nabla\phi_a\cdot\nabla\phi_b$ & \code{gaform}, \code{intrinsicform}, \code{curvedElement} \\
+global operator & $\nabla^*\nabla$, (\ref{eqn:green}) & Hermitian $\mathrm L$ & same & same & $(d^\nabla)^H\star_1 d^\nabla$, (\ref{eqn:dec_energy}) & \code{*form::solve}, \code{decform::laplacian} \\
+mass & $\int|U|^2$ & $A_f/3$ lumped & same & same & $\star_0$ barycentric & --- \\
+time step & (\ref{eqn:backward_euler}) & $(\mathrm M + \Delta t\mathrm L)\psi = \mathrm M\psi^0$ & same & same & same & \code{solveScaled} \\
+exact on bent flat meshes & --- & parallel folds only & yes & yes & yes & \code{foldExperiment} \\
+sphere, 42 vertices, mean error & --- & $0.28^\circ$ & $0.33^\circ$ & $0.33^\circ$ & $0.41^\circ$ & \code{sphereAll} \\
+energy of a rotation field, 42 vertices & $8\pi/3 = 8.378$ & $7.902$ & $7.898$ & $8.312$ & $7.777$ & \code{killingEnergies} \\
+\bottomrule
+\end{tabular}
+\end{minipage}}
+\end{table}
+
+\begin{table}[p]
+\centering
+\caption{The symbols of the text, where they are defined, and the traps among them.}
+\label{tab:symbols}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.13\linewidth} >{\raggedright\arraybackslash}p{0.52\linewidth} >{\raggedright\arraybackslash}p{0.27\linewidth}}
+\toprule
+symbol & meaning & defined in \\
+\midrule
+$T$, $T_i$, $T_f$ & $3 \times 2$ frame matrix $[t \;\; n \times t]$ & (\ref{eqn:frame}), (\ref{eqn:vertex_frame}) \\
+$\mathsf T$ & unit tangent bivector $I n$; the imaginary unit of a plane & (\ref{eqn:ga_T}) \\
+$\psi$, $u$ & spinor (complex) coordinate of a tangent vector, $U = t\psi$ & (\ref{eqn:ga_spinor}), (\ref{eqn:dofs}) \\
+$R_i^f$, $\rho_i^f$ & corner transport from vertex $i$ into face $f$: $2\times 2$ rotation, its angle & (\ref{eqn:connection}), (\ref{eqn:ga_connection}), (\ref{eqn:intrinsic_rho}) \\
+$Q_{i\to f}$ & smallest rotation (rotor) taking $n_i$ to $n_f$ & (\ref{eqn:rodrigues}), (\ref{eqn:ga_Q}) \\
+$\omega$ & connection form of a frame field & (\ref{eqn:covariant_frame}), (\ref{eqn:ga_omega}) \\
+$G_f$ & Gram matrix, metric of a face & (\ref{eqn:metric}), (\ref{eqn:gram}) \\
+$\alpha$, $\alpha_a^f$ & corner angle (of face $f$ at vertex $a$) & (\ref{eqn:law_of_cosines}) \\
+$\Theta_i$ & total angle around vertex $i$ & (\ref{eqn:total_angle}) \\
+$\kappa_i$ & \textbf{angle defect} $2\pi - \Theta_i$ of a vertex (a total curvature) & (\ref{eqn:defect}) \\
+$\kappa$ & \textbf{curvature density} $\Omega_f / A_f$ inside a face of Part~\ref{part:edge}; not the same as $\kappa_i$ & (\ref{eqn:kappa}) \\
+$s_i$ & scale $2\pi/\Theta_i$ of a vertex; $1$ on the boundary & (\ref{eqn:scale}) \\
+$\theta$, $\varphi$ & cone angle at a vertex; stretched angle $\varphi = s\theta$ & (\ref{eqn:cone_angle}), (\ref{eqn:scale}) \\
+$\theta_a(x)$ & in Part~\ref{part:edge}: the angle of transport from $\bar x_a$ to $x$ in a curved face; unrelated to the cone angle & (\ref{eqn:curved_trial}) \\
+$\beta_e$ & direction of an edge in the face frame (layout) & Section~\ref{section:int_triangle} \\
+$\rho_{ab}$, $r_{ab}$ & edge transport from $a$ to $b$: angle, unit complex number; $r_{ba} = \overline{r_{ab}}$ & (\ref{eqn:edge_transport}) \\
+$\Omega_f$ & holonomy of face $f$, $d\rho$ around it & (\ref{eqn:face_holonomy}) \\
+$H_{ab}$ & holonomy of the edge loop of corner transport & (\ref{eqn:edge_loop}) \\
+$\sigma_a$ & angle from the plane of vertex $a$ into the frame of a curved face & (\ref{eqn:sigma}) \\
+$A$ & smooth connection 1-form inside a curved face, $\omega(X) = -A\cdot X$ & (\ref{eqn:symmetric_gauge}) \\
+$w_a$ & $\nabla\theta_a - A$, the curvature term of the curved element & (\ref{eqn:w}) \\
+$\mathcal A(p, q, r)$ & signed area of a triangle & (\ref{eqn:segment_transport}) \\
+$d_0$, $d_1$, $d^\nabla$ & incidence matrices; covariant exterior derivative & (\ref{eqn:dec_d}), (\ref{eqn:dnabla}) \\
+$\star_0$, $\star_1$, $\star_2$ & Hodge stars: dual area, cotangent weight, inverse area & (\ref{eqn:hodge}) \\
+$\mathrm L$, $\mathrm M$ & stiffness (connection Laplacian), lumped mass & (\ref{eqn:linear_system}), (\ref{eqn:lumped_mass}) \\
+$K$ & Gaussian curvature of a smooth surface & Section~\ref{section:ga_intrinsic} \\
+$\Delta_{\mathrm H}$ & Hodge Laplacian of 1-forms, $\nabla^*\nabla + K$ & (\ref{eqn:weitzenbock}) \\
+$e_1, e_2$; $\theta^1, \theta^2$ & a moving frame and its coframe, $\theta^i(X) = e_i \cdot X$ & Remark~\ref{rem:structure} \\
+$F$, $J$, $G(\xi)$ & map, Jacobian and metric of a curved element of degree two & Section~\ref{section:map_cartan} \\
+$\kappa_g$, $[\kappa_g]$ & geodesic curvature of an edge curve; its jump across the edge & (\ref{eqn:p2_gauss_bonnet}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%%% ----------------------------------------------------------------------
+\section{Choosing a Method, Extending It, and What Can Go Wrong}
+\label{section:map_choose}
+
+\paragraph{Summary.} For transport and direction problems on arbitrary meshes, use the intrinsic vertex planes; build energies with corner transport (Part~\ref{part:intrinsic}), and switch the element to the curved one of Part~\ref{part:edge} when the answer is an energy or when a conforming method is needed; keep DEC (Part~\ref{part:dec}) as the reference against the literature. For physics on a known smooth surface, consider the extrinsic surface finite element method instead. Then follow the recipe and the checklist below.
+
+\subsection{Which method for which problem}
+
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.42\linewidth} >{\raggedright\arraybackslash}p{0.5\linewidth}}
+\toprule
+if the problem \ldots & then \ldots \\
+\midrule
+is posed on a mesh that is the only data (scans, designs, folds) & intrinsic planes (III--V); the answer does not change under bending \\
+adds new energy terms, integrated face by face & corner transport, Part~\ref{part:intrinsic}: every face flat, every integral the scalar one with a phase \\
+asks for an energy, an eigenvalue, or a convergence proof & the curved element, Part~\ref{part:edge}: conforming, and seven to ten times more accurate on the energy of Section~\ref{section:map_forms} \\
+prescribes holonomies, places singularities in faces, fixes a gauge & edge transport, Parts~\ref{part:edge}, \ref{part:dec}: the connection is a 1-form there \\
+must match published geometry processing code & DEC, Part~\ref{part:dec}: it is the connection Laplacian of \cite{Knoppel2013, Sharp2019} \\
+lives on a known smooth surface, couples to normal quantities, needs error estimates & extrinsic surface FEM, Section~\ref{section:map_extrinsic} \\
+is built on divergence and curl (flows, Hodge decomposition) & scalar 1-forms on edges, Section~\ref{section:map_forms}; this needs edge unknowns \\
+needs frames of space or volumes & rotors instead of complex numbers, Section~\ref{section:map_notation} \\
+needs curved geometry or higher order & the curved element of degree two in moving frames, Section~\ref{section:map_cartan} (a sketch, not implemented) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{What is used where.} As far as we know, the vertex-based connection Laplacian of geometry processing is, almost always, the DEC operator of Part~\ref{part:dec} on the intrinsic vertex planes \cite{Knoppel2013, Sharp2019}. Kn\"oppel et al.\ also derive a finite element version with a constant curvature in every face, which is close to the curved element of Part~\ref{part:edge}, as far as we can tell from the formulation. Intrinsic triangulations \cite{SharpSolimanCrane2019}, which improve a bad mesh without moving it, work only with operators built from edge lengths, which is one more reason for the intrinsic planes. Face-based fields and edge-based 1-forms are as common for direction field design \cite{Vaxman2016, deGoes2015}. In numerical analysis, the extrinsic surface finite element method of Section~\ref{section:map_extrinsic} is the standard \cite{DziukElliott2013}. The construction of Part~\ref{part:matrix}, a discrete connection built from vertex normals, is not the standard of either community: it was the natural first step of this text, and the following parts explain how the other methods improve on it.
+
+\subsection{Extending the method to a new problem: a recipe}
+
+A new problem of the same family, a field that should be as smooth as possible subject to some conditions, is added in five steps.
+\begin{enumerate}
+\item \emph{Write the continuous energy} as a sum of squares of tangent-valued and scalar quantities: $|\nabla U|^2$, $|U - U^0|^2$, $(\operatorname{div} U)^2$, $|U \cdot X|^2$ for a given direction $X$, and so on. If an operator is wanted instead, derive it from the energy with Green's identity, as in Section~\ref{section:pde}; the weak form is then the derivative of the energy.
+\item \emph{Choose the vertex planes and the transport} with the table above. Do not mix the frames of different methods.
+\item \emph{Write each term on one face}, with the trial field $\sum_a \phi_a e^{\mathsf T\rho_a^f}\psi_a$ of the chosen method. With corner transport this is always the scalar integral of the hat functions times the phase $e^{\mathsf T(\rho_b^f - \rho_a^f)}$, so the scalar finite element literature applies directly (for example the consistent mass $\frac{A_f}{12}(1 + \delta_{ab})$, (\ref{eqn:consistent_mass})).
+\item \emph{Impose the conditions}: a prescribed value by row replacement or symmetric elimination (Section~\ref{section:solve}); a soft condition by a penalty term in the energy; an exact linear condition by a Lagrange multiplier. Fields with $n$-fold symmetry (crosses, $n = 4$; lines, $n = 2$) are obtained by replacing every transport $e^{\mathsf T\rho}$ by $e^{\mathsf T n\rho}$ and every $\psi$ by $\psi^n$ \cite{Knoppel2013}.
+\item \emph{Test} on the three meshes of Section~\ref{section:int_experiments}: a bent flat mesh (Miura-ori), where the exact answer is that of the flat sheet; a sphere under refinement, where the answer is known in closed form; and a coarse, sharp mesh (the cactus), where the methods should agree to a few degrees.
+\end{enumerate}
+
+\subsection{What can go wrong: a checklist}
+
+These are the mistakes that were made, or nearly made, while writing this text.
+\begin{itemize}
+\item \emph{Comparing vectors at vertices.} A vertex has no tangent plane, so comparing a computed vector at a vertex with an exact one needs a choice of plane, and every choice favors one method; a first version of the experiments of Section~\ref{section:int_experiments} produced a spurious error of $1.9^\circ$ in this way. Compare inside the faces, corner by corner, where every method's vector lies in a plane that exists.
+\item \emph{Comparing phases of different gauges.} Matrix entries and solution coordinates depend on the vertex frames; compare across methods only gauge-invariant quantities, or methods that share their frames (Section~\ref{section:map_form}).
+\item \emph{Angles that wrap.} Every angle is defined up to whole turns: $\rho_{ba} = -\rho_{ab} + 2\pi$ in~(\ref{eqn:edge_transport}), the holonomy~(\ref{eqn:face_holonomy}) up to $4\pi$. Store and multiply unit complex numbers, $e^{\mathsf T\rho}$, rather than adding angles, and wrap angles only for printing.
+\item \emph{The orientation of half edges.} Which face is to the left of a half edge, the order in which the half-edge iterator walks around a vertex (clockwise in \code{HalfEdge/}), and whether a transport goes from $a$ to $b$ or back: one sign error here conjugates a transport and still produces a plausible looking field. Check on the upright pyramid, where every number is known.
+\item \emph{The scale at boundary vertices.} This text uses $s_i = 1$ at the boundary, Sharp et al.\ $s_i = \pi/\Theta_i$ (Section~\ref{section:int_vertex}); the two give different fields near the boundary.
+\item \emph{The two $\kappa$.} The angle defect $\kappa_i$ of a vertex and the curvature density $\kappa = \Omega_f / A_f$ of a face share a letter (Table~\ref{tab:symbols}).
+\item \emph{Symmetry lost by the Dirichlet row.} Row replacement makes the matrix non-Hermitian; use LU, or eliminate the constrained unknowns to keep the Hermitian positive definite form (Section~\ref{section:solve}).
+\item \emph{Line ranges in this document.} The listings read fixed line ranges of \code{GAConnection.h}, \code{IntrinsicConnection.h}, \code{EdgeConnection.h} and \code{ga\_fem.cpp}; adding even one line near the top of a file shifts every listing below it. After editing those files, check the listings again (new code is best appended at the end).
+\end{itemize}
+
+\subsection{The five parts in five sentences}
+
+Part~\ref{part:matrix}: the connection Laplacian is the scalar cotangent Laplacian with a rotation on every edge, and a vertex value is rotated into each face before it is interpolated. Part~\ref{part:ga}: that rotation is one complex number of the face plane, and everything is intrinsic except the plane of a vertex. Part~\ref{part:intrinsic}: the plane of a vertex can be made from its angles, and then the method is exact on every bent flat mesh. Part~\ref{part:edge}: transporting along the edges moves the curvature into the faces, and a face with curvature needs a curved element. Part~\ref{part:dec}: discrete exterior calculus is that element with the curvature inside the face dropped. And this part: the methods differ only in where they keep the curvature, Proposition~\ref{prop:corner_edge} converts one into the other, Cartan's moving frames are the language in which all of them are a choice of frames and of a connection form, and the Weitzenb\"ock identity separates them all from the Laplacian of 1-forms.
 
 
 \bibliographystyle{abbrv}
