@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  27 OCT 2026 23:05
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  28 OCT 2026 03:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1035,25 +1035,67 @@ Non-PDF special ignored!
 <special> papersize=15.5cm,23.5cm
 {/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
 [2] (./figures/fig_tangent_plane.tex) [3] [4] (./figures/fig_one_ring.tex)
-(./figures/fig_covariant.tex) [5] [6] (./figures/fig_unfold.tex) [7]
-(./figures/fig_rotor_transport.tex) [8] (./figures/fig_holonomy_cone.tex)
-(./figures/fig_sphere_holonomy.tex) [9] [10] [11] [12] (./figures/fig_hat.tex)
-(./figures/fig_naive.tex) [13] [14] [15] [16] (./figures/fig_reference_2d.tex)
-(./figures/fig_reference_map_3d.tex) [17] (./figures/fig_gradient.tex) [18]
-(./figures/fig_worked_triangle.tex) [19] (./figures/fig_cotangent.tex) [20]
-(./figures/fig_assembly.tex)
-Underfull \hbox (badness 2027) in paragraph at lines 578--586
+(./figures/fig_covariant.tex) [5] [6]
+Overfull \hbox (1.65833pt too wide) in paragraph at lines 188--190
+\OT1/cmr/m/n/10 Equivalently, with-out Step 2: $\OML/cmm/m/it/10 T[]\OMS/cmsy/m
+/n/10 r[]\OML/cmm/m/it/10 U \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 T[]\OT1/cmr/m/n/
+10 (\OML/cmm/m/it/10 TT[]\OT1/cmr/m/n/10 )\OML/cmm/m/it/10 D[]U \OT1/cmr/m/n/10
+ = (\OML/cmm/m/it/10 T[]T\OT1/cmr/m/n/10 ) \OML/cmm/m/it/10 T[]D[]U \OT1/cmr/m/
+n/10 =
+ []
+
+
+Overfull \hbox (6.49954pt too wide) in paragraph at lines 194--203
+ [] 
+ []
+
+
+Underfull \hbox (badness 2080) in paragraph at lines 218--219
+[][]\OT1/cmr/b/n/10 Worked ex-am-ple 3.1. []\OT1/cmr/m/it/10 The plane with the
+ po-lar frame $\OML/cmm/m/it/10 t \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 e[] \OT1/c
+mr/m/n/10 =
+ []
+
+[7] (./figures/fig_unfold.tex) [8] (./figures/fig_rotor_transport.tex) [9]
+[10] (./figures/fig_holonomy_cone.tex) (./figures/fig_sphere_holonomy.tex)
+[11] [12] [13] (./figures/fig_hat.tex) [14] (./figures/fig_naive.tex) [15]
+[16] [17] (./figures/fig_reference_2d.tex) (./figures/fig_reference_map_3d.tex)
+[18] (./figures/fig_gradient.tex) [19] (./figures/fig_worked_triangle.tex)
+[20]
+Overfull \hbox (9.17621pt too wide) detected at line 576
+\OML/cmm/m/it/10 A[] \OMS/cmsy/m/n/10 r\OML/cmm/m/it/10 ^^^[] \OMS/cmsy/m/n/10 
+^^A r\OML/cmm/m/it/10 ^^^[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 A[] [] \OT1/cmr/
+m/n/10 (\OMS/cmsy/m/n/10 ^^@ [] \OML/cmm/m/it/10 ^^R[]\OT1/cmr/m/n/10 ) = \OMS/
+cmsy/m/n/10 ^^@[] \OT1/cmr/m/n/10 = \OMS/cmsy/m/n/10 ^^@[] [] \OT1/cmr/m/n/10 =
+ \OMS/cmsy/m/n/10 ^^@[] [] \OML/cmm/m/it/10 ^^R[]:
+ []
+
+
+Overfull \hbox (45.77473pt too wide) detected at line 580
+\OML/cmm/m/it/10 A[] \OMS/cmsy/m/n/10 jr\OML/cmm/m/it/10 ^^^[]\OMS/cmsy/m/n/10 
+j[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 A[] \OMS/cmsy/m/n/10 r\OML/cmm/m/it/10 ^
+^^[] \OMS/cmsy/m/n/10 ^^A \OT1/cmr/m/n/10 (\OMS/cmsy/m/n/10 ^^@r\OML/cmm/m/it/1
+0 ^^^[] \OMS/cmsy/m/n/10 ^^@ r\OML/cmm/m/it/10 ^^^[]\OT1/cmr/m/n/10 ) = \OMS/cm
+sy/m/n/10 ^^@\OML/cmm/m/it/10 A[] \OMS/cmsy/m/n/10 r\OML/cmm/m/it/10 ^^^[] \OMS
+/cmsy/m/n/10 ^^A r\OML/cmm/m/it/10 ^^^[] \OMS/cmsy/m/n/10 ^^@ \OML/cmm/m/it/10 
+A[] \OMS/cmsy/m/n/10 r\OML/cmm/m/it/10 ^^^[] \OMS/cmsy/m/n/10 ^^A r\OML/cmm/m/i
+t/10 ^^^[] \OT1/cmr/m/n/10 = [] [] \OML/cmm/m/it/10 ^^R[] \OT1/cmr/m/n/10 + [] 
+[] \OML/cmm/m/it/10 ^^R[];
+ []
+
+(./figures/fig_cotangent.tex) [21] [22] (./figures/fig_assembly.tex)
+Underfull \hbox (badness 2027) in paragraph at lines 634--642
 \OT1/cmr/m/n/10 with the zero-based ver-tex in-dices $[]$ of the mesh: \OT1/cmt
 t/m/n/10 (*A)(v[i]->ID
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 578--586
+Underfull \hbox (badness 10000) in paragraph at lines 634--642
 \OT1/cmtt/m/n/10 * 2 + row, v[j]->ID * 2 + col) += wij(row, col)\OT1/cmr/m/n/10
  . The func-tion
  []
 
-[21] (./figures/fig_dirichlet.tex) [22] [23] (./figures/fig_cactus_result.tex)
+[23] (./figures/fig_dirichlet.tex) [24] [25] (./figures/fig_cactus_result.tex)
 (./figures/fig_sphere_result.tex) (./figures/fig_sphere_plots.tex
 PGFPlots: reading {data/sphere_vectors.csv}
 Package pgfplots info on input line 14: Using 'lua backend=false' for axis: ymo
@@ -1061,91 +1103,119 @@ de=log unsupported (yet).
 PGFPlots: reading {data/sphere_vectors.csv}
 )
 Package hyperref Info: bookmark level for unknown algorithm defaults to 0 on in
-put line 651.
+put line 707.
 
-Underfull \hbox (badness 10000) in paragraph at lines 685--686
+Underfull \hbox (badness 10000) in paragraph at lines 741--742
 []|\OT1/cmtt/m/n/8 computeVertex-Tangent-Space\OT1/cmr/m/n/8 ,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 690--690
+Underfull \hbox (badness 10000) in paragraph at lines 746--746
 []|\OT1/cmr/m/n/8 vertex-to-vertex trans-port
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 691--691
+Underfull \hbox (badness 10000) in paragraph at lines 747--747
 []|\OT1/cmr/m/n/8 ([]7.3[]),
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 693--694
+Underfull \hbox (badness 10000) in paragraph at lines 749--750
 []|\OT1/cmtt/m/n/8 AssembleStiffness-Element-
  []
 
-[24] [25] [26] [27] (./figures/fig_quarter_turn.tex) [28] [29] [30]
-(./figures/fig_rolling.tex) [31]
-Underfull \vbox (badness 3895) has occurred while \output is active []
+[26] [27] [28] (./figures/fig_quarter_turn.tex) [29] [30] [31] [32]
+(./figures/fig_rolling.tex) [33] [34]
+Overfull \hbox (19.77701pt too wide) detected at line 949
+\OMS/cmsy/m/n/10 r[]\OML/cmm/m/it/10 t[] \OT1/cmr/m/n/10 = (\OMS/cmsy/m/n/10 r[
+]\OML/cmm/m/it/10 t\OT1/cmr/m/n/10 ) \OML/cmm/m/it/10 e[] \OT1/cmr/m/n/10 + \OM
+L/cmm/m/it/10 t \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a \OMS/cmsy/m/n/10 ^^A r\OML/
+cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) \OT1/cmss/m/n/10 T\OML/cmm/m/it/10 e[] \OT1/cm
+r/m/n/10 = \OML/cmm/m/it/10 !\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a\OT1/cmr/m/n/10
+ ) \OML/cmm/m/it/10 t\OT1/cmss/m/n/10 T\OML/cmm/m/it/10 e[] \OT1/cmr/m/n/10 + (
+\OML/cmm/m/it/10 a \OMS/cmsy/m/n/10 ^^A r\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) 
+\OML/cmm/m/it/10 t \OT1/cmss/m/n/10 T\OML/cmm/m/it/10 e[] \OT1/cmr/m/n/10 = []\
+OML/cmm/m/it/10 !\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a\OT1/cmr/m/n/10 ) + \OML/cm
+m/m/it/10 a \OMS/cmsy/m/n/10 ^^A r\OML/cmm/m/it/10 ^^R[] t[]\OT1/cmss/m/n/10 T\
+OML/cmm/m/it/10 ;
+ []
 
- [32]
-[33] (./figures/fig_gauge.tex) [34] [35] (./figures/fig_complex_block.tex)
-(/usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
+
+Overfull \hbox (67.64024pt too wide) detected at line 955
+\OML/cmm/m/it/10 D[] [] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 a \OMS/cmsy/m/n/10 ^
+^A r[]\OML/cmm/m/it/10 e[] [] \OT1/cmr/m/n/10 + \OML/cmm/m/it/10 ![]\OT1/cmr/m/
+n/10 (\OML/cmm/m/it/10 a\OT1/cmr/m/n/10 ) \OT1/cmss/m/n/10 T \OML/cmm/m/it/10 e
+[]  \OT1/cmr/m/n/10 = \OMS/cmsy/m/n/10 ^^@\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 a \
+OMS/cmsy/m/n/10 ^^A r\OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 ) \OT1/cmss/m/n/10 T\O
+ML/cmm/m/it/10 e[]  \OT1/cmr/m/n/10 + \OML/cmm/m/it/10 e[] a \OMS/cmsy/m/n/10 ^
+^A r\OML/cmm/m/it/10   \OT1/cmr/m/n/10 + []\OML/cmm/m/it/10 !\OT1/cmr/m/n/10 (\
+OML/cmm/m/it/10 a\OT1/cmr/m/n/10 ) + \OML/cmm/m/it/10 a \OMS/cmsy/m/n/10 ^^A r\
+OML/cmm/m/it/10 ^^R[] \OT1/cmss/m/n/10 T\OML/cmm/m/it/10 e[] :
+ []
+
+[35] (./figures/fig_gauge.tex) [36] [37] (./figures/fig_complex_block.tex)
+[38] (/usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
 )
 (/usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2024/02/21 1.10 listings language file
-) [36]
+)
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 1008.
+nput line 1086.
 
-(../src/GAConnection.h [37]) (../src/GAConnection.h) (../src/GAConnection.h
-[38])
-Underfull \hbox (badness 1496) in paragraph at lines 1016--1017
+(../src/GAConnection.h [39]) (../src/GAConnection.h [40])
+(../src/GAConnection.h)
+Underfull \hbox (badness 1496) in paragraph at lines 1094--1095
 \OT1/cmr/m/n/10 by line with \OT1/cmtt/m/n/10 AssembleStiffness-Element-Embedde
 d2\OT1/cmr/m/n/10 , \OT1/cmtt/m/n/10 AssembleMatrix2\OT1/cmr/m/n/10 ,
  []
 
-(../src/ga_fem.cpp [39])
-Underfull \hbox (badness 10000) in paragraph at lines 1036--1037
+(../src/ga_fem.cpp [41])
+Underfull \hbox (badness 10000) in paragraph at lines 1114--1115
 []|\OT1/cmr/m/n/8 a gauge
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1037--1038
+Underfull \hbox (badness 10000) in paragraph at lines 1115--1116
 []|\OT1/cmr/m/n/8 gauge de-
  []
 
 
-Underfull \hbox (badness 1194) in paragraph at lines 1039--1039
+Underfull \hbox (badness 1194) in paragraph at lines 1117--1117
 []|\OT1/cmr/m/n/8 rotor $(1 + \OML/cmm/m/it/8 n[]n[]\OT1/cmr/m/n/8 )\OML/cmm/m/
 it/8 =\OMS/cmsy/m/n/8 j\OT1/cmr/m/n/8 1 +
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1039--1040
+Underfull \hbox (badness 10000) in paragraph at lines 1117--1118
 []|\OT1/cmr/m/n/8 extrinsic
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1041--1042
+Underfull \hbox (badness 10000) in paragraph at lines 1119--1120
 []|\OT1/cmr/m/n/8 gauge co-
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1043--1043
+Underfull \hbox (badness 10000) in paragraph at lines 1121--1121
 []|\OT1/cmr/m/n/8 reciprocal frame,
  []
 
 
-Underfull \hbox (badness 2762) in paragraph at lines 1044--1045
+Underfull \hbox (badness 2762) in paragraph at lines 1122--1123
 []|\OT1/cmr/m/n/8 intrinsic up
  []
 
-[40] (./figures/fig_miura.tex) [41] [42] [43] (./figures/fig_layout_3d.tex)
-(./figures/fig_layout_2d.tex) [44] [45] (./figures/fig_cone_rescale.tex)
-[46] [47] [48] (./figures/fig_projection.tex) [49]
-(./figures/fig_corner_map.tex) [50] [51] (../src/IntrinsicConnection.h)
-(../src/IntrinsicConnection.h) (../src/IntrinsicConnection.h [52])
-(../src/ga_fem.cpp [53]) [54] (./figures/fig_intrinsic_plots.tex
+[42] (./figures/fig_miura.tex) [43] [44] [45] (./figures/fig_layout_3d.tex)
+(./figures/fig_layout_2d.tex) [46] [47] (./figures/fig_cone_rescale.tex)
+[48] [49]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [50]
+(./figures/fig_projection.tex) [51] (./figures/fig_corner_map.tex) [52]
+[53] (../src/IntrinsicConnection.h) (../src/IntrinsicConnection.h [54])
+(../src/IntrinsicConnection.h) (../src/ga_fem.cpp [55]) [56]
+(./figures/fig_intrinsic_plots.tex
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: xmod
 e=log unsupported (yet).
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: ymod
@@ -1157,45 +1227,53 @@ PGFPlots: reading {data/sphere_convergence.csv}
 Package pgfplots info on input line 15: Using 'lua backend=false' for axis: xmo
 de=log unsupported (yet).
 PGFPlots: reading {data/cactus_intrinsic.csv}
-) [55]
-Underfull \hbox (badness 10000) in paragraph at lines 1443--1443
+) [57]
+Underfull \hbox (badness 10000) in paragraph at lines 1521--1521
 []|\OT1/cmr/m/n/8 intrinsically flat
  []
 
-[56] [57] (./figures/fig_edge_transport.tex) (./figures/fig_pyramid_faces.tex)
-[58] [59] (./figures/fig_face_holonomy.tex) [60] [61] [62]
-(../src/EdgeConnection.h) (../src/EdgeConnection.h [63]) (../src/ga_fem.cpp)
-[64] (./figures/fig_cochains.tex) [65] (./figures/fig_dual.tex)
-(./figures/fig_cotan_dual.tex) [66] [67] [68]
+[58] [59] (./figures/fig_edge_transport.tex) [60]
+(./figures/fig_pyramid_faces.tex) [61] (./figures/fig_face_holonomy.tex)
+[62] [63] [64] (../src/EdgeConnection.h) (../src/EdgeConnection.h [65])
+(../src/ga_fem.cpp)
+Underfull \vbox (badness 1365) has occurred while \output is active []
+
+ [66]
+(./figures/fig_cochains.tex) [67] (./figures/fig_dual.tex)
+(./figures/fig_cotan_dual.tex) [68]
+Underfull \vbox (badness 1728) has occurred while \output is active []
+
+ [69]
+[70]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1763.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `superscript' on input line 1763.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\nabla' on input line 1763.
-
-
-Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `superscript' on input line 1763.
+(hyperref)                removing `math shift' on input line 1845.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\nabla' on input line 1763.
+(hyperref)                removing `superscript' on input line 1845.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `\not' on input line 1763.
+(hyperref)                removing `\nabla' on input line 1845.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1763.
+(hyperref)                removing `superscript' on input line 1845.
 
-[69] (../src/ga_fem.cpp [70]) (./figures/fig_four_plots.tex
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\nabla' on input line 1845.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `\not' on input line 1845.
+
+
+Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+(hyperref)                removing `math shift' on input line 1845.
+
+[71] (../src/ga_fem.cpp [72]) (./figures/fig_four_plots.tex
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: xmod
 e=log unsupported (yet).
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: ymod
@@ -1212,33 +1290,36 @@ PGFPlots: reading {data/sphere_convergence.csv}
 PGFPlots: reading {data/sphere_convergence.csv}
 PGFPlots: reading {data/sphere_convergence.csv}
 PGFPlots: reading {data/sphere_convergence.csv}
-) [71] [72]
-(./figures/fig_pipeline.tex) [73] [74] (./figures/fig_choices.tex)
-Underfull \vbox (badness 1168) has occurred while \output is active []
+)
+Underfull \vbox (badness 6236) has occurred while \output is active []
 
- [75]
-[76] [77] (./figures/fig_curvature_moves.tex) [78]
-(./figures/fig_corner_edge.tex) [79] [80]
-Overfull \hbox (5.74611pt too wide) detected at line 2033
+ [73]
+[74] [75] (./figures/fig_pipeline.tex) [76]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [77]
+(./figures/fig_choices.tex) [78] [79] (./figures/fig_curvature_moves.tex)
+[80] [81] (./figures/fig_corner_edge.tex) [82]
+Overfull \hbox (5.74611pt too wide) detected at line 2115
 []
  []
 
-(../src/ga_fem.cpp) [81] [82] [83] [84] [85] (./figures/fig_moving_frames.tex
+(../src/ga_fem.cpp [83]) [84] [85] [86] [87] (./figures/fig_moving_frames.tex
 (./figures/fig_moving_frames_sphere.tex) (./figures/fig_moving_frames_faces.tex
 ))
-Overfull \hbox (3.37265pt too wide) in paragraph at lines 2176--2187
+Overfull \hbox (3.37265pt too wide) in paragraph at lines 2258--2269
  [][] 
  []
 
-[86] (./figures/fig_p2_element.tex (./figures/fig_p2_element_reference.tex)
-(./figures/fig_p2_element_curved.tex) (./figures/fig_p2_element_curvature.tex))
-[87] [88] [89]
-Overfull \hbox (20.41713pt too wide) detected at line 2249
+[88] [89] (./figures/fig_p2_element.tex (./figures/fig_p2_element_reference.tex
+) (./figures/fig_p2_element_curved.tex) (./figures/fig_p2_element_curvature.tex
+)) [90] [91]
+Overfull \hbox (20.41713pt too wide) detected at line 2331
 []
  []
 
-(./figures/fig_vector_storage.tex) [90] [91]
-Overfull \hbox (9.59775pt too wide) detected at line 2305
+[92] (./figures/fig_vector_storage.tex) [93] [94]
+Overfull \hbox (9.59775pt too wide) detected at line 2387
 [][][][][] \OMS/cmsy/m/n/10 jr\OML/cmm/m/it/10 U\OMS/cmsy/m/n/10 j[] \OML/cmm/m
 /it/10 dA \OT1/cmr/m/n/10 + [][] \OML/cmm/m/it/10 K\OMS/cmsy/m/n/10 j\OML/cmm/m
 /it/10 U\OMS/cmsy/m/n/10 j[] \OML/cmm/m/it/10 dA \OT1/cmr/m/n/10 = [][] []([] \
@@ -1247,8 +1328,8 @@ OML/cmm/m/it/10 U\OT1/cmr/m/n/10 )[] + ([] \OML/cmm/m/it/10 U\OT1/cmr/m/n/10 )[
 r/m/n/10 + \OML/cmm/m/it/10 K:
  []
 
-[92]
-Overfull \hbox (28.12407pt too wide) detected at line 2330
+[95]
+Overfull \hbox (28.12407pt too wide) detected at line 2412
 [] \OMS/cmsy/m/n/10 jr\OML/cmm/m/it/10 U\OMS/cmsy/m/n/10 j[] \OT1/cmr/m/n/10 = 
 []\OML/cmm/m/it/10 ;  [] K\OMS/cmsy/m/n/10 j\OML/cmm/m/it/10 U\OMS/cmsy/m/n/10 
 j[] \OT1/cmr/m/n/10 = [] [][] \OML/cmm/m/it/10 # \OT1/cmr/m/n/10 = 4\OML/cmm/m/
@@ -1266,21 +1347,18 @@ PGFPlots: reading {data/killing_energy.csv}
 PGFPlots: reading {data/killing_energy.csv}
 PGFPlots: reading {data/killing_energy.csv}
 PGFPlots: reading {data/killing_energy.csv}
-) [93] (../src/ga_fem.cpp [94]) [95]
-(./figures/fig_extrinsic_fem.tex) [96] [97] [98]
-Underfull \vbox (badness 1888) has occurred while \output is active []
-
- [99]
+) [96] (../src/ga_fem.cpp) [97]
+(./figures/fig_extrinsic_fem.tex) [98] [99] [100] [101] [102]
 (./figures/fig_concept_map.tex)
-Overfull \hbox (48.84341pt too wide) in paragraph at lines 2497--2530
+Overfull \hbox (48.84341pt too wide) in paragraph at lines 2587--2620
  [][] 
  []
 
 
-Underfull \vbox (badness 1874) has occurred while \output is active []
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [100]
-[101] [102] [103] [104] (./fembasic2d.bbl [105]
+ [103]
+[104] [105] [106] [107] (./fembasic2d.bbl [108]
 Underfull \hbox (badness 10000) in paragraph at lines 69--74
 []\OT1/cmr/m/n/9 M. C. Lopez Be-lon. Project on github. Avail-able at
  []
@@ -1291,19 +1369,19 @@ Underfull \hbox (badness 10000) in paragraph at lines 69--74
 egoes,
  []
 
-) [106] [107] (./fembasic2d.aux)
+) [109] [110] (./fembasic2d.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `fembasic2d.out' has not changed.
-(rerunfilecheck)             Checksum: 351973FB494684F14E56EC1ABEF99684;38116.
+(rerunfilecheck)             Checksum: 553FDE6E66FA8DF39A81AF3CEA25099F;38116.
  ) 
 Here is how much of TeX's memory you used:
- 44842 strings out of 474116
- 984358 string characters out of 5743682
- 4246430 words of memory out of 5000000
- 65306 multiletter control sequences out of 15000+600000
+ 44849 strings out of 474116
+ 984429 string characters out of 5743682
+ 4327398 words of memory out of 5000000
+ 65307 multiletter control sequences out of 15000+600000
  570346 words of font info for 83 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
  84i,21n,97p,2968b,2505s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1341,10 +1419,10 @@ ype1/public/amsfonts/cm/cmtt9.pfb></usr/local/texlive/2024/texmf-dist/fonts/typ
 e1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2024/texmf-dist/fonts
 /type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2024/texmf-dist/f
 onts/type1/public/amsfonts/symbols/msbm7.pfb>
-Output written on fembasic2d.pdf (107 pages, 1447920 bytes).
+Output written on fembasic2d.pdf (110 pages, 1460941 bytes).
 PDF statistics:
- 3055 PDF objects out of 3580 (max. 8388607)
- 2811 compressed objects within 29 object streams
- 958 named destinations out of 1000 (max. 500000)
+ 3082 PDF objects out of 3580 (max. 8388607)
+ 2835 compressed objects within 29 object streams
+ 964 named destinations out of 1000 (max. 500000)
  1177 words of extra memory for PDF output out of 10000 (max. 10000000)
 

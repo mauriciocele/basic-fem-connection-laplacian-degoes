@@ -167,12 +167,56 @@ X (U \cdot V) = \nabla_X U \cdot V + U \cdot \nabla_X V,
 \end{equation}
 because $X (U \cdot V) = D_X U \cdot V + U \cdot D_X V$, and the normal parts of $D_X U$ and $D_X V$ are orthogonal to the tangent vectors $V$ and $U$. And it is linear in $X$, so at each point it defines a linear map $\nabla U : X \mapsto \nabla_X U$ from the tangent plane to itself, the \emph{total covariant derivative}, a $2 \times 2$ matrix in a frame.
 
-\paragraph{In a frame.} Write $U = T u$ with a frame field $T$. Then $D_X U = (D_X T)\, u + T\, (X \cdot \nabla u)$, and projecting with $T T^T$,
+\paragraph{In a frame.} We want the covariant derivative in coordinates: not the vector $\nabla_X U \in \R^3$, but its two coordinates $T^T \nabla_X U \in \R^2$ in the frame, which is what the code stores. Write $U = T u$ with a frame field $T$ and the coordinates $u = (u_1, u_2)$, functions on the surface.
+
+\emph{Step 1: differentiate in space.} $U = u_1 t + u_2 b$ is a sum of products of functions and vectors, so the product rule gives
+\begin{equation*}
+D_X U = (X\cdot\nabla u_1)\, t + (X\cdot\nabla u_2)\, b + u_1\, D_X t + u_2\, D_X b = T\,(X\cdot\nabla u) + (D_X T)\, u ,
+\end{equation*}
+where $X\cdot\nabla u = (X\cdot\nabla u_1, X\cdot\nabla u_2)$ is the derivative of the two coordinate functions along $X$, and $D_X T = [\,D_X t \;\; D_X b\,]$ is the $3 \times 2$ matrix of the derivatives of the two frame vectors. The first term is tangent; the second is in general not, because the frame vectors turn out of the tangent plane as the surface bends.
+
+\emph{Step 2: keep the tangent part.} By~(\ref{eqn:covariant}), $\nabla_X U = T T^T D_X U$, a vector of $\R^3$:
+\begin{equation*}
+\nabla_X U = T T^T T\, (X\cdot\nabla u) + T T^T (D_X T)\, u = T\,(X\cdot\nabla u) + T\, \big(T^T D_X T\big)\, u ,
+\end{equation*}
+using $T^T T = I_2$ from~(\ref{eqn:frame}) in both terms.
+
+\emph{Step 3: read the coordinates.} Multiply by $T^T$ and use $T^T T = I_2$ once more:
 \begin{equation}
 \label{eqn:covariant_frame}
 T^T \nabla_X U = X \cdot \nabla u + \omega(X)\, u, \qquad \omega(X) = T^T D_X T .
 \end{equation}
-The first term is the ordinary derivative of the coordinates; the second corrects for the turning of the frame. The $2 \times 2$ matrix $\omega(X)$ is skew-symmetric, because differentiating $T^T T = I$ gives $\omega + \omega^T = 0$: it is $\begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix}$, an infinitesimal rotation by the angle $\theta(X)$, the \emph{connection form} of the frame \cite{Liu2016}. On a flat piece of surface with a constant frame, $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple. Computing with a frame field that is carried along the surface, and recording the turning of the frame in $\omega$, is \emph{Cartan's method of moving frames} \cite{doCarmo1994, Clelland2017}; Section~\ref{section:map_cartan} shows that every part of this text is a choice of frames and of their connection form.
+Equivalently, without Step 2: $T^T \nabla_X U = T^T (T T^T) D_X U = (T^T T)\, T^T D_X U = T^T D_X U$, because $T^T (T T^T) = (T^T T)\, T^T = T^T$: the projector is absorbed by the $T^T$ that reads the coordinates. Geometrically, $T^T$ takes inner products with $t$ and $b$, and those already ignore any normal component, since $t \cdot n = b \cdot n = 0$.
+
+\paragraph{Why $T^T D_X T$ and not $T T^T D_X T$.} Both matrices appear, with different roles. Keep track of the sizes: $T$ is $3\times 2$, $D_X T$ is $3 \times 2$, $T^T$ is $2 \times 3$.
+\begin{center}
+\footnotesize
+\begin{tabular}{l c l}
+\toprule
+matrix & size & meaning \\
+\midrule
+$D_X T$ & $3 \times 2$ & derivatives of $t$ and $b$ in space: tangent and normal parts \\
+$T T^T D_X T = \nabla_X T$ & $3 \times 2$ & their tangent parts: how the frame turns \emph{within} the surface \\
+$T^T D_X T = \omega(X)$ & $2 \times 2$ & the same turning, in the coordinates of the frame \\
+\bottomrule
+\end{tabular}
+\end{center}
+The covariant derivative of the frame itself is $\nabla_X T = T T^T D_X T = T\, \omega(X)$: a pair of tangent vectors of $\R^3$, whose coordinates in the frame are the columns of $\omega(X)$. Equation~(\ref{eqn:covariant_frame}) is an equation between coordinates, vectors of $\R^2$; its term $\omega(X)\, u$ must be a $2 \times 2$ matrix applied to $u \in \R^2$, so that it can be added to $X \cdot \nabla u \in \R^2$. The $3 \times 2$ matrix $T T^T D_X T$ cannot multiply $u$ and be added to $X\cdot\nabla u$; written as a vector equation, (\ref{eqn:covariant_frame}) reads $\nabla_X U = T\,(X\cdot\nabla u) + (\nabla_X T)\, u$, and there $\nabla_X T = T\,\omega(X)$ is the right object. What is discarded in passing from $D_X T$ to $\nabla_X T$ is its normal part $n n^T D_X T$, whose entries $n \cdot D_X t$ and $n \cdot D_X b$ are the second fundamental form of Section~\ref{section:ga_intrinsic}: how the surface bends, which the covariant derivative must not see.
+
+\paragraph{The entries of $\omega$.} The entry $(k, l)$ of $T^T D_X T$ is the inner product of frame vector $k$ with the derivative of frame vector $l$:
+\begin{equation*}
+\omega(X) = \begin{pmatrix} t \cdot D_X t & t \cdot D_X b \\ b \cdot D_X t & b \cdot D_X b \end{pmatrix}.
+\end{equation*}
+Differentiating $t \cdot t = 1$ gives $2\, t \cdot D_X t = 0$, and likewise $b \cdot D_X b = 0$: the diagonal vanishes. Differentiating $t \cdot b = 0$ gives $t \cdot D_X b = -\, b \cdot D_X t$. In matrix form these three facts are one: differentiating $T^T T = I_2$ gives $(D_X T)^T T + T^T D_X T = 0$, that is $\omega(X)^T + \omega(X) = 0$. So, with $\theta(X) = b \cdot D_X t$,
+\begin{equation*}
+\omega(X) = \begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix},
+\end{equation*}
+an infinitesimal rotation by the angle $\theta(X)$, the \emph{connection form} of the frame \cite{Liu2016}. The single number $\theta(X)$ is the rate at which $t$ turns towards $b$ as one moves along $X$; it is the $\omega(a)$ of Part~\ref{part:ga}, (\ref{eqn:ga_omega}).
+
+\begin{example}
+\label{ex:polar_frame}
+The plane with the polar frame $t = e_r = (\cos\varphi, \sin\varphi, 0)$, $b = e_\varphi = (-\sin\varphi, \cos\varphi, 0)$, $n = e_z$. Moving along $X$ changes the polar angle at the rate $X\cdot\nabla\varphi$, and $D_X e_r = (X\cdot\nabla\varphi)\, e_\varphi$, $D_X e_\varphi = -(X\cdot\nabla\varphi)\, e_r$. So $\theta(X) = e_\varphi \cdot D_X e_r = X \cdot \nabla\varphi$: the frame turns exactly by the polar angle, $\omega = \begin{pmatrix} 0 & -d\varphi \\ d\varphi & 0\end{pmatrix}$. The constant field $U = e_x$ has the coordinates $u = (\cos\varphi, -\sin\varphi)$, which are not constant, and~(\ref{eqn:covariant_frame}) gives $X\cdot\nabla u + \omega(X)u = (X\cdot\nabla\varphi)\big[(-\sin\varphi, -\cos\varphi) + (\sin\varphi, \cos\varphi)\big] = 0$: the change of the coordinates is exactly cancelled by the turning of the frame, as it must be for a parallel field. Here the plane is flat and $D_X T$ has no normal part, so $T T^T D_X T = D_X T$; on a curved surface the two differ by the second fundamental form.
+\end{example} On a flat piece of surface with a constant frame, $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple. Computing with a frame field that is carried along the surface, and recording the turning of the frame in $\omega$, is \emph{Cartan's method of moving frames} \cite{doCarmo1994, Clelland2017}; Section~\ref{section:map_cartan} shows that every part of this text is a choice of frames and of their connection form.
 
 \subsection{Parallel transport}
 
@@ -281,7 +325,11 @@ For tangent fields $U$ and $V$ on a surface $\Omega$ with boundary $\partial \Om
 where the \emph{connection Laplacian} is $\nabla^* \nabla U = -\sum_k \big( \nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big)$.
 \end{prop}
 \begin{proof}
-Consider the tangent field $W$ defined by $W \cdot X = (\nabla_X U) \cdot V$ for every tangent $X$. Its divergence, computed with the connection, is $\operatorname{div} W = \sum_k (\nabla_{e_k} W) \cdot e_k$, and by the metric compatibility~(\ref{eqn:metric_compatible}) applied twice,
+Consider the tangent field $W$ defined by $W \cdot X = (\nabla_X U) \cdot V$ for every tangent $X$. Its divergence, computed with the connection in an orthonormal frame field $e_1, e_2$, is $\operatorname{div} W = \sum_k (\nabla_{e_k} W) \cdot e_k$. Metric compatibility~(\ref{eqn:metric_compatible}) is used twice. First, on $W \cdot e_k$: $e_k(W\cdot e_k) = (\nabla_{e_k} W)\cdot e_k + W \cdot \nabla_{e_k} e_k$, so
+\begin{equation*}
+(\nabla_{e_k} W)\cdot e_k = e_k\big((\nabla_{e_k} U)\cdot V\big) - (\nabla_{\nabla_{e_k} e_k} U)\cdot V ,
+\end{equation*}
+where the definition of $W$ was used with $X = e_k$ and with $X = \nabla_{e_k} e_k$. Second, on $(\nabla_{e_k} U)\cdot V$: $e_k\big((\nabla_{e_k} U)\cdot V\big) = (\nabla_{e_k}\nabla_{e_k} U)\cdot V + \nabla_{e_k} U \cdot \nabla_{e_k} V$. Substituting and summing over $k$,
 \begin{align*}
 \operatorname{div} W &= \sum_k \Big( \big(\nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U\big) \cdot V + \nabla_{e_k} U \cdot \nabla_{e_k} V \Big) \\
 &= -(\nabla^* \nabla U) \cdot V + \nabla U : \nabla V .
@@ -407,7 +455,7 @@ with the \emph{mass matrix} $\mathrm M$ and the \emph{stiffness matrix} $\mathrm
 \end{equation}
 (For the right-hand side we have written $U^0 = \sum_j \Psi_{j,l}\, u^0_{j,l}$, its interpolant.) Each integral is a sum over faces, and a face contributes only if it contains both $i$ and $j$, because the hats vanish elsewhere. So the matrices are sparse, with a nonzero block for each vertex and for each pair of vertices joined by an edge, and they can be computed face by face, which is the next step.
 
-\paragraph{The stiffness block of a face.} On a face $f$ containing $i$ and $j$, by~(\ref{eqn:grad_trial}) and the identity $(a b^T) : (c d^T) = (a \cdot c)(b \cdot d)$,
+\paragraph{The stiffness block of a face.} On a face $f$ containing $i$ and $j$, by~(\ref{eqn:grad_trial}) and the identity $(a b^T) : (c d^T) = (a \cdot c)(b \cdot d)$ (which follows from $A : B = \tr(A^T B)$: $\tr\big(b\, a^T c\, d^T\big) = (a\cdot c)\, \tr(b\, d^T) = (a\cdot c)(b\cdot d)$, since $a^T c$ is a number and $\tr(b\, d^T) = b \cdot d$),
 \begin{equation*}
 \nabla \Psi_{j,l} : \nabla \Psi_{i,k} = \big( (R_j^f \varepsilon_l) (g_j^f)^T \big) : \big( (R_i^f \varepsilon_k) (g_i^f)^T \big) = (g_i^f \cdot g_j^f)\, (R_i^f \varepsilon_k) \cdot (R_j^f \varepsilon_l),
 \end{equation*}
@@ -522,7 +570,15 @@ The scalar factor of~(\ref{eqn:element_stiffness}) has a classical closed form, 
 For two distinct vertices $a, b$ of a face with area $A_f$, $A_f\, \nabla \phi_a \cdot \nabla \phi_b = -\frac12 \cot \theta_c$, where $\theta_c$ is the angle at the third vertex $c$; and $A_f\, |\nabla \phi_a|^2 = \frac12 (\cot \theta_b + \cot \theta_c)$.
 \end{prop}
 \begin{proof}
-$\nabla \phi_a$ is orthogonal to the edge opposite to $a$ (along which $\phi_a$ is constant, zero), points towards $a$, and has length $1 / h_a$, where $h_a = 2 A_f / \ell_a$ is the height from $a$ and $\ell_a$ the length of the opposite edge. So $\nabla \phi_a = \frac{\ell_a}{2 A_f} m_a$ with $m_a$ the unit inward normal of the opposite edge, and $\nabla \phi_a \cdot \nabla \phi_b = \frac{\ell_a \ell_b}{4 A_f^2}\, m_a \cdot m_b$. The inward normals of two edges meeting at $c$ make the angle $\pi - \theta_c$, so $m_a \cdot m_b = -\cos \theta_c$, and with $2 A_f = \ell_a \ell_b \sin \theta_c$ we get $A_f\, \nabla \phi_a \cdot \nabla \phi_b = -\frac{\ell_a \ell_b \cos \theta_c}{4 A_f} = -\frac12 \cot \theta_c$. The diagonal follows from $\nabla \phi_a = -\nabla \phi_b - \nabla \phi_c$.
+$\nabla \phi_a$ is orthogonal to the edge opposite to $a$ (along which $\phi_a$ is constant, zero), points towards $a$, and has length $1 / h_a$, where $h_a = 2 A_f / \ell_a$ is the height from $a$ and $\ell_a$ the length of the opposite edge. So $\nabla \phi_a = \frac{\ell_a}{2 A_f} m_a$ with $m_a$ the unit inward normal of the opposite edge, and $\nabla \phi_a \cdot \nabla \phi_b = \frac{\ell_a \ell_b}{4 A_f^2}\, m_a \cdot m_b$. The inward normals of two edges meeting at $c$ make the angle $\pi - \theta_c$, so $m_a \cdot m_b = \cos(\pi - \theta_c) = -\cos \theta_c$. The two edges meeting at $c$ are the edges opposite to $a$ and to $b$, of lengths $\ell_a$ and $\ell_b$, so the area is $A_f = \frac12 \ell_a \ell_b \sin\theta_c$, that is $\ell_a\ell_b = 2A_f/\sin\theta_c$. Then
+\begin{equation*}
+A_f\, \nabla \phi_a \cdot \nabla \phi_b = A_f\, \frac{\ell_a \ell_b}{4 A_f^2}\,(-\cos\theta_c) = -\frac{\ell_a \ell_b \cos \theta_c}{4 A_f} = -\frac{2 A_f}{\sin\theta_c}\,\frac{\cos\theta_c}{4 A_f} = -\frac12 \cot \theta_c .
+\end{equation*}
+For the diagonal, the three hat functions add up to $1$ on the face, so their gradients add up to zero, $\nabla \phi_a = -\nabla \phi_b - \nabla \phi_c$, and
+\begin{equation*}
+A_f\, |\nabla\phi_a|^2 = A_f\, \nabla\phi_a \cdot (-\nabla\phi_b - \nabla\phi_c) = -A_f\, \nabla\phi_a\cdot\nabla\phi_b - A_f\, \nabla\phi_a\cdot\nabla\phi_c = \tfrac12\cot\theta_c + \tfrac12\cot\theta_b ,
+\end{equation*}
+using the off-diagonal formula twice: the pair $a, b$ has the third vertex $c$, and the pair $a, c$ has the third vertex $b$.
 \end{proof}
 Summing over the two faces of an edge $ij$, the off-diagonal stiffness is $-\frac12 (\cot \alpha_{ij} + \cot \beta_{ij})$, the cotangent weight of the edge. (Figure~\ref{fig:cotangent}.)
 \begin{figure}[t]
@@ -883,12 +939,26 @@ On spinor coordinates, the Levi-Civita connection is the ordinary derivative plu
 
 \subsection{Frame independence}
 
-The frame $t$ is arbitrary, and nothing physical may depend on it. Rotating the frame by a field of angles, $t \to t' = t\, e^{\mathsf T \theta}$, changes the coordinates to $\psi' = e^{-\mathsf T \theta} \psi$ and, since $\nabla_a t' = (\nabla_a t)\, e^{\mathsf T\theta} + t\, (a \cdot \nabla\theta)\, \mathsf T e^{\mathsf T\theta}$, the connection form to $\omega' = \omega + d\theta$; and then
+The frame $t$ is arbitrary, and nothing physical may depend on it. Rotate the frame by a field of angles, $t \to t' = t\, e^{\mathsf T \theta}$. Three things change, and we compute each.
+
+\emph{The coordinates.} The same vector is $U = t\psi = t' \psi'$. Since $t' = t\, e^{\mathsf T\theta}$, $t\psi = t\, e^{\mathsf T\theta}\psi'$, so $\psi = e^{\mathsf T\theta}\psi'$ and $\psi' = e^{-\mathsf T \theta} \psi$.
+
+\emph{The connection form.} By the product rule, and because $a\cdot\nabla e^{\mathsf T\theta} = (a\cdot\nabla\theta)\, \mathsf T\, e^{\mathsf T\theta}$ (the derivative of $\cos\theta + \mathsf T\sin\theta$),
+\begin{equation*}
+\nabla_a t' = (\nabla_a t)\, e^{\mathsf T\theta} + t\, (a \cdot \nabla\theta)\, \mathsf T e^{\mathsf T\theta} = \omega(a)\, t\mathsf T e^{\mathsf T\theta} + (a\cdot\nabla\theta)\, t\, \mathsf T e^{\mathsf T\theta} = \big(\omega(a) + a\cdot\nabla\theta\big)\; t'\mathsf T ,
+\end{equation*}
+using~(\ref{eqn:ga_omega}) for $\nabla_a t$, and $t\,\mathsf T e^{\mathsf T\theta} = t\, e^{\mathsf T\theta}\mathsf T = t'\mathsf T$ (even elements of the plane commute). Comparing with the definition $\nabla_a t' = \omega'(a)\, t'\mathsf T$, the new connection form is $\omega' = \omega + d\theta$.
+
+\emph{The covariant derivative.} With the new frame,
+\begin{equation*}
+D'_a \psi' = a\cdot\nabla\big(e^{-\mathsf T\theta}\psi\big) + \omega'(a)\, \mathsf T\, e^{-\mathsf T\theta}\psi = -(a\cdot\nabla\theta)\,\mathsf T e^{-\mathsf T\theta}\psi + e^{-\mathsf T\theta}\, a\cdot\nabla\psi + \big(\omega(a) + a\cdot\nabla\theta\big)\,\mathsf T e^{-\mathsf T\theta}\psi .
+\end{equation*}
+The first and the last terms in $a\cdot\nabla\theta$ cancel, and what remains is $e^{-\mathsf T\theta}\big(a\cdot\nabla\psi + \omega(a)\mathsf T\psi\big)$:
 \begin{equation}
 \label{eqn:ga_gauge}
-D'_a \psi' = e^{-\mathsf T \theta}\, D_a \psi ,
+D'_a \psi' = e^{-\mathsf T \theta}\, D_a \psi .
 \end{equation}
-as one checks by differentiating $e^{-\mathsf T \theta} \psi$: the extra term $-(a \cdot \nabla \theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ is cancelled by the extra term $(a \cdot \nabla\theta)\, \mathsf T\, e^{-\mathsf T\theta}\psi$ of $\omega'$. So $\nabla U = t\, D\psi = t' D'\psi'$ is the same tangent object in both frames, $|D\psi|$ is frame independent, and so are the Dirichlet energy, the connection Laplacian and the solution of the heat equation. In the discrete setting this is the cancellation of the face frame in $(R_i^f)^T R_j^f$ and the statement that changing a vertex frame $t_i$ rotates the computed $u_i$ by the opposite angle and changes nothing else: the arrow $t_i \hat\psi_i$ drawn by the code is independent of the choice of $t_i$ in \code{computeVertexTangentSpace}.
+The covariant derivative transforms exactly like the coordinates themselves. So $\nabla U = t\, D\psi = t' D'\psi'$ is the same tangent object in both frames, $|D\psi|$ is frame independent, and so are the Dirichlet energy, the connection Laplacian and the solution of the heat equation. In the discrete setting this is the cancellation of the face frame in $(R_i^f)^T R_j^f$ and the statement that changing a vertex frame $t_i$ rotates the computed $u_i$ by the opposite angle and changes nothing else: the arrow $t_i \hat\psi_i$ drawn by the code is independent of the choice of $t_i$ in \code{computeVertexTangentSpace}.
 
 \begin{rem}[Cartan's structure equations]
 \label{rem:structure}
@@ -958,7 +1028,14 @@ the opposite edge, turned a quarter turn inward, divided by twice the area.
 \begin{proof}
 The gradient $g$ of $\phi_a$ lies in the plane and is determined by its inner products with the edges, $g \cdot e_m = \partial \hat\phi_a / \partial \xi_m$ (proof of Proposition~\ref{prop:gradient}). Writing $g = \sum_k (\partial \hat\phi_a / \partial \xi_k)\, e^k$ satisfies these equations, by the defining property of the reciprocal frame, and with~(\ref{eqn:shape_gradients}) gives the three gradients. The matrix $B (B^T B)^{-1}$ has the same defining property, $B^T \big(B (B^T B)^{-1}\big) = I$, and its columns lie in the plane, so its columns are $e^1$ and $e^2$. For~(\ref{eqn:ga_grad_edge}), take $a = 2$; in the counterclockwise order $a, b, c = 2, 3, 1$ its opposite edge is $x_c - x_b = x_1 - x_3 = -e_2$. Since $E = 2 A_f \mathsf T_f$ and $\mathsf T_f^{-1} = -\mathsf T_f$, $E^{-1} = -\mathsf T_f / (2 A_f)$, and by~(\ref{eqn:ga_reciprocal}) $e^1 = e_2 \cdot E^{-1} = -e_2 \mathsf T_f / (2 A_f) = (x_1 - x_3)\, \mathsf T_f / (2 A_f)$, using that for a vector in the plane of a bivector the inner and geometric products coincide. The other vertices follow by relabeling. (On the triangle $x_1 = 0$, $x_2 = e_x$, $x_3 = e_y$ with $n = e_z$: $(x_1 - x_3)\mathsf T = n \times (-e_y) = e_x$, which is indeed $\nabla \phi_2$.)
 \end{proof}
-The formula~(\ref{eqn:ga_grad_edge}) makes the cotangent formula of Proposition~\ref{prop:cotangent} immediate: the quarter turn preserves inner products, so $A_f\, \nabla\phi_a \cdot \nabla\phi_b = \frac{(x_c - x_b) \cdot (x_a - x_c)}{4 A_f}$, and for the two edges meeting at $c$, the ratio of their inner product to $|(x_c - x_b) \wedge (x_a - x_c)| = 2 A_f$ is $-\cot \theta_c$. In the vector manifold calculus of Hestenes and Sobczyk \cite{HestenesSobczyk1984}, the reciprocal frame is the general rule: the vector derivative on a face is $\nabla = e^1 \partial_{\xi_1} + e^2 \partial_{\xi_2}$.
+The formula~(\ref{eqn:ga_grad_edge}) gives the cotangent formula of Proposition~\ref{prop:cotangent} in three lines. For the counterclockwise order $a, b, c$, the opposite edge of $a$ is $x_c - x_b$ and that of $b$ (in the order $b, c, a$) is $x_a - x_c$, so
+\begin{equation*}
+A_f\, \nabla\phi_a \cdot \nabla\phi_b = A_f\, \frac{(x_c - x_b)\mathsf T_f}{2A_f} \cdot \frac{(x_a - x_c)\mathsf T_f}{2A_f} = \frac{(x_c - x_b) \cdot (x_a - x_c)}{4 A_f},
+\end{equation*}
+because the quarter turn preserves inner products, $(u\mathsf T)\cdot(v\mathsf T) = u \cdot v$ for vectors $u, v$ of the plane. Write $u = x_b - x_c$ and $v = x_a - x_c$ for the two edges leaving $c$. Then $(x_c - x_b)\cdot(x_a - x_c) = -\,u\cdot v = -|u||v|\cos\theta_c$, and $2A_f = |u \wedge v| = |u||v|\sin\theta_c$, so
+\begin{equation*}
+A_f\, \nabla\phi_a \cdot \nabla\phi_b = \frac{-|u||v|\cos\theta_c}{2\,|u||v|\sin\theta_c} = -\tfrac12\cot\theta_c .
+\end{equation*} In the vector manifold calculus of Hestenes and Sobczyk \cite{HestenesSobczyk1984}, the reciprocal frame is the general rule: the vector derivative on a face is $\nabla = e^1 \partial_{\xi_1} + e^2 \partial_{\xi_2}$.
 
 \begin{example}
 For the triangle of Example~\ref{ex:triangle}, $E = e_1 \wedge e_2 = I (e_1 \times e_2) = I (0, -2, 2)$, with $|E| = 2\sqrt 2 = 2 A_f$, and $\mathsf T_f = E / |E| = I n_f$. The gradient of $\phi_2$ by~(\ref{eqn:ga_grad_edge}) is the opposite edge $x_1 - x_3 = (0, -1, -1)$, turned a quarter turn in the face, $(x_1 - x_3)\, \mathsf T_f = n_f \times (x_1 - x_3) = \frac{1}{\sqrt 2} (0, -1, 1) \times (0, -1, -1) = \frac{1}{\sqrt 2} (2, 0, 0)$, divided by $2 A_f = 2\sqrt 2$: $\nabla\phi_2 = (\frac12, 0, 0)$, as in Example~\ref{ex:triangle}, without inverting any matrix.
@@ -966,12 +1043,13 @@ For the triangle of Example~\ref{ex:triangle}, $E = e_1 \wedge e_2 = I (e_1 \tim
 
 \subsection{The element matrices}
 
-For two vertices $i, j$ of the face, the stiffness integrand of~(\ref{eqn:ga_weak}) with the trial field~(\ref{eqn:ga_grad_trial}) and the test spinor $\chi = \phi_i\, e^{\mathsf T_f \rho_i^f}\, \chi_i$ is
+For two vertices $i, j$ of the face, take the trial field with only the vertex $j$, $\psi_f = \phi_j\, e^{\mathsf T_f\rho_j^f}\psi_j$, and the test spinor with only the vertex $i$, $\chi = \phi_i\, e^{\mathsf T_f \rho_i^f}\, \chi_i$. By~(\ref{eqn:ga_grad_trial}), $D_{e_k}\psi_f = (e_k\cdot\nabla\phi_j)\, e^{\mathsf T_f\rho_j^f}\psi_j$ and $D_{e_k}\chi = (e_k\cdot\nabla\phi_i)\, e^{\mathsf T_f\rho_i^f}\chi_i$. The reverse of a product reverses the order of its factors and the reverse of $e^{\mathsf T\rho}$ is $e^{-\mathsf T\rho}$, so $\widetilde{D_{e_k}\chi} = (e_k\cdot\nabla\phi_i)\, \widetilde{\chi_i}\, e^{-\mathsf T_f\rho_i^f}$. The stiffness integrand of~(\ref{eqn:ga_weak}) is then
 \begin{align*}
-\sum_k \big\langle (D_{e_k} \psi)\, \widetilde{(D_{e_k}\chi)} \big\rangle &= (\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f \rho_j^f} \psi_j\; \widetilde{\chi_i}\, e^{-\mathsf T_f \rho_i^f} \big\rangle \\
-&= (\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f (\rho_j^f - \rho_i^f)}\, \psi_j\, \widetilde{\chi_i} \big\rangle ,
+\sum_k \big\langle (D_{e_k} \psi_f)\, \widetilde{(D_{e_k}\chi)} \big\rangle
+&= \Big(\sum_k (e_k\cdot\nabla\phi_i)(e_k\cdot\nabla\phi_j)\Big)\, \big\langle e^{\mathsf T_f \rho_j^f} \psi_j\; \widetilde{\chi_i}\, e^{-\mathsf T_f \rho_i^f} \big\rangle \\
+&= (\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f (\rho_j^f - \rho_i^f)}\, \psi_j\, \widetilde{\chi_i} \big\rangle .
 \end{align*}
-using that the even elements of the plane commute and the cyclic property of the scalar part. So, as a complex matrix,
+In the first line the scalars $e_k\cdot\nabla\phi$ were moved out of the product; their sum over the orthonormal basis $e_1, e_2$ is the inner product of the two gradients. In the second line $e^{-\mathsf T_f\rho_i^f}$ was moved to the front: $\psi_j$, $\widetilde{\chi_i}$ and the exponentials are all even elements of the plane of the face, complex numbers, and they commute. In complex notation the integrand is $(\nabla\phi_i\cdot\nabla\phi_j)\, \mathrm{Re}\big(\overline{\chi_i}\, e^{\mathrm i(\rho_j^f - \rho_i^f)}\, \psi_j\big)$, and $\mathrm{Re}(\overline{\chi_i}\, z\, \psi_j)$ is the real inner product of $\chi_i$ with $z\psi_j$: the entry of the matrix is the complex number $z$ multiplied by the scalar part of the element. So, as a complex matrix,
 \begin{equation}
 \label{eqn:ga_element}
 \mathrm L^f_{ij} = A_f\, (\nabla\phi_i \cdot \nabla\phi_j)\; e^{\mathsf T (\rho_j^f - \rho_i^f)}, \qquad \mathrm M^f_{ii} = \frac{A_f}{3} :
@@ -1753,7 +1831,11 @@ E(\psi) = \sum_e (\star_1)_{ee}\, |\psi_b - r_{ab}\psi_a|^2 = (d^\nabla\psi)^H \
 \qquad
 \mathrm L^\nabla = (d^\nabla)^H \star_1\, d^\nabla ,
 \end{equation}
-where $^H$ is the conjugate transpose. Expanding $|\psi_b - r_{ab}\psi_a|^2 = |\psi_b|^2 + |\psi_a|^2 - 2\,\mathrm{Re}\,(\overline{\psi_a}\, r_{ba}\, \psi_b)$ gives the entries
+where $^H$ is the conjugate transpose. To read off the entries, expand one term. For complex numbers $|z - w|^2 = |z|^2 + |w|^2 - 2\,\mathrm{Re}(\bar z w)$, so with $z = \psi_b$ and $w = r_{ab}\psi_a$, and $|r_{ab}| = 1$,
+\begin{equation*}
+|\psi_b - r_{ab}\psi_a|^2 = |\psi_b|^2 + |\psi_a|^2 - 2\,\mathrm{Re}\,(\overline{\psi_b}\, r_{ab}\, \psi_a) = |\psi_b|^2 + |\psi_a|^2 - 2\,\mathrm{Re}\,(\overline{\psi_a}\, r_{ba}\, \psi_b) ,
+\end{equation*}
+where the last step takes the complex conjugate inside the real part, which does not change it, and uses $\overline{r_{ab}} = r_{ba}$. Now compare with a Hermitian form $\psi^H \mathrm L\psi = \sum_a \mathrm L_{aa}|\psi_a|^2 + \sum_{a \ne b} \overline{\psi_a}\, \mathrm L_{ab}\, \psi_b$, in which the two entries of an edge, $\mathrm L_{ab}$ and $\mathrm L_{ba} = \overline{\mathrm L_{ab}}$, contribute $\overline{\psi_a}\,\mathrm L_{ab}\psi_b + \overline{\psi_b}\,\overline{\mathrm L_{ab}}\,\psi_a = 2\,\mathrm{Re}(\overline{\psi_a}\,\mathrm L_{ab}\psi_b)$. Matching the terms of every edge, weighted by $(\star_1)_{ee}$, gives the entries
 \begin{equation}
 \label{eqn:dec_entries}
 \mathrm L^\nabla_{aa} = \sum_{b} \tfrac12 (\cot\alpha_{ab} + \cot\beta_{ab}), \qquad \mathrm L^\nabla_{ab} = -\tfrac12 (\cot\alpha_{ab} + \cot\beta_{ab})\; r_{ba} ,
@@ -2383,7 +2465,15 @@ where $D U_h$ is the $3 \times 3$ matrix of derivatives of the three components 
 \paragraph{Where the connection went.} Two subtleties replace the discrete connection, and both are where this method can go wrong.
 \begin{enumerate}
 \item \emph{The field is not tangent.} The penalty $\tau$ is a tuning parameter: too small and the field leaves the surface, too large and the system becomes ill conditioned, or the method locks. A Lagrange multiplier for $U_h \cdot n = 0$ avoids the parameter at the cost of a saddle point system.
-\item \emph{Differentiate first or project first?} For a field that is not exactly tangent, $P\, D(P U_h)\, P = P\, (D U_h)\, P - (U_h \cdot n)\, \mathcal H$, with $\mathcal H = D n$ the shape operator (Weingarten map), as one sees by differentiating $P U_h = U_h - (U_h \cdot n)\, n$. The two formulations differ by a curvature term times the normal component, and each formulation must say which one it means.
+\item \emph{Differentiate first or project first?} For a field that is not exactly tangent, differentiate $P U_h = U_h - (U_h \cdot n)\, n$ along a tangent $X$ by the product rule:
+\begin{equation*}
+D_X(P U_h) = D_X U_h - \big(X\cdot\nabla(U_h\cdot n)\big)\, n - (U_h\cdot n)\, D_X n .
+\end{equation*}
+Apply $P$: the middle term is normal and disappears, and $D_X n$ is already tangent (differentiate $n\cdot n = 1$), so $P\, D_X n = D_X n = \mathcal H X$, with $\mathcal H = D n$ the shape operator (Weingarten map). Hence
+\begin{equation*}
+P\, D(P U_h)\, P = P\, (D U_h)\, P - (U_h \cdot n)\, \mathcal H ,
+\end{equation*}
+the right factor $P$ restricting both sides to tangent directions $X$. The two formulations differ by a curvature term times the normal component, and each formulation must say which one it means.
 \end{enumerate}
 The analysis of Hansbo, Larson and Larsson \cite{Hansbo2020} shows that, for the optimal rate of convergence, the normal used in the penalty term must be more accurate than the piecewise constant normals of the faces. So the extrinsic information that this text removed in Part~\ref{part:intrinsic} is, in this method, essential: on a bent flat mesh such as the Miura-ori it would inherit errors from its normals, while Parts~\ref{part:intrinsic} to~\ref{part:dec} are exact there.
 
