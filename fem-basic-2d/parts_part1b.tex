@@ -1036,7 +1036,7 @@ for each of the two coordinates, so the vector at every vertex is a positive mul
 
 The whole computation of Sections~\ref{section:element}--\ref{section:solve} is a handful of lines of \code{main}:
 \lstinputlisting[firstline=638, lastline=645, firstnumber=638]{../src/FEM.cpp}
-Line~638 assembles $\Delta t\,\mathrm L$ with $\Delta t = \bar h^2$; lines~639--640 assemble the lumped $\mathrm M$; line~641 turns \code{A} into $I + \Delta t\,\mathrm M^{-1}\mathrm L$; line~643 replaces the rows of the source and factors; and line~645 solves the system for the right-hand side built above, storing $\mathrm u$ in \code{solutionU}. The program then enters the drawing loop, and the drawing function reads \code{solutionU}.
+Line~638 assembles $\Delta t\,\mathrm L$ with $\Delta t = \bar h^2$ (with the option \code{--intrinsic} it calls instead the assembly of Part~\ref{part:intrinsic} written in this part's matrices, Section~\ref{section:int_matrix}); lines~639--640 assemble the lumped $\mathrm M$; line~641 turns \code{A} into $I + \Delta t\,\mathrm M^{-1}\mathrm L$; line~643 replaces the rows of the source and factors; and line~645 solves the system for the right-hand side built above, storing $\mathrm u$ in \code{solutionU}. The program then enters the drawing loop, and the drawing function reads \code{solutionU}.
 
 \subsection{From the solution to vectors}
 
@@ -1049,7 +1049,7 @@ The solve returns $\mathrm u$, two coordinates per vertex. Its magnitudes decay 
 \end{align*}
 the tangent vector whose coordinates are $\hat u_i = (\cos\alpha_i, \sin\alpha_i)$. That vector is drawn as an arrow at the vertex, in \code{display}:
 \lstinputlisting[firstline=769, lastline=777, firstnumber=769]{../src/FEM.cpp}
-Line~771 forms the complex number $u_{i,1} + \mathrm i\, u_{i,2}$ from the entries $2i$ and $2i+1$ of the solution, and line~772 normalizes it to $\hat u_i$. Line~773 recomputes the frame vector $t_i$ exactly as line~185 of \code{computeVertexTangentSpace} did, from the same neighbor. Line~774 builds the rotation about $n_i$ by the angle $\alpha_i$: the complex logarithm of a unit complex number $e^{\mathrm i\alpha}$ is $\mathrm i\alpha$, so \code{log(R\_i).imag()} is $\alpha_i$. Line~775 applies the rotation to $t_i$, giving $T_i\hat u_i$, and scales it to the length $0.06$ for display; line~776 draws the arrow at the vertex position $x_i$.
+Line~771 forms the complex number $u_{i,1} + \mathrm i\, u_{i,2}$ from the entries $2i$ and $2i+1$ of the solution, and line~772 normalizes it to $\hat u_i$. Line~773 recomputes the frame vector $t_i$ exactly as line~185 of \code{computeVertexTangentSpace} did, from the same neighbor. Line~774 builds the rotation about $n_i$ by the angle $\alpha_i$: the complex logarithm of a unit complex number $e^{\mathrm i\alpha}$ is $\mathrm i\alpha$, so \code{log(R\_i).imag()} is $\alpha_i$. Line~775 applies the rotation to $t_i$, giving $T_i\hat u_i$ (or, with \code{--intrinsic}, calls \code{intrinsic::lift} of Part~\ref{part:intrinsic}), and scales it to the length $0.06$ for display; line~776 draws the arrow at the vertex position $x_i$.
 
 \subsection{What the program computes}
 

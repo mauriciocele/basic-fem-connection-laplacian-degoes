@@ -37,7 +37,7 @@ FEM Vector Fields
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
-
+#include "IntrinsicConnection.h"   // Part III: the connection from the edge lengths alone
 // #include <ppl.h>
 
 const char *WINDOW_TITLE = "FEM BASIC 2D";
@@ -140,8 +140,8 @@ rotor g_modelRotor = _rotor(1.0);
 float g_dragDistance = -1.0f;
 int g_dragObject;
 bool g_showWires = true;
-
-
+bool g_intrinsic = false;                 // run with --intrinsic for the connection of Part III
+intrinsic::Geometry g_intrinsicGeometry;  // its lengths, angles, gradients and corner connections
 VertexBuffer vertexBuffer;
 IndexBuffer indexBuffer;
 
@@ -166,7 +166,7 @@ Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 std::set<int> allconstraints;
 Eigen::VectorXd right_hand_side;
 Eigen::VectorXd solutionU;
-
+std::shared_ptr<SparseMatrix<double>> AssembleMatrixIntrinsic(Mesh *mesh, double delta_t);   // at the end of the file
 /// Project u on the orthgonal of n
 /// \param u vector to project
 /// \param n vector to build orthogonal space from
@@ -551,7 +551,7 @@ int main(int argc, char* argv[])
 	/**
 	 * Load the FEM mesh
 	 */
-	//mesh.readFEM("lake_nodes.txt", "lake_elements.txt");
+	g_intrinsic = argc > 1 && std::string(argv[1]) == "--intrinsic";
 	mesh.readOBJ("cactus1.obj");
 	mesh.CenterAndNormalize();
 	mesh.computeNormals();
@@ -635,7 +635,7 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	A = AssembleMatrix2(&mesh, avgEdgeLength*avgEdgeLength);
+	A = g_intrinsic ? AssembleMatrixIntrinsic(&mesh, avgEdgeLength*avgEdgeLength) : AssembleMatrix2(&mesh, avgEdgeLength*avgEdgeLength);
 	std::shared_ptr<SparseMatrix<double>> M;
 	M = AssembleDiagonalMassMatrix(&mesh);
 	IplusMinvTimesA(M, A);
@@ -772,7 +772,7 @@ void display()
 		R_i = R_i / abs(R_i);
 		Eigen::Vector3d X_i = project(vi.edge->pair->vertex->p - vi.p, vi.n).normalized();
 		Eigen::Quaterniond Q(Eigen::AngleAxisd(log(R_i).imag(), vi.n));
-		Eigen::Vector3d U_i = 0.06 * Q._transformVector(X_i);
+		Eigen::Vector3d U_i = 0.06 * (g_intrinsic ? intrinsic::lift(mesh, g_intrinsicGeometry, i, R_i) : Q._transformVector(X_i));
 		DrawArrow(c3gaPoint(vi.p.x(), vi.p.y(), vi.p.z()), _vectorE3GA(U_i.x(), U_i.y(), U_i.z()));
 	}
 
@@ -928,3 +928,55 @@ void DestroyWindow()
 	ReleaseDrawing();
 }
 
+/**
+ * Part III in the matrix form of Part I: the element of AssembleStiffnessElementEmbedded2 with its three ingredients
+ * taken from the edge lengths alone (IntrinsicConnection.h). The gradients are the 2D gradients of the layout
+ * (eq. intrinsic_gradient), the area is Heron's, and the vertex-to-face rotation R_a is the 2x2 matrix of the corner
+ * connection e^{T rho_a^f} (eq. intrinsic_rho). The block (a, b) is A_f (grad phi_a . grad phi_b) R_a^T R_b, the real
+ * form of the complex entry A_f (grad phi_a . grad phi_b) e^{T (rho_b - rho_a)} (eq. intrinsic_element).
+ */
+Matrix66d AssembleStiffnessElementIntrinsic(const Face& face, const intrinsic::Geometry& G) {
+	const intrinsic::FaceGeometry& g = G.faces[face.ID];
+	Eigen::Matrix2d R[3];
+	for (int a = 0; a < 3; ++a) {
+		const double c = g.rho[a].real(), s = g.rho[a].imag();
+		R[a] << c, -s,
+		        s,  c;
+	}
+	Matrix66d elementMatrix;
+	elementMatrix.setZero();
+	for (int i = 0; i < 3; ++i) { // for each test function
+		for (int j = 0; j < 3; ++j) { // for each shape function
+			const double w = g.area * g.grad[i].dot(g.grad[j]);
+			if (i == j) elementMatrix.block<2,2>(i * 2, j * 2) = w * Eigen::Matrix2d::Identity();
+			else        elementMatrix.block<2,2>(i * 2, j * 2) = w * R[i].transpose() * R[j];
+		}
+	}
+	return elementMatrix;
+}
+
+/// AssembleMatrix2 with the intrinsic element: the same loop over faces, the same 2x2 blocks, the same global matrix.
+std::shared_ptr<SparseMatrix<double>> AssembleMatrixIntrinsic(Mesh *mesh, double delta_t) {
+	g_intrinsicGeometry = intrinsic::compute(*mesh);
+	std::shared_ptr<SparseMatrix<double>> A(new SparseMatrix<double>(mesh->numVertices() * 2, mesh->numVertices() * 2));
+	Matrix66d stiffnessMatrix;
+	Eigen::Matrix2d wij;
+	Vertex* v[3];
+	for (Face& face : mesh->getFaces()) {
+		v[0] = face.edge->vertex;
+		v[1] = face.edge->next->vertex;
+		v[2] = face.edge->next->next->vertex;
+		stiffnessMatrix = AssembleStiffnessElementIntrinsic(face, g_intrinsicGeometry);
+		for( int i = 0 ; i < 3 ; ++i ) {
+			for (int j = 0 ; j < 3 ; ++j ) {
+				wij = delta_t * stiffnessMatrix.block<2,2>(i * 2, j * 2);
+				for(int row = 0 ; row < 2 ; ++row) {
+					for(int col = 0 ; col < 2 ; ++col) {
+						(*A)(v[i]->ID * 2 + row, v[j]->ID * 2 + col) += wij(row, col);
+					}
+				}
+			}
+		}
+	}
+	return A;
+}
