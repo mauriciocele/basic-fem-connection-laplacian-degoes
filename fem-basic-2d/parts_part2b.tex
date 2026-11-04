@@ -1,0 +1,1004 @@
+%%% ----------------------------------------------------------------------
+\section{Stage 5: The Discretization: the Mesh and the Finite-Dimensional Space}
+\label{section:ga_fem}
+
+\paragraph{What we want.} We want a finite-dimensional space $V_h$ of tangent fields on the mesh, with a basis, in which to look for an approximate solution of the weak form~(\ref{eqn:ga_weak}),
+\begin{equation*}
+\tag{\ref{eqn:ga_weak}}
+\int_\Omega \langle \psi\, \widetilde\chi \rangle\, dA + \Delta t \int_\Omega \sum_k \langle (D_{e_k} \psi)\, \widetilde{(D_{e_k} \chi)} \rangle\, dA = \int_\Omega \langle \psi^0\, \widetilde\chi \rangle\, dA .
+\end{equation*}
+In the plane this is easy: interpolate the values at the vertices with the hat functions. On a curved, piecewise flat surface it is not, and this is where differential geometry enters the finite element method. The unknown at a vertex is a vector of the vertex's tangent plane; inside a face, a tangent field must take values in the plane of the face; and the planes are all different. Before the vertex vectors can be interpolated in a face they must be carried into the plane of the face. So we need, in order: the tangent planes of the faces and the vertices, as bivectors; the rotor that carries one plane onto another, and the reason for choosing the smallest one; the resulting connection angle; what of all this is intrinsic; and finally the spinor hat functions.
+
+\subsection{Tangent bivectors of the faces and the vertices}
+
+\paragraph{A face.} A face with vertices $x_1, x_2, x_3$, in counterclockwise order, has the edge vectors $e_1 = x_2 - x_1$ and $e_2 = x_3 - x_1$. Part~\ref{part:matrix} defined its normal and its area by~(\ref{eqn:face_normal}),
+\begin{equation*}
+\tag{\ref{eqn:face_normal}}
+n_f = \frac{e_1\times e_2}{|e_1\times e_2|}, \qquad A_f = \tfrac12\,|e_1\times e_2| ,
+\end{equation*}
+so that $e_1\times e_2 = |e_1\times e_2|\, n_f = 2A_f\, n_f$. The outer product of the two edges is the \emph{area bivector} of the face. We expand it one rule at a time:
+\begin{align}
+E_f = e_1\wedge e_2 &= I\,(e_1\times e_2) && a\wedge b = I(a\times b) \notag\\
+&= I\,(2A_f\, n_f) && e_1\times e_2 = 2A_f\, n_f \notag\\
+&= 2A_f\; I n_f && \text{the real number } 2A_f \text{ moves out} \notag\\
+&= 2A_f\,\mathsf T_f && \mathsf T_f = I n_f,\ \text{by (\ref{eqn:ga_T})} . \label{eqn:r2_face_bivector}
+\end{align}
+The face plane is the plane of its two edges, $\mathsf T_f = E_f/(2A_f)$. Its magnitude is $|E_f| = 2A_f\,|\mathsf T_f| = 2A_f$, since $\mathsf T_f$ has unit magnitude, so $A_f = \frac12|E_f|$ and $\mathsf T_f = E_f/|E_f|$. The first frame vector of the face is its first edge, normalized, $t_f = e_1/|e_1|$; it lies in the plane already. The program computes these in \code{computeGeometry}:
+\lstinputlisting[firstline=58, lastline=70, firstnumber=58]{../src/ga_fem.cpp}
+Lines~58--62 size the arrays and visit the faces, each with its three vertices in counterclockwise order (\code{faceVertices}). Line~63 is the dual vector of $E_f$, the cross product $e_1\times e_2$. Line~64 is $A_f = \frac12|E_f|$ and line~65 the unit normal, the dual vector of $\mathsf T_f$, which is how \code{tangentBivector} stores the plane. Line~66 is $t_f$, stored on line~67. Lines~68--69 build the $3\times 2$ frame $[\,t_f\;\; n_f\times t_f\,]$ of Part~\ref{part:matrix}, used only by the matrix version; in geometric algebra the second column is $t_f\mathsf T_f$, determined by $t_f$ and the plane.
+
+\paragraph{A vertex.} A vertex has no tangent plane of its own: it is the apex of a cone of faces. The code gives it one, orthogonal to the area-weighted normal~(\ref{eqn:vertex_normal}),
+\begin{equation*}
+\tag{\ref{eqn:vertex_normal}}
+n_i = \frac{\sum_{f \ni i} 2 A_f\, n_f}{\big|\sum_{f \ni i} 2 A_f\, n_f\big|} .
+\end{equation*}
+In geometric algebra the weighted sum of normals is a sum of planes. Multiply the numerator by $I$ and use~(\ref{eqn:r2_face_bivector})~[\,$E_f = 2A_f\, I n_f$\,] term by term:
+\begin{equation*}
+I\sum_{f\ni i} 2A_f\, n_f = \sum_{f\ni i} 2A_f\, I n_f = \sum_{f\ni i} E_f .
+\end{equation*}
+Multiplication by $I$ does not change magnitudes ($|Iv|^2 = -(Iv)^2 = -I^2v^2 = |v|^2$), so the denominator is $\big|\sum_f E_f\big|$ as well, and
+\begin{equation*}
+\mathsf T_i = I n_i = \frac{I\sum_{f \ni i} 2A_f\, n_f}{\big|\sum_{f\ni i} 2A_f\, n_f\big|} = \frac{\sum_{f \ni i} E_f}{\big|\sum_{f\ni i} E_f\big|} :
+\end{equation*}
+the vertex plane is the normalized sum of the area bivectors of the faces around it. Its first frame vector $t_i$ is the first edge from $i$, projected onto the plane with $P$ of~(\ref{eqn:ga_projection})~[\,$P(a) = a - (a\cdot n)\, n$\,] and normalized, as in~(\ref{eqn:vertex_frame}):
+\begin{equation*}
+\tag{\ref{eqn:vertex_frame}}
+t_i = \frac{(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i}{\big|(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i\big|} .
+\end{equation*}
+\lstinputlisting[firstline=51, lastline=57, firstnumber=51]{../src/ga_fem.cpp}
+Line~52 is the edge $x_j - x_i$ to the first neighbor. Line~53 is the projection $P$, written in its vector form $a - (a\cdot n_i)\, n_i$, followed by normalization: this is $t_i$. Line~56 stores the second frame vector $b_i = n_i\times t_i$, which by~(\ref{eqn:ga_quarter_turn})~[\,$a\,\mathsf T = n\times a$\,] is $t_i\,\mathsf T_i$. The geometric algebra version needs only line~54, the single vector $t_i$; the matrix version needs the whole $3\times 2$ frame of lines~55--56.
+
+\subsection{The rotor between two planes}
+\label{section:ga_rotor}
+
+\paragraph{What we want, and why this rotor.} To compare a vector of the vertex plane, with normal $n_i$, with vectors of a face plane, with normal $n_f$, we must carry the vertex plane onto the face plane. Any rotation that takes $n_i$ to $n_f$ does that, and there are infinitely many: after one such rotation we may spin the face plane about $n_f$ by any angle and still have $n_i$ taken to $n_f$. These rotations differ only by a rotation within the face plane, so they would give connection angles $\rho_i^f$ that differ by an arbitrary constant. We must pick one, and the right choice is the one that does not spin: the rotation whose plane contains both normals, $n_i\wedge n_f$. It moves the normal $n_i$ straight towards $n_f$, by the angle between them, and it leaves fixed the line in which the two tangent planes meet, the direction $n_i\times n_f$, which belongs to both planes. The next subsection shows that this ``no spin'' rule, applied to infinitely many infinitely small steps, is exactly parallel transport; here it is applied to one finite step, from a vertex into a face. It is the smallest rotation taking $n_i$ to $n_f$, the rotation of the Rodrigues formula~(\ref{eqn:rodrigues}) of Part~\ref{part:matrix},
+\begin{equation*}
+\tag{\ref{eqn:rodrigues}}
+Q = I + [v]_\times + \frac{1}{1 + a \cdot c}\, [v]_\times^2 , \qquad v = a \times c .
+\end{equation*}
+In geometric algebra this rotation has a short formula, which we now derive. Let $a$ and $c$ be unit vectors (later $a = n_i$, $c = n_f$), with angle $\phi$ between them, and $a\cdot c = \cos\phi \ne -1$.
+
+\paragraph{Step 1: the sandwich by one unit vector is a reflection.} Two rules of Section~\ref{section:r2_tools} are all we need. Adding $xp = x\cdot p + x\wedge p$ and $px = x\cdot p - x\wedge p$ gives
+\begin{equation*}
+x p + p x = 2\, (x\cdot p), \qquad\text{so}\qquad x p = 2\,(x\cdot p) - p x .
+\end{equation*}
+For a unit vector $p$ ($pp = 1$) and any vector $x$, substitute this into $p\,x\,p$:
+\begin{align*}
+p\, x\, p &= p\,(x p) && \text{grouping} \\
+&= p\,\big(2\,(x\cdot p) - p x\big) && x p = 2(x\cdot p) - p x \\
+&= 2\,(x\cdot p)\, p - (p p)\, x && \text{distributing; the scalar } x\cdot p \text{ moves out} \\
+&= 2\,(x\cdot p)\, p - x && p p = 1 .
+\end{align*}
+Split $x = x_\parallel + x_\perp$ into its part along $p$, $x_\parallel = (x\cdot p)\,p$, and the rest. Then $2(x\cdot p)p - x = 2x_\parallel - x_\parallel - x_\perp = x_\parallel - x_\perp$: the component along $p$ is kept and the orthogonal component is flipped. The map $x\mapsto p\,x\,p$ is the \emph{reflection in the line of $p$}. The same result can be read off the commutation rules directly: $x_\parallel$ is parallel to $p$, so it commutes with $p$, and $p\,x_\parallel\,p = x_\parallel\,pp = x_\parallel$; $x_\perp$ is orthogonal to $p$, so it anticommutes, and $p\,x_\perp\,p = -x_\perp\,pp = -x_\perp$.
+
+\paragraph{Step 2: a product of two unit vectors is a rotor.} For unit vectors $p, q$, let $R = qp$. Its reverse is $\widetilde R = pq$ (reversion reverses the order of vector factors), and
+\begin{equation*}
+R\widetilde R = (q p)(p q) = q\,(p p)\, q = q\, q = 1 ,
+\end{equation*}
+so $R$ is a rotor. Its sandwich is two reflections, one after the other: $R\,x\,\widetilde R = q\,p\,x\,p\,q = q\,(p\,x\,p)\,q$, the reflection in the line of $p$ followed by the reflection in the line of $q$.
+
+\paragraph{Step 3: the right two vectors, and $m\,a\,m = c$.} We want to take $a$ to $c$. Take the half-way unit vector
+\begin{equation*}
+m = \frac{a + c}{|a + c|}, \qquad |a + c|^2 = (a + c)\cdot(a + c) = a\cdot a + 2\,a\cdot c + c\cdot c = 2 + 2\,a\cdot c .
+\end{equation*}
+Reflect $a$ in the line of $m$, with the formula of Step~1 [\,$p\,x\,p = 2(x\cdot p)\,p - x$\,] for $p = m$, $x = a$:
+\begin{align*}
+m\, a\, m &= 2\,(a\cdot m)\, m - a && \text{Step 1} \\
+&= 2\,\frac{a\cdot(a + c)}{|a + c|}\,\frac{a + c}{|a + c|} - a && m = \tfrac{a + c}{|a + c|}\ \text{substituted twice} \\
+&= \frac{2\,(1 + a\cdot c)}{|a + c|^2}\,(a + c) - a && a\cdot a = 1;\ \text{collecting the two denominators} \\
+&= \frac{2\,(1 + a\cdot c)}{2 + 2\,a\cdot c}\,(a + c) - a && |a + c|^2 = 2 + 2\,a\cdot c \\
+&= (a + c) - a = c && \text{cancelling.}
+\end{align*}
+The line of $m$ bisects the angle between $a$ and $c$, so this is what a reflection must do. Reflecting $c$ in its own line leaves it unchanged: $c\,c\,c = (cc)\,c = c$. So the rotor $Q = c\,m$ (first reflect in $m$, then in $c$), with $\widetilde Q = m\,c$, takes $a$ to $c$:
+\begin{align*}
+Q\, a\, \widetilde Q &= (c\, m)\, a\, (m\, c) && Q = cm,\ \widetilde Q = mc \\
+&= c\, (m\, a\, m)\, c && \text{regrouping (the product is associative)} \\
+&= c\, (c)\, c && m\,a\,m = c \\
+&= (c\, c)\, c = c && c\,c = 1 .
+\end{align*}
+
+\paragraph{Step 4: its formula.} Substitute $m$ into $Q = c\,m$:
+\begin{align*}
+Q = c\, m &= c\,\frac{a + c}{|a + c|} && m \text{ substituted} \\
+&= \frac{c\,a + c\,c}{|a + c|} && \text{distributing the product} \\
+&= \frac{1 + c\,a}{|a + c|} && c\,c = 1 \\
+&= \frac{1 + c\,a}{\sqrt{2 (1 + a \cdot c)}} && |a + c|^2 = 2 + 2\,a\cdot c .
+\end{align*}
+The denominator is the magnitude of the numerator. To see it, multiply the numerator by its reverse, $\widetilde{(1 + ca)} = 1 + ac$:
+\begin{align*}
+(1 + c a)(1 + a c) &= 1 + a c + c a + c\,(a a)\, c && \text{distributing} \\
+&= 1 + (a c + c a) + c\, c && a a = 1 \\
+&= 1 + 2\,a\cdot c + 1 && a c + c a = 2\, a\cdot c,\ c c = 1 \\
+&= 2\,(1 + a\cdot c) ,
+\end{align*}
+a positive scalar, the squared magnitude $|1 + ca|^2$. So
+\begin{equation}
+\label{eqn:ga_rotor}
+Q = \frac{1 + c\, a}{|1 + c\, a|} = \frac{1 + c\, a}{\sqrt{2 (1 + a \cdot c)}} .
+\end{equation}
+
+\paragraph{Step 5: checks, factor by factor.} We check directly that~(\ref{eqn:ga_rotor}) does what Steps~1--3 promised. Write $N = |1 + ca|$, so $N^2 = 2(1 + a\cdot c)$, $Q = (1 + ca)/N$ and $\widetilde Q = (1 + ac)/N$.
+\begin{itemize}
+\item \emph{It is a rotor.} $Q\widetilde Q = (1 + ca)(1 + ac)/N^2 = 2(1 + a\cdot c)/N^2 = 1$, by the product just computed; and $\widetilde Q Q = (1 + ac)(1 + ca)/N^2 = \big(1 + ca + ac + a(cc)a\big)/N^2 = \big(2 + 2\,a\cdot c\big)/N^2 = 1$ too.
+\item \emph{It takes $a$ to $c$.} The first product is $(1 + ca)\,a = a + c\,(aa) = a + c$. The second:
+\begin{align*}
+(a + c)(1 + a c) &= a + a a c + c + c a c && \text{distributing} \\
+&= a + c + c + c a c && a a = 1 \\
+&= a + 2c + \big(2\,(a\cdot c)\, c - a\big) && c\,a\,c = 2(a\cdot c)\,c - a,\ \text{Step 1} \\
+&= 2\,(1 + a\cdot c)\, c && \text{the two } a \text{ cancel.}
+\end{align*}
+Dividing by $N^2 = 2(1 + a\cdot c)$: $Q\,a\,\widetilde Q = c$.
+\item \emph{Its angle and plane.} The geometric product $ca = c\cdot a + c\wedge a = \cos\phi + c\wedge a$. Let $B$ be the unit bivector of $a\wedge c$, so $a\wedge c = B\sin\phi$ and $c\wedge a = -a\wedge c = -B\sin\phi$. With the half-angle formulas $1 + \cos\phi = 2\cos^2\frac\phi2$ and $\sin\phi = 2\sin\frac\phi2\cos\frac\phi2$,
+\begin{align*}
+1 + c a &= 1 + \cos\phi - B\sin\phi = 2\cos\tfrac\phi2\,\big(\cos\tfrac\phi2 - B\sin\tfrac\phi2\big), \\
+N &= \sqrt{2(1 + \cos\phi)} = \sqrt{4\cos^2\tfrac\phi2} = 2\cos\tfrac\phi2 ,
+\end{align*}
+and dividing, $Q = \cos\frac\phi2 - B\sin\frac\phi2 = e^{-B\phi/2}$. By the rule of Section~\ref{section:r2_tools}, this rotor turns by $\phi$ in the plane $B$ of $a$ and $c$, from $a$ towards $c$.
+\item \emph{It does not spin: the axis is fixed.} Let $k$ be a vector orthogonal to both $a$ and $c$, for instance $k = a\times c$. Then $k$ anticommutes with $a$ and with $c$, so it commutes with their product: $(ca)\,k = c\,(a k) = -c\,(k a) = -(c k)\, a = k\, c\, a$. Hence $k$ commutes with $Q = (1 + ca)/N$, and $Q\,k\,\widetilde Q = k\,Q\widetilde Q = k$. The rotation fixes the axis $a\times c$, as the Rodrigues rotation~(\ref{eqn:rodrigues}) [\,axis $v = a\times c$\,] does; since both turn by $\phi$ about the same axis, they are the same rotation.
+\item \emph{It carries the planes.} The pseudoscalar $I$ commutes with every element, so $Q\,(Ia)\,\widetilde Q = I\,(Q\,a\,\widetilde Q) = I c$: the plane orthogonal to $a$ goes to the plane orthogonal to $c$.
+\end{itemize}
+
+\begin{prop}
+\label{prop:ga_rotor}
+For unit vectors $a$ and $c$ with $a\cdot c\ne -1$, the rotor~(\ref{eqn:ga_rotor})~[\,$Q = \frac{1 + ca}{\sqrt{2(1 + a\cdot c)}}$\,] turns $a$ to $c$ in the plane $a\wedge c$, by their angle; it is the rotation of the Rodrigues formula~(\ref{eqn:rodrigues}), and it takes the bivector $Ia$ to $Ic$.
+\end{prop}
+
+\paragraph{From a vertex to a face.} With $a = n_i$ and $c = n_f$, the rotor
+\begin{equation}
+\label{eqn:ga_Q}
+Q_{i \to f} = \frac{1 + n_f\, n_i}{|1 + n_f\, n_i|}
+\end{equation}
+takes the normal of vertex $i$ to that of face $f$ and, by the last check, the tangent bivector $\mathsf T_i = I n_i$ to $\mathsf T_f = I n_f$:
+\begin{equation*}
+Q_{i\to f}\,\mathsf T_i\,\widetilde Q_{i\to f} = Q_{i\to f}\,(I n_i)\,\widetilde Q_{i\to f} = I\,\big(Q_{i\to f}\, n_i\,\widetilde Q_{i\to f}\big) = I n_f = \mathsf T_f .
+\end{equation*}
+It carries the tangent plane of the vertex onto that of the face, and with it every tangent vector, $a \mapsto Q_{i \to f}\, a\, \widetilde Q_{i \to f}$. The failure of \code{alignVectors} for opposite normals is visible here: $1 + n_f n_i = 1 + n_f\cdot n_i + n_f\wedge n_i = 1 - 1 + 0 = 0$ when $n_f = -n_i$, and no plane of rotation is singled out.
+
+\subsection{Why the smallest rotor: rolling without twisting}
+
+\paragraph{What we want.} Part~\ref{part:matrix} defined parallel transport by the equation $\nabla_{\gamma'} U = 0$, which is hard to picture. Here is a mechanical picture. Along a curve $\gamma(s)$ on the surface, carry a rigid plane, always tangent to the surface. The plane must follow the surface, so it must tilt as the normal $n(s)$ changes; but we may choose not to spin it about the normal. A vector drawn on the plane is then carried along. We show that this ``rolling without twisting'' is parallel transport, and that it is the limit of a chain of the smallest rotors~(\ref{eqn:ga_rotor}). This is the reason the discrete method uses the smallest rotor: it is one finite step of parallel transport.
+
+\paragraph{The rotor of one small step.} Over a small step $ds$ the normal moves from $n$ to $n + n'\,ds$, where $n' = dn/ds$. We keep terms of first order in $ds$ and drop those in $ds^2$. Differentiating $n\cdot n = 1$ gives $2\,n\cdot n' = 0$. Hence the new normal has unit length to first order,
+\begin{equation*}
+|n + n'ds|^2 = n\cdot n + 2\,(n\cdot n')\, ds + (n'\cdot n')\, ds^2 = 1 + 0 + O(ds^2) ,
+\end{equation*}
+and its inner product with the old one is $n\cdot(n + n'ds) = 1 + (n\cdot n')\,ds = 1$. Now apply~(\ref{eqn:ga_rotor})~[\,$Q = \frac{1 + ca}{\sqrt{2(1 + a\cdot c)}}$\,] with $a = n$ and $c = n + n'ds$. The numerator:
+\begin{align*}
+1 + c\,a &= 1 + (n + n'\,ds)\, n && c = n + n'ds \\
+&= 1 + n\,n + (n'\,n)\, ds && \text{distributing} \\
+&= 2 + (n'\cdot n + n'\wedge n)\, ds && n n = 1;\ n'n = n'\cdot n + n'\wedge n \\
+&= 2 + (n'\wedge n)\, ds && n'\cdot n = 0 .
+\end{align*}
+The denominator: $\sqrt{2\,(1 + a\cdot c)} = \sqrt{2\,(1 + 1)} = 2$. Dividing, the rotor of the step is
+\begin{equation*}
+Q_{ds} = \frac{2 + (n'\wedge n)\, ds}{2} = 1 + \tfrac12\,\Omega\, ds, \qquad \Omega = n'\wedge n .
+\end{equation*}
+
+\paragraph{The rotor equation.} Let $R(s)$ be the rotor that carries the plane from $\gamma(0)$ to $\gamma(s)$. The step from $s$ to $s + ds$ acts after it, so a vector $x$ goes first to $R\,x\,\widetilde R$ and then to $Q_{ds}\,(R\,x\,\widetilde R)\,\widetilde Q_{ds} = (Q_{ds}R)\,x\,(\widetilde R\,\widetilde Q_{ds}) = (Q_{ds}R)\,x\,\widetilde{(Q_{ds}R)}$, using $\widetilde{XY} = \widetilde Y\,\widetilde X$. The rotor of the first $s + ds$ is therefore the product $Q_{ds}R$:
+\begin{align*}
+R(s + ds) &= Q_{ds}\, R(s) = \big(1 + \tfrac12\,\Omega\, ds\big)\, R(s) \\
+&= R(s) + \tfrac12\,\Omega\, R(s)\, ds && \text{distributing.}
+\end{align*}
+Subtracting $R(s)$ and dividing by $ds$, $\big(R(s + ds) - R(s)\big)/ds = \frac12\,\Omega\, R(s)$.
+In the limit $ds\to 0$,
+\begin{equation*}
+R' = \tfrac12\, \Omega\, R, \qquad \Omega = n'\wedge n, \qquad R(0) = 1 .
+\end{equation*}
+This is the continuous version of the chain of smallest rotors, and Figure~\ref{fig:rolling} draws it exactly that way. The bivector $\Omega$ is the plane of $n$ and $n'$: it contains the normal. A rotation in that plane tilts the normal towards $n'$ and does not spin anything about the normal. A spin about the normal would be a rotation in the tangent plane, a multiple of $\mathsf T = In$, which is a different bivector; it is absent.
+
+\paragraph{How a rotated vector changes.} Let $v(s) = R\, v_0\, \widetilde R$ be a fixed vector $v_0$ carried by the rotor. We need its derivative, and for it the derivative of $\widetilde R$. Reversion is linear, so it commutes with the derivative, and
+\begin{equation*}
+\widetilde R' = \widetilde{(R')} = \widetilde{\big(\tfrac12\,\Omega\, R\big)} = \tfrac12\,\widetilde R\,\widetilde\Omega = -\tfrac12\,\widetilde R\,\Omega ,
+\end{equation*}
+by $\widetilde{XY} = \widetilde Y\,\widetilde X$ and $\widetilde\Omega = -\Omega$ for a bivector. By the product rule,
+\begin{align*}
+v' &= R'\, v_0\, \widetilde R + R\, v_0\, \widetilde R' && \text{product rule} \\
+&= \big(\tfrac12\,\Omega\, R\big)\, v_0\,\widetilde R + R\, v_0\,\big(-\tfrac12\,\widetilde R\,\Omega\big) && \text{the rotor equation and its reverse} \\
+&= \tfrac12\,\Omega\,(R v_0\widetilde R) - \tfrac12\,(R v_0 \widetilde R)\,\Omega && \text{regrouping} \\
+&= \tfrac12\,(\Omega\, v - v\,\Omega) && v = R v_0\widetilde R \\
+&= \Omega\cdot v && B\cdot v = -v\cdot B = \tfrac12(Bv - vB) .
+\end{align*}
+The last rule is the one of Section~\ref{section:r2_tools}, $v\cdot B = \frac12(vB - Bv) = -B\cdot v$. For $\Omega = x\wedge y$ with $x = n'$ and $y = n$, we expand this inner product. Write $x\wedge y = xy - x\cdot y$; the scalar $x\cdot y$ commutes with $v$ and drops out of $\Omega v - v\Omega$, so $\Omega v - v\Omega = xyv - vxy$. Move $v$ to the front of $xyv$ with the rule $pq = 2\,(p\cdot q) - qp$ of Step~1, twice:
+\begin{align*}
+x\, y\, v &= x\,\big(2\,(y\cdot v) - v\, y\big) && y v = 2(y\cdot v) - v y \\
+&= 2\,(y\cdot v)\, x - (x\, v)\, y && \text{distributing} \\
+&= 2\,(y\cdot v)\, x - \big(2\,(x\cdot v) - v\, x\big)\, y && x v = 2(x\cdot v) - v x \\
+&= 2\,(y\cdot v)\, x - 2\,(x\cdot v)\, y + v\, x\, y && \text{distributing.}
+\end{align*}
+Subtracting $vxy$ and halving,
+\begin{equation*}
+(x\wedge y)\cdot v = \tfrac12\,(x y v - v x y) = x\,(y\cdot v) - y\,(x\cdot v) ,
+\end{equation*}
+and with $x = n'$, $y = n$,
+\begin{equation*}
+v' = \Omega\cdot v = n'\,(n\cdot v) - n\,(n'\cdot v).
+\end{equation*}
+
+\paragraph{The rotor follows the normal.} Apply this to the starting normal, $m(s) = R\, n(0)\, \widetilde R$. It satisfies
+\begin{equation*}
+m' = n'\,(n\cdot m) - n\,(n'\cdot m), \qquad m(0) = n(0) ,
+\end{equation*}
+a linear differential equation for $m$, with the coefficients $n(s), n'(s)$ given. Try $m = n$ on the right side: $n'\,(n\cdot n) - n\,(n'\cdot n) = n'\cdot 1 - n\cdot 0 = n'$, which is the derivative of $n$. So $n(s)$ solves the same equation with the same starting value, and a linear differential equation with a given starting value has only one solution. Hence $m = n$: $R\, n(0)\,\widetilde R = n(s)$. The rotor carries the normal at the start to the normal along the curve. It also preserves inner products: for vectors $x, y$, by the cyclic rule $\langle XY\rangle = \langle YX\rangle$,
+\begin{equation*}
+(R x\widetilde R)\cdot(R y\widetilde R) = \langle R x\widetilde R\, R y\widetilde R\rangle = \langle R\, x\, y\,\widetilde R\rangle = \langle x\, y\,\widetilde R R\rangle = \langle x y\rangle = x\cdot y ,
+\end{equation*}
+using $\widetilde R R = 1$ twice. So a tangent vector $a_0$ at the start, with $a_0\cdot n(0) = 0$, stays tangent: $a(s) = R\, a_0\,\widetilde R$ has $a\cdot n = (R a_0\widetilde R)\cdot(R\, n(0)\,\widetilde R) = a_0\cdot n(0) = 0$.
+
+\paragraph{The carried vector is parallel.} For such a tangent vector, $n\cdot a = 0$, and the formula for the derivative loses its first term:
+\begin{equation*}
+a' = n'\,(n\cdot a) - n\,(n'\cdot a) = n'\cdot 0 - (n'\cdot a)\, n = -(n'\cdot a)\, n .
+\end{equation*}
+The derivative of $a$ in space is purely normal. Its tangent part is the covariant derivative, by the Gauss formula~(\ref{eqn:ga_gauss}),
+\begin{equation*}
+\tag{\ref{eqn:ga_gauss}}
+\gamma'\cdot\nabla a = \nabla_{\gamma'} a + \mathrm{II}(\gamma', a)\, n ,
+\end{equation*}
+with $\gamma'\cdot\nabla a = a'$. Comparing, $\nabla_{\gamma'} a = P(a') = P\big(-(n'\cdot a)\,n\big) = 0$ and $\mathrm{II}(\gamma', a) = -n'\cdot a$. The vector carried by the rolling plane is parallel along the curve. All the change it undergoes in space is the tilting forced by the surface, recorded by $\mathrm{II}$, exactly as for the field $e_\varphi$ on the cylinder of Stage~1. Had we added a spin $\lambda\,\mathsf T$ to $\Omega$, the derivative would have gained the term $\lambda\,\mathsf T\cdot a = \frac\lambda2(\mathsf Ta - a\mathsf T) = \frac\lambda2(-a\mathsf T - a\mathsf T) = -\lambda\, a\mathsf T$ (a tangent $a$ anticommutes with $\mathsf T$), a tangent multiple of the quarter turn of $a$, and the vector would turn within the surface.
+
+\begin{prop}
+\label{prop:ga_rolling}
+Let $R(s)$ solve $R' = \frac12 \Omega\, R$ with $R(0) = 1$, where $\Omega = n' \wedge n$ and $n(s)$ is the normal along the curve. Then $R n(0) \widetilde R = n(s)$, and for every tangent vector $a_0$ at $\gamma(0)$, the field $a(s) = R\, a_0 \widetilde R$ is tangent and parallel along the curve.
+\end{prop}
+Figure~\ref{fig:rolling} shows the rolling planes along a curve on a sphere. The plane \emph{rolls} along the curve, as a coin rolls on a table, without twisting about its normal. Parallel transport is this rolling. The discrete transport $Q_{i \to f}$ of~(\ref{eqn:ga_Q})~[\,$Q_{i\to f} = \frac{1 + n_fn_i}{|1 + n_fn_i|}$\,] is the same idea over one finite step: the rotor in the plane $n_f \wedge n_i$, which contains both normals and therefore has no component of spin about either of them.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_rolling}}
+\caption{Parallel transport is rolling without twisting. Along a curve $\gamma$ on a sphere, the tangent plane (blue) is rolled by the rotor of Proposition~\ref{prop:ga_rolling}, here integrated as a sequence of smallest rotations between consecutive normals (red). The transported vector (green) changes only in the direction of the normal, so its covariant derivative vanishes.}
+\label{fig:rolling}
+\end{figure}
+
+\subsection{The connection angle}
+
+\paragraph{What we want.} After the rotor, the first frame vector of the vertex has become $c = Q t_i\widetilde Q$, a unit vector of the face plane. The face has its own first frame vector $t_f$. The discrete connection is the angle $\rho_i^f$ from $t_f$ to $c$: it says how the frame of the vertex looks when seen from the face. In Part~\ref{part:matrix} it was hidden in the $2\times 2$ matrix~(\ref{eqn:connection})~[\,$R_i^f = T_f^T Q_{i\to f} T_i$\,]. Here it comes out of one product.
+
+\paragraph{The product of two unit vectors of a plane.} Let $t_f$ and $c$ be unit vectors of the face plane, and $\rho$ the angle from $t_f$ to $c$, measured counterclockwise about $n_f$. In the face frame $(t_f, b_f)$, with $b_f = t_f\mathsf T_f$,
+\begin{equation*}
+c = \cos\rho\; t_f + \sin\rho\; b_f = \cos\rho\; t_f + \sin\rho\; t_f\mathsf T_f .
+\end{equation*}
+Multiply on the left by $t_f$:
+\begin{align*}
+t_f\, c &= t_f\,\big(\cos\rho\; t_f + \sin\rho\; t_f\mathsf T_f\big) && c \text{ substituted} \\
+&= \cos\rho\; t_f t_f + \sin\rho\; t_f t_f \mathsf T_f && \text{distributing; real numbers move out} \\
+&= \cos\rho + \mathsf T_f\sin\rho && t_f t_f = 1 \text{, twice} \\
+&= e^{\mathsf T_f\rho} && e^{\mathsf T\theta} = \cos\theta + \mathsf T\sin\theta .
+\end{align*}
+The geometric product of two unit vectors of a plane is the unit complex number of that plane whose angle is the angle between them, from the first to the second. Its scalar part $t_f\cdot c$ is the cosine and its bivector part $t_f\wedge c$ is the sine times the plane. Applied to the transported frame vector, this gives the discrete connection as a single number:
+\begin{equation}
+\label{eqn:ga_connection}
+e^{\mathsf T_f \rho_i^f} = t_f\, \big( Q_{i \to f}\, t_i\, \widetilde Q_{i \to f} \big).
+\end{equation}
+
+\paragraph{Transport is multiplication.} Now take any tangent vector of the vertex, $U = t_i\psi$ with $\psi = u_1 + u_2\mathsf T_i$ as in~(\ref{eqn:ga_spinor})~[\,$U = t\psi,\ \psi = u_1 + u_2\mathsf T$\,], and carry it into the face. Write $Q = Q_{i\to f}$ and $\psi_f = u_1 + u_2 \mathsf T_f$, the same pair of numbers read in the face plane. We want to show that
+\begin{equation}
+\label{eqn:ga_transport}
+Q\, t_i \psi\, \widetilde Q = (Q t_i \widetilde Q)(Q \psi \widetilde Q) = t_f\, e^{\mathsf T_f \rho_i^f}\, \psi_f .
+\end{equation}
+\emph{Split the sandwich.} Insert $1 = \widetilde Q Q$ between $t_i$ and $\psi$:
+\begin{align*}
+Q\, t_i\, \psi\, \widetilde Q &= Q\, t_i\, (1)\, \psi\, \widetilde Q && \\
+&= Q\, t_i\, \big(\widetilde Q Q\big)\, \psi\, \widetilde Q && 1 = \widetilde Q Q \text{ (Step 5)} \\
+&= \big(Q\, t_i\, \widetilde Q\big)\,\big(Q\, \psi\, \widetilde Q\big) && \text{regrouping.}
+\end{align*}
+The rotation of a product is the product of the rotations.
+
+\emph{Rotate the coordinate.} Substitute $\psi = u_1 + u_2\mathsf T_i$:
+\begin{align*}
+Q\,\psi\,\widetilde Q &= Q\,\big(u_1 + u_2\mathsf T_i\big)\,\widetilde Q && \psi \text{ substituted} \\
+&= u_1\, Q\widetilde Q + u_2\, Q\,\mathsf T_i\,\widetilde Q && \text{distributing; real numbers move out} \\
+&= u_1 + u_2\,\mathsf T_f = \psi_f && Q\widetilde Q = 1,\ Q\mathsf T_i\widetilde Q = \mathsf T_f .
+\end{align*}
+The numbers $u_1, u_2$ do not change; only the plane they refer to does.
+
+\emph{Rotate the frame vector.} Write $c = Q t_i\widetilde Q$ and insert $1 = t_f t_f$ in front of it:
+\begin{align*}
+Q\, t_i\, \widetilde Q = c &= (t_f\, t_f)\, c && t_f t_f = 1 \\
+&= t_f\, (t_f\, c) && \text{regrouping} \\
+&= t_f\, e^{\mathsf T_f\rho_i^f} && t_f\,c = e^{\mathsf T_f\rho_i^f},\ \text{by (\ref{eqn:ga_connection})} .
+\end{align*}
+\emph{Put the two together.} $Q\, t_i\,\psi\,\widetilde Q = \big(t_f\, e^{\mathsf T_f\rho_i^f}\big)\,\psi_f = t_f\, e^{\mathsf T_f\rho_i^f}\,\psi_f$, which is~(\ref{eqn:ga_transport}).
+
+Read the result with~(\ref{eqn:ga_spinor})~[\,$U = t\psi$\,]: the transported vector is $t_f$ times the complex number $e^{\mathsf T_f\rho_i^f}\psi_f$, so that number is its spinor coordinate in the face frame. In spinor coordinates, transport from the vertex to the face is \emph{multiplication by the unit complex number} $e^{\mathsf T_f \rho_i^f}$. The step ``rotate the coordinate'' also tells us how to compare complex numbers of different planes: the rotor maps $u_1 + u_2\mathsf T_i$ to $u_1 + u_2\mathsf T_f$, the same pair of coefficients. From now on we identify every $\alpha + \beta\mathsf T$, in whatever plane, with the complex number $\alpha + \beta\,\mathrm i$, and write $\psi_i$ for the coordinate of vertex $i$ read in any plane; this identification is exactly what the code does when it stores all of them as \code{std::complex}.
+
+\paragraph{The matrix of the multiplication.} Multiply $u_1 + u_2\mathsf T$ by $\cos\rho + \mathsf T\sin\rho$, using only $\mathsf T^2 = -1$:
+\begin{align*}
+&(\cos\rho + \mathsf T\sin\rho)(u_1 + u_2\mathsf T) \\
+&\qquad= u_1\cos\rho + u_2\cos\rho\,\mathsf T + u_1\sin\rho\,\mathsf T + u_2\sin\rho\,\mathsf T^2 \\
+&\qquad= (u_1\cos\rho - u_2\sin\rho) + (u_1\sin\rho + u_2\cos\rho)\,\mathsf T .
+\end{align*}
+In the basis $(1, \mathsf T_f)$ this takes the column $(u_1, u_2)$ to the column $(u_1\cos\rho - u_2\sin\rho,\ u_1\sin\rho + u_2\cos\rho)$, so it is the matrix
+\begin{equation}
+\label{eqn:ga_matrix}
+R_i^f = \begin{pmatrix} \cos\rho_i^f & -\sin\rho_i^f \\ \sin\rho_i^f & \cos\rho_i^f \end{pmatrix},
+\end{equation}
+which is the matrix $R_i^f = T_f^TQ_{i\to f}T_i$ of~(\ref{eqn:connection}), as the code shows below with numbers.
+
+\paragraph{Transport between two vertices.} The transport between two vertices through the face, (\ref{eqn:vertex_transport})~[\,$R^f_{j\to i} = (R_i^f)^T R_j^f$\,], becomes a product of two complex numbers. The transpose of~(\ref{eqn:ga_matrix}) is
+\begin{equation*}
+(R_i^f)^T = \begin{pmatrix} \cos\rho_i^f & \sin\rho_i^f \\ -\sin\rho_i^f & \cos\rho_i^f \end{pmatrix} = \begin{pmatrix} \cos(-\rho_i^f) & -\sin(-\rho_i^f) \\ \sin(-\rho_i^f) & \cos(-\rho_i^f) \end{pmatrix},
+\end{equation*}
+the matrix of multiplication by $e^{-\mathsf T_f\rho_i^f}$. A product of matrices of multiplications is the matrix of multiplication by the product of the numbers, and two exponentials of one plane multiply by adding the angles:
+\begin{align*}
+e^{-\mathsf T\alpha}\, e^{\mathsf T\beta} &= (\cos\alpha - \mathsf T\sin\alpha)(\cos\beta + \mathsf T\sin\beta) \\
+&= \cos\alpha\cos\beta + \sin\alpha\sin\beta \\
+&\quad + \mathsf T\,(\cos\alpha\sin\beta - \sin\alpha\cos\beta) && \mathsf T^2 = -1 \\
+&= \cos(\beta - \alpha) + \mathsf T\sin(\beta - \alpha) && \text{addition formulas} \\
+&= e^{\mathsf T(\beta - \alpha)} .
+\end{align*}
+With $\alpha = \rho_i^f$ and $\beta = \rho_j^f$:
+\begin{equation*}
+(R_i^f)^T R_j^f \;\longleftrightarrow\; e^{-\mathsf T_f\rho_i^f}\, e^{\mathsf T_f\rho_j^f} = e^{\mathsf T_f(\rho_j^f - \rho_i^f)} .
+\end{equation*}
+The connection angles subtract, and the arbitrary face frame cancels. To see it, turn the face frame to $t_f' = t_f\,e^{\mathsf T_f\theta}$. A tangent vector anticommutes with $\mathsf T_f$, so $t_f\,e^{\mathsf T_f\theta} = t_f\cos\theta + t_f\mathsf T_f\sin\theta = t_f\cos\theta - \mathsf T_f t_f\sin\theta = e^{-\mathsf T_f\theta}\, t_f$, and the new connection~(\ref{eqn:ga_connection}) is
+\begin{equation*}
+t_f'\, c = e^{-\mathsf T_f\theta}\, t_f\, c = e^{-\mathsf T_f\theta}\, e^{\mathsf T_f\rho_i^f} = e^{\mathsf T_f(\rho_i^f - \theta)} .
+\end{equation*}
+Both $\rho_i^f$ and $\rho_j^f$ decrease by $\theta$, and the difference $(\rho_j^f - \theta) - (\rho_i^f - \theta) = \rho_j^f - \rho_i^f$ does not change, as found in Section~\ref{section:transport} and as the frame independence~(\ref{eqn:ga_gauge})~[\,$D'_a\psi' = e^{-\mathsf T\theta}D_a\psi$\,] of Stage~1 demands.
+
+\paragraph{In the code.} The second part of \code{GAConnection.h} implements~(\ref{eqn:ga_Q})~[\,$Q_{i\to f} = \frac{1 + n_fn_i}{|1 + n_fn_i|}$\,] and~(\ref{eqn:ga_connection})~[\,$e^{\mathsf T_f\rho_i^f} = t_f\,(Q_{i\to f}t_i\widetilde Q_{i\to f})$\,]:
+\lstinputlisting[firstline=62, lastline=83, firstnumber=62]{../src/GAConnection.h}
+\begin{itemize}
+\item Line~65 forms the product $c\,a = c\cdot a + I(c\times a)$, the scalar \code{ca.w} and the dual vector \code{ca.b}.
+\item Line~66 adds $1$ to the scalar part: $1 + c\,a$ has the scalar part $1 + c\cdot a$ and the same bivector part.
+\item Line~67 computes the norm $|1 + ca|$ from its two parts, as the square root of $(1 + c\cdot a)^2 + |c\times a|^2$. This is the second denominator of~(\ref{eqn:ga_rotor})~[\,$Q = \frac{1 + ca}{\sqrt{2(1 + a\cdot c)}}$\,], because for unit vectors $|c\times a|^2 = 1 - (c\cdot a)^2$, and
+\begin{equation*}
+(1 + c\cdot a)^2 + 1 - (c\cdot a)^2 = 1 + 2\,c\cdot a + (c\cdot a)^2 + 1 - (c\cdot a)^2 = 2\,(1 + c\cdot a) .
+\end{equation*}
+\item Line~68 divides both parts by it: the rotor $Q$.
+\item Lines~73--75: the product of two unit vectors of the plane with normal $n$, as a complex number. The real part is $t\cdot c = \cos\rho$. The bivector part is $t\wedge c = I(t\times c)$, and $t\times c$ is parallel to $n$ (both vectors lie in the plane), so $t\times c = \big((t\times c)\cdot n\big)\, n$ and $t\wedge c = \big((t\times c)\cdot n\big)\, In = \big((t\times c)\cdot n\big)\,\mathsf T$. Its coefficient, line~74, is $\sin\rho$, with the sign of the turn from $t$ to $c$ about $n$.
+\item Lines~80--83: the connection~(\ref{eqn:ga_connection}), in the order of the formula: the rotor from $n_i$ to $n_f$ (line~81), the rotated frame vector $Q t_i\widetilde Q$ (\code{Q.rotate(t\_i)}), and its product with $t_f$ (line~82).
+\end{itemize}
+The matrix version of the same computation, in the \code{matrixform} namespace of \code{ga\_fem.cpp}, is \code{alignVectors} and \code{Rvf} of \code{FEM.cpp}:
+\lstinputlisting[firstline=79, lastline=91, firstnumber=79]{../src/ga_fem.cpp}
+Line~85 is the Rodrigues matrix~(\ref{eqn:rodrigues}) and line~90 is $R_i^f = T_f^T Q T_i$. The two versions give the same numbers, not only the same mathematics. The first column of \code{Rvf} is $T_f^T Q t_i = (t_f\cdot c,\ b_f\cdot c)$. Its first entry is the real part of \code{connection}; its second entry is
+\begin{equation*}
+b_f\cdot c = (n_f\times t_f)\cdot c = n_f\cdot(t_f\times c) = (t_f\times c)\cdot n_f ,
+\end{equation*}
+by the cyclic symmetry of the triple product, which is the imaginary part. The second column of \code{Rvf} carries no new information: it is the first one turned by a quarter turn, as~(\ref{eqn:ga_matrix}) shows.
+
+\begin{example}
+\label{ex:ga_transport}
+For the vertex and the face of Example~\ref{ex:transport}, $n_i = e_3$, $t_i = e_2$, $n_f = (0, -1, 1)/\sqrt 2$ and $t_f = e_1$. The product of the normals is
+\begin{equation*}
+\begin{aligned}
+n_f n_i &= n_f \cdot n_i + n_f \wedge n_i = \tfrac{1}{\sqrt 2} + I\, (n_f \times n_i), \\
+n_f \times n_i &= \tfrac1{\sqrt2}(0, -1, 1)\times(0, 0, 1) = \big(-\tfrac{1}{\sqrt 2}, 0, 0\big) .
+\end{aligned}
+\end{equation*}
+So $1 + n_fn_i = (1 + \frac1{\sqrt2}) - \frac1{\sqrt2}\, Ie_1$, whose norm is $\sqrt{(1 + \frac1{\sqrt2})^2 + \frac12} = \sqrt{2 + \sqrt2} = \sqrt{2(1 + 1/\sqrt2)} = 1.8478$. Dividing,
+\begin{equation*}
+Q = 0.9239 - 0.3827\, I e_1 = \cos 22.5^\circ - I e_1 \sin 22.5^\circ = e^{-I e_1 \pi / 8} ,
+\end{equation*}
+the rotor of the rotation by $45^\circ$ in the plane $B = I e_1 = e_2 e_3$, about the $x$ axis, as found with matrices. We rotate $t_i = e_2$ factor by factor, with $C = \cos\frac\pi8$, $S = \sin\frac\pi8$, $Q = C - BS$, $\widetilde Q = C + BS$, and the products $Be_2 = e_2e_3e_2 = -e_2e_2e_3 = -e_3$ and $e_2B = e_2e_2e_3 = e_3$, $e_3B = e_3e_2e_3 = -e_2e_3e_3 = -e_2$:
+\begin{align*}
+Q\, e_2 &= (C - BS)\, e_2 = C\, e_2 - S\, B e_2 = C\, e_2 + S\, e_3 , \\
+(Q e_2)\,\widetilde Q &= (C\, e_2 + S\, e_3)(C + BS) = C^2 e_2 + CS\, e_2 B + SC\, e_3 + S^2\, e_3 B \\
+&= C^2 e_2 + CS\, e_3 + CS\, e_3 - S^2 e_2 = (C^2 - S^2)\, e_2 + 2CS\, e_3 \\
+&= \cos\tfrac\pi4\, e_2 + \sin\tfrac\pi4\, e_3 = \tfrac{1}{\sqrt2}\,(e_2 + e_3) .
+\end{align*}
+In the code's representation, $w = 0.9239$ and $b = (-0.3827, 0, 0)$; the quaternion vector is $u = -b = (0.3827, 0, 0)$, and \code{rotate} gives $t = 2\,u\times e_2 = 0.7654\, e_3$ and $e_2 + 0.9239\, t + u\times t = e_2 + 0.7071\, e_3 - 0.2929\, e_2 = 0.7071\,(e_2 + e_3)$, the same vector. So $c = Q e_2 \widetilde Q = (e_2 + e_3)/\sqrt 2$, and the connection is the geometric product
+\begin{equation*}
+t_f c = e_1\, \tfrac{1}{\sqrt2}(e_2 + e_3) = \tfrac{1}{\sqrt2}\,(e_1 e_2 + e_1 e_3) ,
+\end{equation*}
+a unit bivector with no scalar part ($e_1\cdot e_2 = e_1\cdot e_3 = 0$). The face plane is, with $Ie_2 = e_3e_1$ and $Ie_3 = e_1e_2$,
+\begin{equation*}
+\mathsf T_f = I n_f = \tfrac{1}{\sqrt2}\,(-I e_2 + I e_3) = \tfrac{1}{\sqrt2}\,(-e_3 e_1 + e_1 e_2) = \tfrac{1}{\sqrt2}\,(e_1 e_3 + e_1 e_2) ,
+\end{equation*}
+using $-e_3e_1 = e_1e_3$. So $t_f c = \mathsf T_f = 0 + 1\cdot\mathsf T_f = e^{\mathsf T_f \pi/2}$: $\rho_i^f = 90^\circ$, the same number as in Example~\ref{ex:transport}, now read off a single product. The program computes this example in \code{workedExamples}:
+\lstinputlisting[firstline=401, lastline=413, firstnumber=401]{../src/ga_fem.cpp}
+Line~402 sets $n_i$, $t_i$ and $t_f$ (the normal $n$ of the face was computed earlier in the function, from the triangle of Example~\ref{ex:triangle}). Lines~403--405 evaluate~(\ref{eqn:ga_Q}), the rotated frame vector and~(\ref{eqn:ga_connection}); lines~409--412 build the two frames and the matrix $T_f^T Q T_i$ of Part~\ref{part:matrix}. The program prints
+\begin{lstlisting}[numbers=none]
+  n_f = (0, -0.707107, 0.707107), Q = 0.923880 + I (-0.382683, 0.000000, 0.000000)
+  Q t_i ~Q = (0.000000, 0.707107, 0.707107), e^{T rho} = 0.000000 + 1.000000 T, rho = 90.0 degrees
+  R_i^f = T_f^T Q T_i = [0.000000 -1.000000; 1.000000 0.000000]
+\end{lstlisting}
+and the first column of the matrix, $(0, 1)$, is the complex number $0 + 1\,\mathsf T$, as~(\ref{eqn:ga_matrix}) with $\rho = 90^\circ$ [\,first column $(\cos\rho, \sin\rho)$\,] says.
+\end{example}
+
+\subsection{Intrinsic and extrinsic geometry of the discrete transport}
+\label{section:ga_intrinsic}
+
+\paragraph{What an inhabitant of the surface can measure.} As in Stage~1, a quantity is \emph{intrinsic} if a two-dimensional being living on the surface can compute it from lengths and angles measured on the surface, and \emph{extrinsic} if it depends on how the surface sits in space ($n$, $\mathsf T$ as an element of $\Ge_3$, $\mathrm{II}$). Intrinsic quantities do not change when the surface is bent without stretching, as a sheet of paper rolled into a cylinder. Gauss's \emph{Theorema Egregium} says that the Gaussian curvature $K$, defined extrinsically as the product of the two principal curvatures, is intrinsic. The PDE of Stage~1 is intrinsic; the computation uses extrinsic tools (normals, rotors of $\R^3$, projections). On a triangle mesh the intrinsic geometry is that of the flat faces glued along their edges: it is given by the edge lengths. We ask which parts of the discrete transport a being on the mesh could reproduce.
+
+\paragraph{Across an edge, the transport is intrinsic.} Take two faces $f$ and $g$ sharing an edge with direction $e$. Both normals are orthogonal to the shared edge, so $e$ anticommutes with $n_f$ and with $n_g$, and it commutes with their product:
+\begin{equation*}
+(n_f n_g)\, e = n_f\,(n_g\, e) = -n_f\,(e\, n_g) = -(n_f\, e)\, n_g = e\, n_f\, n_g .
+\end{equation*}
+So $e$ commutes with $Q_{g\to f} = (1 + n_fn_g)/|1 + n_fn_g|$, and $Q_{g\to f}\, e\,\widetilde Q_{g\to f} = e\, Q_{g\to f}\widetilde Q_{g\to f} = e$: the rotor turns about the shared edge. It takes the plane of $g$ onto the plane of $f$, keeping the shared edge in place, which is exactly the \emph{unfolding} of one face onto the plane of the other (Figure~\ref{fig:unfold}). The unfolded pair of triangles is determined by their edge lengths alone, not by the angle at which they meet in space, so the transport across an edge is intrinsic. It is the parallel transport of the piecewise flat surface: a vector carried across the edge without turning, as seen by the being, which sees the two triangles as one flat piece.
+
+\paragraph{Through a vertex, it is not.} A vertex has no tangent plane: it is the apex of a cone whose total angle $\Theta_i = \sum_f \alpha_{i,f}$, the sum of the angles of the incident faces at the vertex, is in general not $2\pi$. The code gives the vertex a plane anyway, the normalized sum of the face bivectors, and transports between that plane and the faces with the rolling rotor $Q_{i \to f}$. This is an \emph{extrinsic} choice. Bend the mesh at the vertex without stretching any triangle, by changing the angles between the faces: no length changes, but the sum of the face bivectors changes, and with it the rotors $Q_{i\to f}$ and the connection angles. The error it introduces vanishes as the mesh is refined on a smooth surface, because the vertex normal then converges to the normal of the smooth surface and the rolling rotors to its parallel transport. Part~\ref{part:intrinsic} replaces this choice by an intrinsic one, the angles around the vertex rescaled by $2\pi/\Theta_i$; in the code it replaces only the computation of the connection angle $\rho_i^f$ (\code{Rvf}, or \code{connection} here), leaving the finite element machinery untouched.
+
+\paragraph{Holonomy.} Carry a vector parallel around a small closed loop and it comes back rotated, in the tangent plane, by an angle: the \emph{holonomy} of the loop. On a plane the angle is zero; on the unit sphere, Example~\ref{ex:holonomy} found that the loop around an octant turns the vector by $90^\circ$, which is the area $\pi/2$ of the octant.
+
+\paragraph{Rolling sees only the normals.} The rolling picture explains where the angle comes from. The rotor equation $R' = \frac12\,(n'\wedge n)\,R$ involves only the normal $n(s)$ and its derivative, not the curve $\gamma$ itself. Draw the normal $n(s)$ as a point of the unit sphere. As we go around the loop on the surface, that point traces a closed curve on the unit sphere. The tangent plane of the unit sphere at the point $n(s)$ is the plane orthogonal to $n(s)$, the same plane as the tangent plane of the surface at $\gamma(s)$, and the normal of the unit sphere at the point $n(s)$ is $n(s)$ itself; so the rolling equation of the unit sphere along the curve $n(s)$ is the same equation, $R' = \frac12\,(n'\wedge n)\,R$. Parallel transport around the loop on the surface is therefore parallel transport around the curve traced by the normal on the unit sphere, and the holonomy is the holonomy of that curve on the sphere: the area it encloses, as in the octant example (up to a sign that depends on the sense of the loop).
+
+\paragraph{Curvature.} The area enclosed by the normals on the unit sphere, divided by the area of the region they come from on the surface, is Gauss's original definition of the curvature $K$. So, for a small loop, the holonomy is $\int K\, dA$ over the region the loop encloses: holonomy measures curvature, and since parallel transport is intrinsic, so is the curvature, which is the Theorema Egregium seen from the side of transport. Along a small loop on a cylinder the normals move back and forth along the equator of the unit sphere and enclose no area, and indeed $K = 0$ there.
+
+\paragraph{On a mesh.} The intrinsic transport around a vertex, unfolding the faces one after another, closes with the rotation $2\pi - \Theta_i$, the \emph{angle defect}, the discrete total curvature of the vertex (Example~\ref{ex:holonomy}, the pyramid). The code's transport, which rolls through the vertex normals, closes with the area of the spherical polygon whose corners are the normals visited by the loop, those of the neighboring vertices and faces. That area approximates the angle defect on fine meshes, and the remark of Section~\ref{section:transport} should be read in this sense. The same spherical areas decide, in the next subsection, how close the discrete space comes to being conforming.
+
+\subsection{Spinor hat functions}
+
+\paragraph{The scalar hats.} On each face the hat function $\phi_i$ of a vertex $i$ is the linear function that is $1$ at $x_i$ and $0$ at the other two vertices; it is zero on the faces that do not contain $i$. The hats are continuous across edges, because on an edge both faces' hats are the linear function along the edge with the same end values, and they add up to $1$ on every face.
+
+\paragraph{The basis.} The unknown at vertex $i$ is a tangent vector $t_i\psi_i$ of the vertex plane. To spread it over the faces around $i$, carry it into each face with the rotor $Q_{i\to f}$ and fade it out with the hat. By~(\ref{eqn:ga_transport}),
+\begin{equation*}
+\tag{\ref{eqn:ga_transport}}
+Q_{i\to f}\, t_i\, \psi_i\, \widetilde Q_{i\to f} = t_f\, e^{\mathsf T_f \rho_i^f}\, \psi_i ,
+\end{equation*}
+with $\psi_i$ now read in the face plane. Multiplying by the real function $\phi_i$, which commutes with everything, we define, for a complex coefficient $\alpha$, the \emph{spinor hat function} of vertex $i$,
+\begin{equation}
+\label{eqn:r2_basis}
+\Phi_i[\alpha]\big|_f = t_f\;\phi_i\, e^{\mathsf T_f\rho_i^f}\,\alpha \quad (f \ni i), \qquad \Phi_i[\alpha]\big|_f = 0 \quad (f \not\ni i),
+\end{equation}
+whose spinor coordinate in the face frame is $\phi_i\, e^{\mathsf T_f\rho_i^f}\alpha$. It is real-linear in $\alpha$, and each vertex contributes two real basis fields, $\Phi_i[1]$ and $\Phi_i[\mathsf T]$: the frame vector $t_i$ and its quarter turn $t_i\mathsf T_i$, carried into the faces and faded out. They are the basis fields of Part~\ref{part:matrix},~(\ref{eqn:basis})~[\,$\Psi_{i,k}|_f = \phi_i\, T_fR_i^f\varepsilon_k$\,]. To see it, write $\rho = \rho_i^f$, $b_f = t_f\mathsf T_f$, and multiply out:
+\begin{align*}
+\Phi_i[1]\big|_f &= \phi_i\, t_f\,(\cos\rho + \mathsf T_f\sin\rho) = \phi_i\,\big(\cos\rho\; t_f + \sin\rho\; b_f\big) \\
+&= \phi_i\, T_f\begin{pmatrix}\cos\rho\\ \sin\rho\end{pmatrix} = \phi_i\, T_f R_i^f\varepsilon_1 , \\
+\Phi_i[\mathsf T]\big|_f &= \phi_i\, t_f\,(\cos\rho\,\mathsf T_f + \sin\rho\,\mathsf T_f^2) = \phi_i\,\big(-\sin\rho\; t_f + \cos\rho\; b_f\big) \\
+&= \phi_i\, T_f\begin{pmatrix}-\sin\rho\\ \cos\rho\end{pmatrix} = \phi_i\, T_f R_i^f\varepsilon_2 ,
+\end{align*}
+using $T_f(\alpha, \beta)^T = \alpha\, t_f + \beta\, b_f$ and the columns of~(\ref{eqn:ga_matrix}). The discrete space $V_h$ is the set of all sums $\sum_i \Phi_i[\psi_i]$; it has $n$ complex, or $2n$ real, dimensions, with $n$ the number of vertices.
+
+\paragraph{The trial field.} On a face, only the three vertices of the face contribute, since $\Phi_i|_f = 0$ for $i\notin f$. Substituting~(\ref{eqn:r2_basis}) into the sum,
+\begin{align*}
+U\big|_f = \sum_{i\in f}\Phi_i[\psi_i]\big|_f &= \sum_{i\in f} \Big(t_f\,\phi_i\, e^{\mathsf T_f\rho_i^f}\,\psi_i\Big) && \text{(\ref{eqn:r2_basis}), } \alpha = \psi_i \\
+&= t_f\,\Big(\sum_{i\in f}\phi_i\, e^{\mathsf T_f\rho_i^f}\,\psi_i\Big) && t_f \text{ factored out,}
+\end{align*}
+so a field of $V_h$ is
+\begin{equation}
+\label{eqn:ga_trial}
+U\big|_f = t_f\, \psi_f, \qquad \psi_f = \sum_{i \in f} \phi_i\; e^{\mathsf T_f \rho_i^f}\, \psi_i :
+\end{equation}
+each vertex coordinate is turned by its connection angle into the face, and the three are interpolated with the hats. It is the trial field of Part~\ref{part:matrix},~(\ref{eqn:trial})~[\,$T_f^TU|_f = \sum_{i\in f}\phi_i\, R_i^fu_i$\,], with the $2\times 2$ rotation $R_i^f$ replaced by the number $e^{\mathsf T_f\rho_i^f}$, by~(\ref{eqn:ga_matrix}). Every value is a vector of the plane of its face, so the field is tangent to every face. The test spinors are built in the same way, with coordinates $\chi_i$ at the vertices.
+
+\paragraph{Is the space conforming?} Stage~2 asked the discrete fields to have no jump across edges, so that $V_h\subset H^1$. Take an edge between the faces $f$ and $g$, with a vertex $i$ at one of its ends. Along the edge both faces' hats agree, so the only possible jump comes from the transports. Seen from $f$, the contribution of vertex $i$ is $\phi_i$ times the vector $Q_{i\to f}(t_i\psi_i)\widetilde Q_{i\to f}$; seen from $g$, it is $\phi_i$ times $Q_{i\to g}(t_i\psi_i)\widetilde Q_{i\to g}$, a vector of the other plane. To compare them, unfold $g$ onto $f$ with the intrinsic transport across the edge, the rotor $Q_{g\to f}$. Both $Q_{g\to f}Q_{i\to g}$ and $Q_{i\to f}$ take $n_i$ to $n_f$:
+\begin{equation*}
+\begin{aligned}
+(Q_{g\to f}Q_{i\to g})\, n_i\, \widetilde{(Q_{g\to f}Q_{i\to g})} &= Q_{g\to f}\,\big(Q_{i\to g}\, n_i\,\widetilde Q_{i\to g}\big)\,\widetilde Q_{g\to f} \\
+&= Q_{g\to f}\, n_g\,\widetilde Q_{g\to f} = n_f ,
+\end{aligned}
+\end{equation*}
+so they differ only by a rotation that fixes $n_f$, a rotation within the plane of $f$. That rotation is the holonomy of the three steps $n_i\to n_g\to n_f\to n_i$, and by the rolling picture its angle is the area of the spherical triangle with corners $n_i, n_g, n_f$. So the discrete field jumps across each edge by a small rotation. Neighboring normals differ by angles of the order of $\kappa h$, with $\kappa$ the curvature and $h$ the edge length, so the area, and the jump, is of the order of $(\kappa h)^2$, and it vanishes on flat meshes and as the mesh is refined. The space is \emph{nearly} conforming, not exactly. The method nevertheless computes all its integrals face by face, as if there were no jumps; in the language of finite elements this is a small \emph{variational crime}, whose effect is controlled by Strang's lemma, C\'ea's lemma with one more term that measures the inconsistency.
+
+\paragraph{The covariant derivative of the trial field.} The face is flat and its frame vector $t_f$ is constant on it, so the frame does not turn: $\nabla_a t_f = 0$, and by~(\ref{eqn:ga_omega})~[\,$\nabla_a t = \omega(a)\, t\mathsf T$\,] $\omega = 0$. Then~(\ref{eqn:ga_covariant}),
+\begin{equation*}
+\tag{\ref{eqn:ga_covariant}}
+D_a = a\cdot\nabla + \omega(a)\,\mathsf T ,
+\end{equation*}
+reduces to $D_a = a\cdot\nabla$, the plain derivative of the coefficients. Apply it to $\psi_f$ of~(\ref{eqn:ga_trial}):
+\begin{align*}
+D_a\psi_f &= a\cdot\nabla\Big(\sum_{i \in f} \phi_i\; e^{\mathsf T_f \rho_i^f}\, \psi_i\Big) && \omega = 0,\ \psi_f \text{ substituted} \\
+&= \sum_{i\in f} a\cdot\nabla\big(\phi_i\; e^{\mathsf T_f \rho_i^f}\, \psi_i\big) && \text{the derivative is linear} \\
+&= \sum_{i\in f} (a\cdot\nabla\phi_i)\; e^{\mathsf T_f \rho_i^f}\, \psi_i && e^{\mathsf T_f\rho_i^f}\psi_i \text{ is constant on the face,}
+\end{align*}
+that is,
+\begin{equation}
+\label{eqn:ga_grad_trial}
+D_a \psi_f = \sum_{i \in f} (a \cdot \nabla \phi_i)\, e^{\mathsf T_f \rho_i^f}\, \psi_i .
+\end{equation}
+Inside a face the covariant derivative of the discrete field is just the derivative of the hats, times constant complex numbers. All the geometry of the curved surface has been moved into the connection angles $\rho_i^f$, computed once per corner of each face.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 6: The Discrete Solution and the Test Functions}
+\label{section:r2_stage6}
+
+\paragraph{What we want.} We replace the infinite-dimensional problem of Stage~4 by a finite one: look for the solution in $V_h$, and ask the weak form to hold only for the test fields of $V_h$. This is the \emph{Galerkin method}: the test space is the trial space. We want to see, by direct substitution, that this gives one complex linear equation per vertex.
+
+\paragraph{The discrete solution and the tests.} Write the discrete solution as a combination of the spinor hat functions~(\ref{eqn:r2_basis}),
+\begin{equation*}
+\psi_h = \sum_{j=1}^n \Phi_j[\psi_j] ,
+\end{equation*}
+with the $n$ unknown complex numbers $\psi_j$, the coordinates of the vertices. As test fields take the basis fields themselves, $\chi_h = \Phi_i[\chi_i]$, for every vertex $i \ne s$ and for the two real coefficients $\chi_i = 1$ and $\chi_i = \mathsf T$. That is $2(n - 1)$ real tests for $2(n - 1)$ real unknowns, the coordinates of the vertices other than the source.
+
+\paragraph{The fields on one face.} The weak form~(\ref{eqn:ga_weak}) again:
+\begin{equation*}
+\tag{\ref{eqn:ga_weak}}
+\int_\Omega \langle \psi\, \widetilde\chi \rangle\, dA + \Delta t \int_\Omega \sum_k \langle (D_{e_k} \psi)\, \widetilde{(D_{e_k} \chi)} \rangle\, dA = \int_\Omega \langle \psi^0\, \widetilde\chi \rangle\, dA .
+\end{equation*}
+The integrals over $\Omega$ are sums of integrals over the faces. On a face $f$ that contains $i$, the trial field~(\ref{eqn:ga_trial}) and the test field have the spinor coordinates
+\begin{equation*}
+\tag{\ref{eqn:ga_trial}}
+\psi_f = \sum_{j \in f} \phi_j\; e^{\mathsf T_f \rho_j^f}\, \psi_j, \qquad \chi_f = \phi_i\, e^{\mathsf T_f\rho_i^f}\,\chi_i ,
+\end{equation*}
+and on the faces that do not contain $i$ the test field is zero, so they contribute nothing. By~(\ref{eqn:ga_grad_trial}), their derivatives along a unit direction $e_k$ of the face (here $e_1, e_2$ is an orthonormal basis of the face plane, not the edge frame) are
+\begin{equation*}
+\tag{\ref{eqn:ga_grad_trial}}
+D_{e_k}\psi_f = \sum_{j\in f}(e_k\cdot\nabla\phi_j)\, e^{\mathsf T_f\rho_j^f}\psi_j, \qquad D_{e_k}\chi_f = (e_k\cdot\nabla\phi_i)\, e^{\mathsf T_f\rho_i^f}\chi_i .
+\end{equation*}
+
+\paragraph{The reverses of the test terms.} The weak form needs $\widetilde{\chi_f}$ and $\widetilde{D_{e_k}\chi_f}$. Three rules give them: the reverse of a product reverses the order of its factors, $\widetilde{XY} = \widetilde Y\,\widetilde X$; a real number is its own reverse; and the reverse of $e^{\mathsf T\rho} = \cos\rho + \mathsf T\sin\rho$ is $\cos\rho - \mathsf T\sin\rho = e^{-\mathsf T\rho}$, because $\widetilde{\mathsf T} = -\mathsf T$. So
+\begin{align*}
+\widetilde{\chi_f} &= \widetilde{\big(\phi_i\; e^{\mathsf T_f\rho_i^f}\;\chi_i\big)} = \widetilde{\chi_i}\;\widetilde{\big(e^{\mathsf T_f\rho_i^f}\big)}\;\phi_i = \phi_i\;\widetilde{\chi_i}\; e^{-\mathsf T_f\rho_i^f} , \\
+\widetilde{D_{e_k}\chi_f} &= \widetilde{\big((e_k\cdot\nabla\phi_i)\, e^{\mathsf T_f\rho_i^f}\chi_i\big)} = (e_k\cdot\nabla\phi_i)\;\widetilde{\chi_i}\; e^{-\mathsf T_f\rho_i^f} ,
+\end{align*}
+where in the last step of each line the real number was moved to the front.
+
+\paragraph{Two abbreviations.} The lines below are long, so we write, for the corners $a$ of the face,
+\begin{equation*}
+z_a = e^{\mathsf T_f\rho_a^f}, \qquad \widetilde{z_a} = e^{-\mathsf T_f\rho_a^f}, \qquad \partial_k\phi_a = e_k\cdot\nabla\phi_a .
+\end{equation*}
+Then $\psi_f = \sum_{j\in f}\phi_j\, z_j\,\psi_j$, $\widetilde{\chi_f} = \phi_i\,\widetilde{\chi_i}\,\widetilde{z_i}$, $D_{e_k}\psi_f = \sum_{j\in f}\partial_k\phi_j\; z_j\,\psi_j$ and $\widetilde{D_{e_k}\chi_f} = \partial_k\phi_i\;\widetilde{\chi_i}\,\widetilde{z_i}$. We also need the product of two exponentials of the plane, computed above: $\widetilde{z_i}\, z_j = e^{-\mathsf T_f\rho_i^f}e^{\mathsf T_f\rho_j^f} = e^{\mathsf T_f(\rho_j^f - \rho_i^f)}$.
+
+\paragraph{The mass integrand.} Substitute $\psi_f$ and $\widetilde{\chi_f}$ into $\langle\psi_f\,\widetilde{\chi_f}\rangle$:
+\begin{align*}
+\langle\psi_f\,\widetilde{\chi_f}\rangle &= \Big\langle\Big(\sum_{j\in f}\phi_j\, z_j\,\psi_j\Big)\Big(\phi_i\,\widetilde{\chi_i}\,\widetilde{z_i}\Big)\Big\rangle && \text{(a)} \\
+&= \sum_{j\in f}\big\langle\phi_j\, z_j\,\psi_j\;\phi_i\,\widetilde{\chi_i}\,\widetilde{z_i}\big\rangle && \text{(b)} \\
+&= \sum_{j\in f}\phi_i\,\phi_j\,\big\langle z_j\,\psi_j\,\widetilde{\chi_i}\,\widetilde{z_i}\big\rangle && \text{(c)} \\
+&= \sum_{j\in f}\phi_i\,\phi_j\,\big\langle \widetilde{z_i}\, z_j\,\psi_j\,\widetilde{\chi_i}\big\rangle && \text{(d)} \\
+&= \sum_{j\in f}\phi_i\,\phi_j\,\big\langle e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\,\psi_j\,\widetilde{\chi_i}\big\rangle && \text{(e)}
+\end{align*}
+(a) Both fields substituted. (b) The product distributes over the sum, and the scalar part is linear. (c) The real hats commute with everything and move out of the product and of the scalar part. (d) The cyclic rule $\langle XY\rangle = \langle YX\rangle$ of Section~\ref{section:r2_tools}, with $X = z_j\psi_j\widetilde{\chi_i}$ and $Y = \widetilde{z_i}$; one could also use that all four factors are complex numbers of the plane $\mathsf T_f$, which commute. (e) The product $\widetilde{z_i}\,z_j = e^{\mathsf T_f(\rho_j^f - \rho_i^f)}$.
+
+\paragraph{The stiffness integrand.} Substitute $D_{e_k}\psi_f$ and $\widetilde{D_{e_k}\chi_f}$, and sum over $k$:
+\begin{align*}
+\sum_k \big\langle (D_{e_k} \psi_f)\, \widetilde{(D_{e_k}\chi_f)} \big\rangle
+&= \sum_k \Big\langle\Big(\sum_{j\in f}\partial_k\phi_j\; z_j\,\psi_j\Big)\Big(\partial_k\phi_i\;\widetilde{\chi_i}\,\widetilde{z_i}\Big)\Big\rangle && \text{(a)} \\
+&= \sum_k\sum_{j\in f}\partial_k\phi_i\;\partial_k\phi_j\, \big\langle z_j\,\psi_j\,\widetilde{\chi_i}\,\widetilde{z_i} \big\rangle && \text{(b)} \\
+&= \sum_{j\in f}\Big(\sum_k \partial_k\phi_i\;\partial_k\phi_j\Big)\, \big\langle z_j\,\psi_j\,\widetilde{\chi_i}\,\widetilde{z_i} \big\rangle && \text{(c)} \\
+&= \sum_{j\in f}(\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle z_j\,\psi_j\,\widetilde{\chi_i}\,\widetilde{z_i} \big\rangle && \text{(d)} \\
+&= \sum_{j\in f}(\nabla\phi_i \cdot \nabla\phi_j)\, \big\langle e^{\mathsf T_f (\rho_j^f - \rho_i^f)}\, \psi_j\, \widetilde{\chi_i} \big\rangle && \text{(e)}
+\end{align*}
+(a) Both derivatives substituted. (b) Distributing, and moving the real numbers $\partial_k\phi_i$, $\partial_k\phi_j$ out of the product and of the scalar part. (c) Swapping the two finite sums; the scalar part does not depend on $k$. (d) The inner product in components: with $\nabla\phi_i = \sum_k (\partial_k\phi_i)\, e_k$, likewise for $\phi_j$, and $e_k\cdot e_l = \delta_{kl}$,
+\begin{equation*}
+\nabla\phi_i\cdot\nabla\phi_j = \sum_k\sum_l \partial_k\phi_i\;\partial_l\phi_j\;(e_k\cdot e_l) = \sum_k \partial_k\phi_i\;\partial_k\phi_j .
+\end{equation*}
+(e) As in steps (d) and (e) of the mass integrand: the cyclic rule moves $\widetilde{z_i}$ to the front, and $\widetilde{z_i}\,z_j = e^{\mathsf T_f(\rho_j^f - \rho_i^f)}$.
+
+\paragraph{The right side.} The datum $\psi^0$ is also written as a field of $V_h$, $\psi^0_h = \sum_j\Phi_j[\psi^0_j]$, so that on the face $\psi^0_f = \sum_{j\in f}\phi_j\, e^{\mathsf T_f\rho_j^f}\psi^0_j$. Its integrand is the mass integrand with $\psi^0_j$ in the place of $\psi_j$; the five lines (a)--(e) of the mass integrand, with that one replacement, give $\langle\psi^0_f\,\widetilde{\chi_f}\rangle = \sum_{j\in f}\phi_i\phi_j\,\langle e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\psi^0_j\,\widetilde{\chi_i}\rangle$. In the code $\psi^0 = 0$, and the source enters only through the prescribed value.
+
+\paragraph{Collecting.} Put the three integrands into~(\ref{eqn:ga_weak}), integrated over the faces $f\ni i$. The left side is
+\begin{align*}
+&\sum_{f\ni i}\int_f\sum_{j\in f}\phi_i\phi_j\,\big\langle e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\psi_j\widetilde{\chi_i}\big\rangle\, dA \\
+&\quad + \Delta t\sum_{f\ni i}\int_f\sum_{j\in f}(\nabla\phi_i\cdot\nabla\phi_j)\,\big\langle e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\psi_j\widetilde{\chi_i}\big\rangle\, dA .
+\end{align*}
+Three operations bring it to its final form. (1) Swap the sum over the faces and the integral with the sum over $j$: a pair $(f, j)$ with $f\ni i$ and $j\in f$ is the same as a vertex $j$ and a face $f\ni i, j$, so $\sum_{f\ni i}\sum_{j\in f} = \sum_j\sum_{f\ni i, j}$. (2) The number $e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\psi_j\widetilde{\chi_i}$ is constant on the face, so the integral acts only on the hats, and it moves inside the scalar part: $\int_f g\,\langle z\rangle\, dA = \big\langle\big(\int_f g\, dA\big)\, z\big\rangle$ for a real function $g$ and a constant $z$. (3) The scalar part is linear, so the sum over faces moves inside it, and the common right factor $\widetilde{\chi_i}$ moves out of the sum. The left side becomes
+\begin{equation*}
+\Big\langle\sum_j\Big(\sum_{f\ni i, j}\Big(\int_f\phi_i\phi_j\, dA + \Delta t\int_f\nabla\phi_i\cdot\nabla\phi_j\, dA\Big)\, e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\Big)\,\psi_j\,\widetilde{\chi_i}\Big\rangle ,
+\end{equation*}
+and the right side becomes $\big\langle\sum_j\big(\sum_{f\ni i, j}\int_f\phi_i\phi_j\, dA\; e^{\mathsf T_f(\rho_j^f - \rho_i^f)}\big)\,\psi^0_j\;\widetilde{\chi_i}\big\rangle$. Name the face sums: one complex number for each pair of vertices,
+\begin{equation}
+\label{eqn:r2_global}
+\begin{aligned}
+\mathrm M_{ij} &= \sum_{f \ni i, j} \Big(\int_f \phi_i\,\phi_j\, dA\Big)\, e^{\mathsf T_f (\rho_j^f - \rho_i^f)}, \\
+\mathrm L_{ij} &= \sum_{f \ni i, j} \Big(\int_f \nabla\phi_i\cdot\nabla\phi_j\, dA\Big)\, e^{\mathsf T_f (\rho_j^f - \rho_i^f)} ,
+\end{aligned}
+\end{equation}
+the sums running over the faces that contain both vertices (for $i = j$, all the faces around $i$, where the transport is $e^{\mathsf T_f\cdot 0} = 1$). Subtracting the right side from the left, the tested equation of vertex $i$ is
+\begin{equation}
+\label{eqn:r2_tested}
+\Big\langle \Big(\sum_j \big(\mathrm M_{ij} + \Delta t\,\mathrm L_{ij}\big)\,\psi_j - \sum_j \mathrm M_{ij}\,\psi^0_j\Big)\,\widetilde{\chi_i}\Big\rangle = 0 .
+\end{equation}
+
+\paragraph{Two real tests make one complex equation.} Let $z$ be the complex number in the large parentheses of~(\ref{eqn:r2_tested}), $z = \alpha + \beta\mathsf T$. With $\chi_i = 1$, $\widetilde{\chi_i} = 1$ and the test gives $\langle z\rangle = \alpha = 0$. With $\chi_i = \mathsf T$, $\widetilde{\chi_i} = -\mathsf T$ and
+\begin{equation*}
+z\,(-\mathsf T) = (\alpha + \beta\mathsf T)(-\mathsf T) = -\alpha\mathsf T - \beta\mathsf T^2 = \beta - \alpha\mathsf T ,
+\end{equation*}
+so the test gives $\langle z\,(-\mathsf T)\rangle = \beta = 0$. The two real test functions of vertex $i$ ask for the real and the imaginary parts of the same complex number to vanish, that is, $z = 0$:
+\begin{equation}
+\label{eqn:r2_galerkin}
+\sum_{j=1}^n \big(\mathrm M_{ij} + \Delta t\,\mathrm L_{ij}\big)\,\psi_j = \sum_{j=1}^n \mathrm M_{ij}\,\psi^0_j \quad (i \ne s), \qquad \psi_s \text{ prescribed} .
+\end{equation}
+These are the \emph{Galerkin equations}: one complex equation per vertex, a square linear system for the complex coordinates. Its coefficients~(\ref{eqn:r2_global}) are sums of integrals over single faces, which Stage~7 computes.
+
+\paragraph{Galerkin orthogonality and the best approximation.} Pretend for a moment that $V_h$ is exactly conforming, $V_h \subset H^1$. Write the weak form as $a(\psi, \chi) = l(\chi)$ with the forms~(\ref{eqn:r2_forms}),
+\begin{equation*}
+\tag{\ref{eqn:r2_forms}}
+\begin{aligned}
+a(\psi, \chi) &= \int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA, \\
+l(\chi) &= \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{aligned}
+\end{equation*}
+The exact weak solution satisfies $a(\psi, \chi_h) = l(\chi_h)$ for every $\chi_h\in V_h$, since those are among all the tests of $H^1$; the discrete solution satisfies $a(\psi_h, \chi_h) = l(\chi_h)$ by construction. Subtracting, and using the linearity of $a$ in its first argument,
+\begin{equation*}
+a(\psi - \psi_h, \chi_h) = a(\psi, \chi_h) - a(\psi_h, \chi_h) = l(\chi_h) - l(\chi_h) = 0
+\end{equation*}
+for every $\chi_h \in V_h$: the error is orthogonal to the discrete space in the inner product $a$. Now take any $\chi_h \in V_h$ and split $\psi - \chi_h = x + y$ with $x = \psi - \psi_h$ and $y = \psi_h - \chi_h\in V_h$. With the energy norm $\|x\|_a^2 = a(x, x)$ and the symmetry of $a$,
+\begin{align*}
+\|\psi - \chi_h\|_a^2 &= a(x + y, x + y) \\
+&= a(x, x) + 2\,a(x, y) + a(y, y) && \text{bilinear, symmetric} \\
+&= \|\psi - \psi_h\|_a^2 + 0 + \|\psi_h - \chi_h\|_a^2 && a(x, y) = 0,\ y\in V_h \\
+&\ge \|\psi - \psi_h\|_a^2 && \|\psi_h - \chi_h\|_a^2\ge 0 .
+\end{align*}
+This is C\'ea's lemma: the Galerkin solution is the best approximation of the exact solution from $V_h$ in the energy norm. For piecewise linear hats on a mesh with edge length $h$ the best approximation error in this norm is of order $h$, and so is the error of the method. Our space is conforming only up to the small rotations of Stage~5, which add a term of the order of their size to this bound (Strang's lemma).
+
+%%% ----------------------------------------------------------------------
+\section{Stage 7: The Element Integrals}
+\label{section:r2_stage7}
+
+\paragraph{What we want.} On one face, with vertices $x_1, x_2, x_3$ in counterclockwise order, we need $\int_f \nabla\phi_a\cdot\nabla\phi_b\, dA$ and $\int_f\phi_a\phi_b\, dA$ for the nine pairs of local vertices. We compute them on the reference triangle, with the affine map and the chain rule, as Part~\ref{part:matrix} did; geometric algebra replaces the matrix inverse by the reciprocal frame of the edges.
+
+\subsection{The reference triangle, the chain rule and the reciprocal frame}
+
+\paragraph{The map and the chain rule.} The reference triangle $\hat K$ has the vertices $(0, 0)$, $(1, 0)$, $(0, 1)$ in the coordinates $\xi = (\xi_1, \xi_2)$, with the hats $\hat\phi_1 = 1 - \xi_1 - \xi_2$, $\hat\phi_2 = \xi_1$, $\hat\phi_3 = \xi_2$. The affine map~(\ref{eqn:affine}) is
+\begin{equation*}
+\tag{\ref{eqn:affine}}
+F(\xi) = x_1 + B\, \xi, \qquad B = \big[\, x_2 - x_1 \;\; x_3 - x_1 \,\big] ,
+\end{equation*}
+which, written with the edge vectors, is
+\begin{equation*}
+F(\xi) = x_1 + \xi_1\, e_1 + \xi_2\, e_2, \qquad e_1 = x_2 - x_1,\quad e_2 = x_3 - x_1 ,
+\end{equation*}
+and the hats of the face are $\phi_a(F(\xi)) = \hat\phi_a(\xi)$. Fix $\xi_2$ and move along $\xi_1$: the point $F(\xi)$ moves on the curve $s\mapsto F(\xi_1 + s, \xi_2) = F(\xi) + s\, e_1$, with velocity $e_1$. By the definition of the directional derivative (Stage~1), the derivative of $\phi_a$ along that curve is $e_1\cdot\nabla\phi_a$; the same holds for $\xi_2$ and $e_2$. So the chain rule reads
+\begin{equation*}
+\frac{\partial\hat\phi_a}{\partial\xi_m} = \frac{d}{ds}\,\phi_a\big(F(\xi) + s\, e_m\big)\Big|_{s = 0} = e_m\cdot\nabla\phi_a , \qquad m = 1, 2 .
+\end{equation*}
+These are two equations for the gradient $g = \nabla\phi_a$, a vector of the face plane: $g\cdot e_m = \partial\hat\phi_a/\partial\xi_m$. Part~\ref{part:matrix} solved them with the matrix $B(B^TB)^{-1}$. Here we solve them with a pair of vectors made for the purpose.
+
+\paragraph{The reciprocal frame.} The edges $e_1, e_2$ are in general neither orthogonal nor of unit length. The \emph{reciprocal frame} of the edges is the pair of vectors $e^1, e^2$ of the face plane with
+\begin{equation*}
+e^1\cdot e_1 = 1, \quad e^1\cdot e_2 = 0, \qquad e^2\cdot e_1 = 0, \quad e^2\cdot e_2 = 1 ,
+\end{equation*}
+that is, $e^k\cdot e_m = \delta_{km}$. Each reciprocal vector is orthogonal to the \emph{other} edge, and its length is such that its inner product with its own edge is one. With it, every vector $g$ of the plane is
+\begin{equation*}
+g = \sum_k (g\cdot e_k)\, e^k .
+\end{equation*}
+To see it, take the inner product of the right side with $e_m$: $\sum_k (g\cdot e_k)\,(e^k\cdot e_m) = \sum_k (g\cdot e_k)\,\delta_{km} = g\cdot e_m$. Both sides are vectors of the plane with the same inner products with $e_1$ and $e_2$, and a vector of the plane is determined by those two numbers (their difference would be orthogonal to two independent vectors of the plane). Applied to $g = \nabla\phi_a$, with $g\cdot e_k = \partial\hat\phi_a/\partial\xi_k$ from the chain rule,
+\begin{equation*}
+\nabla\phi_a = \sum_k \frac{\partial\hat\phi_a}{\partial\xi_k}\; e^k = e^1\,\frac{\partial\hat\phi_a}{\partial\xi_1} + e^2\,\frac{\partial\hat\phi_a}{\partial\xi_2} ,
+\end{equation*}
+so on the face the vector derivative is $\nabla = e^1\,\partial/\partial\xi_1 + e^2\,\partial/\partial\xi_2$. If the edges happened to be orthonormal, then $e^k = e_k$ and $\partial/\partial\xi_k = e_k\cdot\nabla$, and this is~(\ref{eqn:r2_vector_derivative})~[\,$\nabla F = \sum_k e_k\,(e_k\cdot\nabla F)$\,]. With the reference gradients~(\ref{eqn:shape_gradients})~[\,$\hat\nabla\hat\phi_1 = (-1,-1),\ \hat\nabla\hat\phi_2 = (1,0),\ \hat\nabla\hat\phi_3 = (0,1)$\,],
+\begin{align*}
+\nabla\phi_2 &= e^1\cdot 1 + e^2\cdot 0 = e^1, \qquad \nabla\phi_3 = e^1\cdot 0 + e^2\cdot 1 = e^2, \\
+\nabla\phi_1 &= e^1\cdot(-1) + e^2\cdot(-1) = -e^1 - e^2 .
+\end{align*}
+The matrix $C = B(B^TB)^{-1}$ of Part~\ref{part:matrix}, \code{Binv}, has the same defining property: $B^T C = (B^TB)(B^TB)^{-1} = I_2$, whose entry $(m, k)$ says $e_m\cdot c_k = \delta_{mk}$ for the columns $c_k$ of $C$. Its columns are combinations of the columns $e_1, e_2$ of $B$ (the matrix $B$ multiplies from the left), so they lie in the plane of the face. By the uniqueness just used, its columns are $e^1$ and $e^2$.
+
+\paragraph{The reciprocal frame in geometric algebra.} A vector orthogonal to $e_2$ in the face plane is $e_2$ turned by a quarter turn, $e_2\,\mathsf T_f$. So $e^1$ must be a multiple of $e_2\mathsf T_f$, and $e^2$ a multiple of $e_1\mathsf T_f$; only the factors are to be found. They come from the area bivector~(\ref{eqn:r2_face_bivector})~[\,$E = e_1\wedge e_2 = 2A_f\,\mathsf T_f$\,] of Stage~5, whose inverse is, with $\mathsf T_f^2 = -1$,
+\begin{equation*}
+E^{-1} = -\frac{E}{|E|^2} = -\frac{2A_f\,\mathsf T_f}{4A_f^2} = -\frac{\mathsf T_f}{2A_f} ;
+\end{equation*}
+check: $E\,E^{-1} = 2A_f\,\mathsf T_f\big(-\mathsf T_f/(2A_f)\big) = -\mathsf T_f^2 = 1$.
+The geometric algebra formula for the reciprocal frame is
+\begin{equation}
+\label{eqn:ga_reciprocal}
+e^1 = e_2 \cdot E^{-1}, \qquad e^2 = -\,e_1 \cdot E^{-1}, \qquad E^{-1} = -\frac{E}{|E|^2} .
+\end{equation}
+\emph{The products expanded.} For a vector $a$ of the face plane, the geometric product with $\mathsf T_f$ has no outer part: by the splitting rule, $a\wedge\mathsf T_f = I\,(a\cdot n_f) = 0$, so $a\,\mathsf T_f = a\cdot\mathsf T_f + a\wedge\mathsf T_f = a\cdot\mathsf T_f$, which by~(\ref{eqn:ga_quarter_turn}) is $n_f\times a$. Then
+\begin{align*}
+e^1 = e_2\cdot E^{-1} &= e_2\cdot\Big(-\frac{\mathsf T_f}{2A_f}\Big) && E^{-1} \text{ substituted} \\
+&= -\frac{1}{2A_f}\; e_2\cdot\mathsf T_f && \text{real factor out} \\
+&= -\frac{e_2\,\mathsf T_f}{2A_f} = -\frac{n_f\times e_2}{2A_f} && e_2\cdot\mathsf T_f = e_2\mathsf T_f ,
+\end{align*}
+and in the same three steps, with $-e_1$ in the place of $e_2$,
+\begin{align*}
+e^2 = -\,e_1\cdot E^{-1} &= -\,e_1\cdot\Big(-\frac{\mathsf T_f}{2A_f}\Big) = \frac{1}{2A_f}\; e_1\cdot\mathsf T_f \\
+&= \frac{e_1\,\mathsf T_f}{2A_f} = \frac{n_f\times e_1}{2A_f} .
+\end{align*}
+\emph{The four conditions, in geometric algebra.} For two vectors, $x\cdot y = \langle xy\rangle$. We need $\langle e_2\mathsf T_f e_1\rangle$ and its relatives. By the cyclic rule, $\langle e_2\mathsf T_f e_1\rangle = \langle e_1 e_2\mathsf T_f\rangle$, and
+\begin{align*}
+e_1 e_2 &= e_1\cdot e_2 + e_1\wedge e_2 = e_1\cdot e_2 + 2A_f\,\mathsf T_f , \\
+e_2 e_1 &= e_1\cdot e_2 - e_1\wedge e_2 = e_1\cdot e_2 - 2A_f\,\mathsf T_f .
+\end{align*}
+Each condition takes three lines: write the inner product as a scalar part, rotate the factors with the cyclic rule, and expand the product of the two edges.
+\begin{align*}
+e^1\cdot e_1 &= \Big\langle -\frac{e_2\mathsf T_f}{2A_f}\; e_1\Big\rangle = -\frac{1}{2A_f}\,\langle e_1 e_2\,\mathsf T_f\rangle && \text{cyclic rule} \\
+&= -\frac{1}{2A_f}\,\big\langle (e_1\cdot e_2)\,\mathsf T_f + 2A_f\,\mathsf T_f^2\big\rangle && e_1e_2 \text{ expanded} \\
+&= -\frac{1}{2A_f}\,\big(0 - 2A_f\big) = 1 && \langle\mathsf T_f\rangle = 0,\ \mathsf T_f^2 = -1 ; \\[4pt]
+e^1\cdot e_2 &= -\frac{1}{2A_f}\,\langle e_2\,\mathsf T_f\, e_2\rangle = -\frac{1}{2A_f}\,\langle e_2 e_2\,\mathsf T_f\rangle && \text{cyclic rule} \\
+&= -\frac{|e_2|^2}{2A_f}\,\langle\mathsf T_f\rangle = 0 && e_2e_2 = |e_2|^2 ; \\[4pt]
+e^2\cdot e_2 &= \frac{1}{2A_f}\,\langle e_1\,\mathsf T_f\, e_2\rangle = \frac{1}{2A_f}\,\langle e_2 e_1\,\mathsf T_f\rangle && \text{cyclic rule} \\
+&= \frac{1}{2A_f}\,\big\langle (e_1\cdot e_2)\,\mathsf T_f - 2A_f\,\mathsf T_f^2\big\rangle && e_2e_1 \text{ expanded} \\
+&= \frac{1}{2A_f}\,\big(0 + 2A_f\big) = 1 && \langle\mathsf T_f\rangle = 0,\ \mathsf T_f^2 = -1 ; \\[4pt]
+e^2\cdot e_1 &= \frac{1}{2A_f}\,\langle e_1\,\mathsf T_f\, e_1\rangle = \frac{1}{2A_f}\,\langle e_1 e_1\,\mathsf T_f\rangle && \text{cyclic rule} \\
+&= \frac{|e_1|^2}{2A_f}\,\langle\mathsf T_f\rangle = 0 && e_1e_1 = |e_1|^2 .
+\end{align*}
+\emph{The same, with cross products,} as the code computes them: $e^1\cdot e_2 = 0$ and $e^2\cdot e_1 = 0$ because $n_f\times e_2$ is orthogonal to $e_2$ and $n_f\times e_1$ to $e_1$; and, with $(n\times u)\cdot v = n\cdot(u\times v)$ and $n_f\cdot(e_1\times e_2) = n_f\cdot(2A_f\, n_f) = 2A_f$,
+\begin{equation*}
+e^1\cdot e_1 = -\frac{n_f\cdot(e_2\times e_1)}{2A_f} = \frac{n_f\cdot(e_1\times e_2)}{2A_f} = 1, \qquad e^2\cdot e_2 = \frac{n_f\cdot(e_1\times e_2)}{2A_f} = 1 .
+\end{equation*}
+So no matrix needs to be inverted: each reciprocal vector is the other edge, turned by a quarter turn and divided by twice the area.
+
+\paragraph{One vertex at a time.} The three gradients have one common form. For a vertex $a$, let $b, c$ be the next two vertices in the counterclockwise order $a, b, c$ of the face, so that the edge opposite to $a$ is $x_c - x_b$. Then
+\begin{equation}
+\label{eqn:ga_grad_edge}
+\nabla \phi_a = \frac{(x_c - x_b)\, \mathsf T_f}{2 A_f} :
+\end{equation}
+the opposite edge, turned a quarter turn, divided by twice the area. We check all three vertices, substituting the formulas just found, $e^1 = -\frac{e_2\mathsf T_f}{2A_f}$ and $e^2 = \frac{e_1\mathsf T_f}{2A_f}$:
+\begin{itemize}
+\item $a = 2$: the order is $2, 3, 1$, the opposite edge is $x_1 - x_3 = -(x_3 - x_1) = -e_2$, and
+\begin{equation*}
+\frac{(x_1 - x_3)\,\mathsf T_f}{2A_f} = \frac{(-e_2)\,\mathsf T_f}{2A_f} = -\frac{e_2\mathsf T_f}{2A_f} = e^1 = \nabla\phi_2 ;
+\end{equation*}
+\item $a = 3$: the order is $3, 1, 2$, the opposite edge is $x_2 - x_1 = e_1$, and $\frac{e_1\mathsf T_f}{2A_f} = e^2 = \nabla\phi_3$;
+\item $a = 1$: the order is $1, 2, 3$, the opposite edge is $x_3 - x_2 = (x_3 - x_1) - (x_2 - x_1) = e_2 - e_1$, and
+\begin{equation*}
+\frac{(e_2 - e_1)\,\mathsf T_f}{2A_f} = \frac{e_2\mathsf T_f}{2A_f} - \frac{e_1\mathsf T_f}{2A_f} = (-e^1) - (e^2) = \nabla\phi_1 .
+\end{equation*}
+\end{itemize}
+The quarter turn is counterclockwise, and in a counterclockwise triangle the interior lies to the left of the edge from $b$ to $c$, so the turned edge points into the triangle, towards $a$, where $\phi_a$ grows. Its length is $|(x_c - x_b)\mathsf T_f|/(2A_f) = \ell_a/(2A_f)$, with $\ell_a = |x_c - x_b|$ (the quarter turn keeps lengths). The area is half the base times the height, $2A_f = \ell_a h_a$, with $h_a$ the height from $a$, so the length is $\ell_a/(\ell_a h_a) = 1/h_a$, the one found in the proof of Proposition~\ref{prop:cotangent}. (On the triangle $x_1 = 0$, $x_2 = e_x$, $x_3 = e_y$ with $n = e_z$: $(x_1 - x_3)\mathsf T = n \times (-e_y) = e_x$, and $2A = 1$, which is indeed $\nabla \phi_2 = \nabla\xi_1 = e_x$.)
+
+\begin{prop}
+\label{prop:ga_reciprocal}
+The gradients of the hat functions of a face are $\nabla \phi_2 = e^1$, $\nabla \phi_3 = e^2$ and $\nabla \phi_1 = -e^1 - e^2$, with the reciprocal frame~(\ref{eqn:ga_reciprocal})~[\,$e^1 = e_2\cdot E^{-1},\ e^2 = -e_1\cdot E^{-1}$\,] of the edges; the reciprocal frame is the pair of columns of $B (B^T B)^{-1}$, \code{Binv}; and for each vertex, $\nabla\phi_a$ is given by~(\ref{eqn:ga_grad_edge})~[\,$\nabla\phi_a = \frac{(x_c - x_b)\mathsf T_f}{2A_f}$\,].
+\end{prop}
+
+\paragraph{The cotangent formula.} The formula~(\ref{eqn:ga_grad_edge}) gives the cotangent formula of Proposition~\ref{prop:cotangent}. For the counterclockwise order $a, b, c$, the opposite edge of $a$ is $x_c - x_b$ and that of $b$ (in the order $b, c, a$) is $x_a - x_c$. First, the quarter turn preserves inner products: for vectors $u, v$ of the plane, $u\mathsf T$ and $v\mathsf T$ are vectors, and
+\begin{align*}
+(u\mathsf T)\cdot(v\mathsf T) = \langle u\,\mathsf T\, v\,\mathsf T\rangle &= -\langle u\, v\,\mathsf T\,\mathsf T\rangle && \mathsf T v = -v\mathsf T \\
+&= \langle u\, v\rangle = u\cdot v && \mathsf T^2 = -1 .
+\end{align*}
+Then substitute~(\ref{eqn:ga_grad_edge}) for $a$ and for $b$:
+\begin{align*}
+A_f\, \nabla\phi_a \cdot \nabla\phi_b &= A_f\, \frac{(x_c - x_b)\mathsf T_f}{2A_f} \cdot \frac{(x_a - x_c)\mathsf T_f}{2A_f} && \text{(\ref{eqn:ga_grad_edge}) twice} \\
+&= \frac{A_f}{4A_f^2}\,\big((x_c - x_b)\mathsf T_f\big)\cdot\big((x_a - x_c)\mathsf T_f\big) && \text{reals out} \\
+&= \frac{(x_c - x_b) \cdot (x_a - x_c)}{4 A_f} && \text{the turn keeps } \cdot\, .
+\end{align*}
+Write $u = x_b - x_c$ and $v = x_a - x_c$ for the two edges leaving $c$, with $\theta_c$ the angle between them. Then $(x_c - x_b)\cdot(x_a - x_c) = (-u)\cdot v = -|u||v|\cos\theta_c$, and $2A_f = |u \wedge v| = |u||v|\sin\theta_c$, so
+\begin{equation*}
+A_f\, \nabla\phi_a \cdot \nabla\phi_b = \frac{-|u||v|\cos\theta_c}{2\,(2A_f)} = \frac{-|u||v|\cos\theta_c}{2\,|u||v|\sin\theta_c} = -\tfrac12\cot\theta_c .
+\end{equation*}
+
+\paragraph{In the code.} The third part of \code{GAConnection.h} computes the gradients both ways:
+\lstinputlisting[firstline=85, lastline=102, firstnumber=85]{../src/GAConnection.h}
+\begin{itemize}
+\item Line~89: the edge frame $e_1 = x_2 - x_1$, $e_2 = x_3 - x_1$, with the local vertices numbered $0, 1, 2$ in the code for $1, 2, 3$ in the text.
+\item Line~90: $E^{-1}$ of~(\ref{eqn:ga_reciprocal}), the inverse of the outer product. In the stored dual form, $E$ is $e_1\times e_2 = 2A_f\, n_f$ and $E^{-1}$ is $-(e_1\times e_2)/|e_1\times e_2|^2 = -2A_f\,n_f/(4A_f^2) = -n_f/(2A_f)$, the dual of $-\mathsf T_f/(2A_f)$.
+\item Lines~91--92: $e^1 = e_2\cdot E^{-1}$ and $e^2 = -e_1\cdot E^{-1}$. The function \code{dot} computes $b\times a$ for the dual vector $b$, so line~91 is $\big(-\frac{n_f}{2A_f}\big)\times e_2 = -\frac{n_f\times e_2}{2A_f}$, the formula derived above.
+\item Lines~93--95: the three gradients, $\nabla\phi_1 = -e^1 - e^2$, $\nabla\phi_2 = e^1$, $\nabla\phi_3 = e^2$, in the zero-based slots \code{grad[0]}, \code{grad[1]}, \code{grad[2]}.
+\item Lines~100--102: the one-vertex form~(\ref{eqn:ga_grad_edge}): the edge from $x_b$ to $x_c$, turned by \code{quarterTurn} and divided by $2A_f$. The caller must pass $x_b, x_c$ in the counterclockwise order after $a$.
+\end{itemize}
+The \code{matrixform} namespace computes the same gradients as \code{FEM.cpp} does, with the matrix of Proposition~\ref{prop:gradient}:
+\lstinputlisting[firstline=93, lastline=102, firstnumber=93]{../src/ga_fem.cpp}
+Lines~96--97 are the columns of $B$, line~98 is \code{Binv} $= \big((B^TB)^{-1}B^T\big)^T = B\,\big((B^TB)^{-1}\big)^T = B(B^TB)^{-1}$ (the matrix $B^TB$ is symmetric, and so is its inverse), and lines~99--101 are~(\ref{eqn:gradN})~[\,$\nabla\phi_1 = -C_{:,1} - C_{:,2},\ \nabla\phi_2 = C_{:,1},\ \nabla\phi_3 = C_{:,2}$\,]. The two functions return the same vectors: the columns of \code{Binv} are the reciprocal frame.
+
+\begin{example}
+For the triangle of Example~\ref{ex:triangle}, $x_1 = (0,0,0)$, $x_2 = (2,0,0)$, $x_3 = (0,1,1)$, the edges are $e_1 = (2, 0, 0)$ and $e_2 = (0, 1, 1)$, so $e_1\times e_2 = (0\cdot 1 - 0\cdot 1,\ 0\cdot 0 - 2\cdot 1,\ 2\cdot 1 - 0\cdot 0) = (0, -2, 2)$. The area bivector is $E = e_1 \wedge e_2 = I (e_1 \times e_2) = I (0, -2, 2)$, with $|E| = \sqrt{0 + 4 + 4} = 2\sqrt 2 = 2 A_f$, and $\mathsf T_f = E / |E| = I n_f$ with $n_f = (0, -1, 1)/\sqrt 2$. The gradient of $\phi_2$ by~(\ref{eqn:ga_grad_edge})~[\,$\nabla\phi_a = \frac{(x_c - x_b)\mathsf T_f}{2A_f}$\,] uses the opposite edge $x_1 - x_3 = (0, -1, -1)$, turned a quarter turn in the face:
+\begin{equation*}
+\begin{aligned}
+(x_1 - x_3)\, \mathsf T_f = n_f \times (x_1 - x_3) &= \tfrac{1}{\sqrt 2} (0, -1, 1) \times (0, -1, -1) \\
+&= \tfrac{1}{\sqrt 2}\big((-1)(-1) - (1)(-1),\ 0,\ 0\big) = \tfrac{1}{\sqrt 2} (2, 0, 0)
+\end{aligned}
+\end{equation*}
+(the second and third components are $1\cdot 0 - 0\cdot(-1) = 0$ and $0\cdot(-1) - (-1)\cdot 0 = 0$), divided by $2 A_f = 2\sqrt 2$: $\nabla\phi_2 = \frac{2}{\sqrt2\cdot 2\sqrt2}\,(1, 0, 0) = (\frac12, 0, 0)$, as in Example~\ref{ex:triangle}, without inverting any matrix. The program checks the example in \code{workedExamples}:
+\lstinputlisting[firstline=380, lastline=399, firstnumber=380]{../src/ga_fem.cpp}
+Line~384 computes \code{Binv} as in Part~\ref{part:matrix}, line~387 the reciprocal frame, and line~393 the one-vertex form for $a = 2$, with $x_b = x_3$ and $x_c = x_1$, so that $x_c - x_b = x_1 - x_3$. Lines~396--399 print the scalar stiffness $A_f\,\nabla\phi_a\cdot\nabla\phi_b$ and $-\frac12\cot\theta_3$, with $\theta_3$ the angle at $x_3$ between $u = x_1 - x_3$ and $w = x_2 - x_3$, computed as $\cot\theta_3 = \frac{u\cdot w}{|u\times w|}$. The output is
+\begin{lstlisting}[numbers=none]
+  grad phi_1 = (-0.5, -0.5, -0.5)
+  grad phi_2 = (0.5, 0, -0)
+  grad phi_3 = (-0, 0.5, 0.5)
+  columns of Binv: (0.5 0 0), (0 0.5 0.5)
+  grad phi_2 from the opposite edge turned a quarter turn: (0.5, 0, 0)
+  stiffness A grad phi_a . grad phi_b:
+     1.060660 -0.353553 -0.707107
+    -0.353553  0.353553  0.000000
+    -0.707107  0.000000  0.707107
+  -cot(theta_3)/2 = -0.353553
+\end{lstlisting}
+the numbers of Example~\ref{ex:triangle}: the reciprocal frame agrees with the columns of \code{Binv}, and the entry $(1, 2)$ of the stiffness is $-\frac12\cot\theta_3$. By hand: $u = (0, -1, -1)$, $w = (2, -1, -1)$, $u\cdot w = 0 + 1 + 1 = 2$, $u\times w = \big((-1)(-1) - (-1)(-1),\ (-1)(2) - 0\cdot(-1),\ 0\cdot(-1) - (-1)(2)\big) = (0, -2, 2)$, $|u\times w| = 2\sqrt2$, so $-\frac12\cot\theta_3 = -\frac12\cdot\frac{2}{2\sqrt2} = -\frac{1}{2\sqrt2} = -0.353553$.
+\end{example}
+
+\subsection{The element matrices}
+
+\paragraph{The area element.} The map $F$ takes a small rectangle $d\xi_1\times d\xi_2$ of $\hat K$ to the parallelogram spanned by $e_1\,d\xi_1$ and $e_2\,d\xi_2$, whose area bivector is $(e_1\,d\xi_1)\wedge(e_2\,d\xi_2) = (e_1\wedge e_2)\, d\xi_1 d\xi_2 = E\, d\xi_1 d\xi_2$. Its area is the magnitude, $dA = |E|\, d\xi_1 d\xi_2 = 2A_f\, d\xi_1d\xi_2$, and for any function $g$ on the face,
+\begin{equation*}
+\int_f g\, dA = 2A_f\int_{\hat K} g(F(\xi))\, d\xi_1\, d\xi_2 .
+\end{equation*}
+(For $g = 1$: $2A_f\cdot\frac12 = A_f$, the area of $\hat K$ being $\frac12$.)
+
+\paragraph{The stiffness integrals.} The gradients are constant on the face, so
+\begin{equation*}
+\int_f \nabla\phi_a\cdot\nabla\phi_b\, dA = (\nabla\phi_a\cdot\nabla\phi_b)\int_f dA = A_f\,\nabla\phi_a\cdot\nabla\phi_b ,
+\end{equation*}
+the area times the constant, which is $-\frac12\cot\theta_c$ for $a \ne b$ by the cotangent formula.
+
+\paragraph{The mass integrals.} On $\hat K$ the inner variable runs from $0$ to $1$ minus the outer one. For the square of $\hat\phi_2 = \xi_1$,
+\begin{align*}
+\int_{\hat K}\xi_1^2\, d\xi &= \int_0^1\Big(\int_0^{1 - \xi_1} d\xi_2\Big)\,\xi_1^2\, d\xi_1 = \int_0^1 \xi_1^2(1 - \xi_1)\, d\xi_1 \\
+&= \Big[\frac{\xi_1^3}{3} - \frac{\xi_1^4}{4}\Big]_0^1 = \frac13 - \frac14 = \frac1{12} ,
+\end{align*}
+and for the product $\hat\phi_2\hat\phi_3 = \xi_1\xi_2$,
+\begin{align*}
+\int_{\hat K}\xi_1\xi_2\, d\xi &= \int_0^1\xi_2\Big(\int_0^{1 - \xi_2}\xi_1\, d\xi_1\Big)\, d\xi_2 = \int_0^1\xi_2\,\frac{(1 - \xi_2)^2}{2}\, d\xi_2 \\
+&= \frac12\int_0^1\big(\xi_2 - 2\xi_2^2 + \xi_2^3\big)\, d\xi_2 \\
+&= \frac12\Big(\frac12 - \frac23 + \frac14\Big) = \frac12\cdot\frac{6 - 8 + 3}{12} = \frac1{24} .
+\end{align*}
+The other pairs give the same values: the map $(\xi_1, \xi_2)\mapsto(1 - \xi_1 - \xi_2,\ \xi_2)$ takes $\hat K$ onto itself, exchanges $\hat\phi_1$ and $\hat\phi_2$, and has Jacobian determinant $-1$, so it does not change integrals; and exchanging $\xi_1$ and $\xi_2$ exchanges $\hat\phi_2$ and $\hat\phi_3$. With the area element,
+\begin{equation*}
+\int_f\phi_a^2\, dA = 2A_f\cdot\frac1{12} = \frac{A_f}{6}, \qquad \int_f\phi_a\phi_b\, dA = 2A_f\cdot\frac1{24} = \frac{A_f}{12}\quad (a \ne b) .
+\end{equation*}
+With the transports of~(\ref{eqn:r2_global}) this is the consistent mass $\frac{A_f}{12}(1 + \delta_{ab})\, e^{\mathsf T_f(\rho_b^f - \rho_a^f)}$, the complex form of~(\ref{eqn:consistent_mass})~[\,$\mathrm M^f_{ab} = \frac{A_f}{12}(1 + \delta_{ab})\,(R_a^f)^TR_b^f$\,]. The code \emph{lumps} it, as in~(\ref{eqn:lumped_mass})~[\,$\mathrm M^f_{aa} = \tfrac{A_f}3 I_2$\,]: it moves the row sum of the scalar factor to the diagonal, where the transport of a vertex to itself is $1$. The row sum is
+\begin{equation*}
+\sum_{b\in f}\int_f\phi_a\phi_b\, dA = \frac{A_f}{6} + 2\cdot\frac{A_f}{12} = \frac{A_f}{3} ,
+\end{equation*}
+which is also $\int_f\phi_a\big(\sum_b\phi_b\big)\, dA = \int_f\phi_a\, dA = 2A_f\int_{\hat K}\xi_1\, d\xi = 2A_f\int_0^1\xi_1(1 - \xi_1)\, d\xi_1 = 2A_f\big(\frac12 - \frac13\big) = \frac{A_f}{3}$, because the hats add up to $1$.
+
+\paragraph{The element matrices.} Putting the integrals into the face terms of~(\ref{eqn:r2_global}) again,
+\begin{equation*}
+\tag{\ref{eqn:r2_global}}
+\begin{aligned}
+\mathrm M_{ij} &= \sum_{f \ni i, j} \Big(\int_f \phi_i\,\phi_j\, dA\Big)\, e^{\mathsf T_f (\rho_j^f - \rho_i^f)}, \\
+\mathrm L_{ij} &= \sum_{f \ni i, j} \Big(\int_f \nabla\phi_i\cdot\nabla\phi_j\, dA\Big)\, e^{\mathsf T_f (\rho_j^f - \rho_i^f)} ,
+\end{aligned}
+\end{equation*}
+the stiffness integral $\big(A_f\,\nabla\phi_i\cdot\nabla\phi_j\big)$ in the place of $\int_f\nabla\phi_i\cdot\nabla\phi_j\, dA$, and the lumped mass $\frac{A_f}{3}$ on the diagonal, the contribution of one face $f$ to the pair $(i, j)$ is
+\begin{equation}
+\label{eqn:ga_element}
+\mathrm L^f_{ij} = A_f\, (\nabla\phi_i \cdot \nabla\phi_j)\; e^{\mathsf T (\rho_j^f - \rho_i^f)}, \qquad \mathrm M^f_{ii} = \frac{A_f}{3} :
+\end{equation}
+one complex number per pair of vertices instead of a $2 \times 2$ block. The scalar factor is the cotangent weight of the edge, as in the scalar Laplacian; the complex factor is the transport from $j$ to $i$ through the face. The connection Laplacian is the scalar Laplacian in which every coupling first turns the neighbor's coordinate into the frame of the vertex.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 8: Assembly and the Hermitian System}
+\label{section:r2_stage8}
+
+\paragraph{What we want.} We want the global matrices, the linear system with the source condition, its solution by the program, and a check that it is the system of Part~\ref{part:matrix}.
+
+\subsection{Assembly and the system}
+
+\paragraph{Assembly.} By~(\ref{eqn:r2_global}), the global coefficients are sums over faces of the element contributions~(\ref{eqn:ga_element}) again,
+\begin{equation*}
+\tag{\ref{eqn:ga_element}}
+\mathrm L^f_{ij} = A_f\, (\nabla\phi_i \cdot \nabla\phi_j)\; e^{\mathsf T (\rho_j^f - \rho_i^f)}, \qquad \mathrm M^f_{ii} = \frac{A_f}{3} ,
+\end{equation*}
+so that $\mathrm L_{ij} = \sum_{f\ni i, j}\mathrm L^f_{ij}$ and $\mathrm M_{ii} = \sum_{f\ni i}\frac{A_f}{3}$, one third of the area of the faces around $i$. This is the assembly~(\ref{eqn:assembly})~[\,$\mathrm L = \sum_f P_f^T\mathrm L^fP_f$\,] of Part~\ref{part:matrix}, with one complex entry per pair of vertices instead of a $2\times 2$ block: every face adds its nine numbers to the rows and columns of its three vertices.
+
+\paragraph{The matrix is Hermitian.} Exchange $i$ and $j$ in~(\ref{eqn:ga_element}). The real factor $A_f\,\nabla\phi_j\cdot\nabla\phi_i = A_f\,\nabla\phi_i\cdot\nabla\phi_j$ does not change, and the complex factor becomes
+\begin{equation*}
+e^{\mathsf T(\rho_i^f - \rho_j^f)} = \cos(\rho_j^f - \rho_i^f) - \mathsf T\sin(\rho_j^f - \rho_i^f) = \overline{e^{\mathsf T(\rho_j^f - \rho_i^f)}} ,
+\end{equation*}
+using $\cos(-x) = \cos x$ and $\sin(-x) = -\sin x$. So $\mathrm L^f_{ji} = \overline{\mathrm L^f_{ij}}$ for every face, and, summing over the faces that contain both vertices, $\mathrm L_{ji} = \overline{\mathrm L_{ij}}$: the global stiffness $\mathrm L$ is an $n\times n$ complex \emph{Hermitian} matrix.
+
+\paragraph{The matrix is positive semidefinite.} For a face and complex coordinates $\psi_a$ of its vertices, write $w_a = e^{\mathrm i\rho_a^f}\psi_a$ (with $\mathsf T$ identified with $\mathrm i$), so that $\overline{w_a} = e^{-\mathrm i\rho_a^f}\,\overline{\psi_a}$. Substitute~(\ref{eqn:ga_element}) into the quadratic form of the face:
+With $\partial_k\phi_a = e_k\cdot\nabla\phi_a$ as in Stage~6,
+\begin{align*}
+\sum_{a, b\in f}\overline{\psi_a}\,\mathrm L^f_{ab}\,\psi_b &= A_f\sum_{a,b}(\nabla\phi_a\cdot\nabla\phi_b)\;\overline{\psi_a}\; e^{\mathrm i(\rho_b^f - \rho_a^f)}\;\psi_b && \text{(a)} \\
+&= A_f\sum_{a,b}(\nabla\phi_a\cdot\nabla\phi_b)\;\big(e^{-\mathrm i\rho_a^f}\,\overline{\psi_a}\big)\,\big(e^{\mathrm i\rho_b^f}\psi_b\big) && \text{(b)} \\
+&= A_f\sum_{a,b}(\nabla\phi_a\cdot\nabla\phi_b)\;\overline{w_a}\; w_b && \text{(c)} \\
+&= A_f\sum_k\sum_{a,b}\partial_k\phi_a\;\partial_k\phi_b\;\overline{w_a}\; w_b && \text{(d)} \\
+&= A_f\sum_k\Big(\overline{\sum_a \partial_k\phi_a\; w_a}\Big)\Big(\sum_b \partial_k\phi_b\; w_b\Big) && \text{(e)} \\
+&= A_f\sum_k\Big|\sum_b \partial_k\phi_b\; w_b\Big|^2 \ \ge 0 && \text{(f)}
+\end{align*}
+(a) The element~(\ref{eqn:ga_element}) substituted. (b) The exponential split, $e^{\mathrm i(\rho_b - \rho_a)} = e^{-\mathrm i\rho_a}e^{\mathrm i\rho_b}$, and the complex numbers regrouped (they commute). (c) The definition of $w_a$. (d) The inner product of the gradients in components, as in Stage~6. (e) The double sum is a product of two single sums; the real numbers $\partial_k\phi_a$ are their own conjugates. (f) $\bar z z = |z|^2$.
+By~(\ref{eqn:ga_grad_trial})~[\,$D_{e_k}\psi_f = \sum_b(e_k\cdot\nabla\phi_b)\, e^{\mathsf T_f\rho_b^f}\psi_b$\,], the sum inside the last bars is $D_{e_k}\psi_f$, constant on the face, so the last line is $\int_f\sum_k|D_{e_k}\psi_f|^2\, dA$, the discrete energy of the face. Summing over the faces, $\overline\psi^T\mathrm L\,\psi$ is the discrete Dirichlet energy of the field, twice $E$ of~(\ref{eqn:ga_energy})~[\,$E = \frac12\int_\Omega\sum_k|D_{e_k}\psi|^2\, dA$\,].
+
+\paragraph{The system.} The Galerkin equations~(\ref{eqn:r2_galerkin})~[\,$\sum_j(\mathrm M_{ij} + \Delta t\,\mathrm L_{ij})\,\psi_j = \sum_j\mathrm M_{ij}\,\psi^0_j$\,] are, in matrix form, the backward Euler step as the complex system
+\begin{equation}
+\label{eqn:ga_system}
+(\mathrm M + \Delta t\, \mathrm L)\, \psi = \mathrm M\, \psi^0, \qquad \psi \in \mathbb C^n ,
+\end{equation}
+with one complex unknown per vertex. The matrix $\mathrm M + \Delta t\,\mathrm L$ is Hermitian and positive definite, since $\mathrm M$ is diagonal with positive entries:
+\begin{equation*}
+\overline\psi^T(\mathrm M + \Delta t\,\mathrm L)\,\psi = \sum_i \mathrm M_{ii}\,|\psi_i|^2 + \Delta t\;\overline\psi^T\mathrm L\,\psi \ \ge\ \Big(\min_i\mathrm M_{ii}\Big)\sum_i|\psi_i|^2 ,
+\end{equation*}
+which is positive for $\psi\ne 0$,
+the discrete counterpart of the coercivity of Stage~2. The code imposes the source and scales as Part~\ref{part:matrix} does. It multiplies by $\mathrm M^{-1}$, which divides row $i$ by $\mathrm M_{ii}$ and turns $\mathrm M^{-1}\mathrm M$ into $I$:
+\begin{equation*}
+\mathrm M^{-1}(\mathrm M + \Delta t\,\mathrm L)\,\psi = \mathrm M^{-1}\mathrm M\,\psi^0 \quad\Longrightarrow\quad (I + \Delta t\,\mathrm M^{-1}\mathrm L)\,\psi = \psi^0 ,
+\end{equation*}
+the complex form of~(\ref{eqn:scaled_system})~[\,$(I + \Delta t\,\mathrm M^{-1}\mathrm L)\,\mathrm u = \mathrm u^0$\,]. It replaces the row of the source vertex $s$ by the row of the identity, with the prescribed $\psi_s = e^{2\pi\mathsf T/3}$ on the right side; and it sets $\psi^0 = 0$ everywhere else, which is~(\ref{eqn:r2_source})~[\,$\psi + \Delta t\, D^*D\psi = 0$ away from $s$, $\psi(s) = \psi_s$\,] on the mesh.
+
+\subsection{The program}
+\label{section:ga_code}
+
+The repository contains a second program, \code{ga\_fem.cpp}, which needs no graphics and implements Part~\ref{part:ga} with the small header \code{GAConnection.h}. It is built and run from \code{src/} with
+\begin{lstlisting}[language=bash, numbers=none]
+c++ -std=c++17 -O2 -I<eigen> ga_fem.cpp HalfEdge/Mesh.cpp -o ga_fem
+./ga_fem ../fem-basic-2d/data
+\end{lstlisting}
+It prints the worked examples of this text, solves the cactus of \code{FEM.cpp} twice, with the real $2 \times 2$ blocks of Part~\ref{part:matrix} and with the complex Hermitian system of Part~\ref{part:ga}, solves the sphere of Example~\ref{ex:sphere}, and writes the data of Figures~\ref{fig:cactus} and~\ref{fig:sphere}. The listings of \code{GAConnection.h} appear at the stages they implement: the algebra in Stage~1, the rotor and the connection in Stage~5, the gradients in Stage~7. This subsection shows the two solvers.
+
+\paragraph{The complex system.} The function \code{gaform::solve} assembles~(\ref{eqn:ga_element})~[\,$\mathrm L^f_{ij} = A_f(\nabla\phi_i\cdot\nabla\phi_j)\, e^{\mathsf T(\rho_j^f - \rho_i^f)}$\,] and the lumped mass, scales by the mass, imposes the Dirichlet row, and solves, with \code{std::complex} entries. It does in one function what \code{AssembleStiffness\-Element\-Embedded2}, \code{AssembleMatrix2}, \code{IplusMinvTimesA} and \code{PreFactor} do in \code{FEM.cpp}, where each complex number is a $2 \times 2$ block:
+\lstinputlisting[firstline=151, lastline=188, firstnumber=151]{../src/ga_fem.cpp}
+\begin{itemize}
+\item Lines~154--156: one mass per vertex and one complex entry per pair of vertices, stored in a map so that the contributions of different faces add up, which is the assembly without the $P_f$ matrices of~(\ref{eqn:assembly}). The map holds $\Delta t\,\mathrm L$, as \code{AssembleMatrix2} does.
+\item Lines~157--161: the loop over faces, the three vertices in counterclockwise order, and the gradients of Proposition~\ref{prop:ga_reciprocal}, Stage~7.
+\item Lines~163--165: the three connections $e^{\mathsf T_f\rho_a^f}$ of~(\ref{eqn:ga_connection}), one per corner of the face, Stage~5. This is where the vertex normals, and so the extrinsic choice of Section~\ref{section:ga_intrinsic}, enter.
+\item Line~167: the lumped mass~(\ref{eqn:ga_element}), $\frac{A_f}{3}$ to each vertex of the face.
+\item Lines~168--171: the element matrix~(\ref{eqn:ga_element}). The local index \code{a} is the test vertex $i$, the row, and \code{b} the trial vertex $j$, the column. The transport from $j$ to $i$ is
+\begin{equation*}
+e^{\mathsf T(\rho_j - \rho_i)} = e^{\mathsf T\rho_j}\, e^{-\mathsf T\rho_i} = e^{\mathsf T\rho_j}\,\overline{e^{\mathsf T\rho_i}} ,
+\end{equation*}
+\code{rho[b] * std::conj(rho[a])}, since the conjugate of a unit complex number is its inverse. On the diagonal the code writes $1$ directly, which is what the product $e^{\mathsf T\rho_i}\,\overline{e^{\mathsf T\rho_i}} = |e^{\mathsf T\rho_i}|^2 = 1$ gives up to rounding. Line~171 adds $\Delta t\, A_f\,(\nabla\phi_i\cdot\nabla\phi_j)$ times that number.
+\item Lines~175--179: the scaled system~(\ref{eqn:scaled_system})~[\,$(I + \Delta t\,\mathrm M^{-1}\mathrm L)\,\mathrm u = \mathrm u^0$\,]: each row is divided by the mass of its vertex and $1$ is added on the diagonal, \code{IplusMinvTimesA}. The row of the source is skipped (line~177).
+\item Lines~180--184: the Dirichlet condition by row replacement, \code{PreFactor}: the row of the source becomes a row of the identity, and the right-hand side holds the prescribed complex number there and zero elsewhere.
+\item Lines~185--186: the general sparse LU, because the scaled matrix with a replaced row is no longer Hermitian.
+\end{itemize}
+
+\paragraph{The real system.} The function \code{matrixform::solve} is the same computation with the $2\times 2$ blocks of Part~\ref{part:matrix}:
+\lstinputlisting[firstline=105, lastline=142, firstnumber=105]{../src/ga_fem.cpp}
+Lines~118--119 are the face coordinates~(\ref{eqn:grad_face})~[\,$g_a^f = T_f^T\nabla\phi_a$\,], lines~120--121 the transport~(\ref{eqn:vertex_transport})~[\,$(R_a^f)^T R_b^f$\,], with the identity on the diagonal, and line~122 the block~(\ref{eqn:element_stiffness})~[\,$\mathrm L^f_{ij} = A_f\,(g_i^f\cdot g_j^f)\,(R_i^f)^TR_j^f$\,] times $\Delta t$. Line~124 places the four entries of the block at the global indices $2\,\mathrm{ID} + r$, $2\,\mathrm{ID} + c$ of~(\ref{eqn:index_map}); in the complex version this line is the single entry \code{A[\{v[a]->ID, v[b]->ID\}]}. Lines~131--135 scale and replace the two rows of the source, where the complex version replaces one row. Line by line, the two functions differ only where a complex number replaces a $2\times 2$ block and an index $i$ replaces the pair $2i, 2i+1$.
+
+\subsection{The same system as in Part~\ref{part:matrix}}
+
+\paragraph{A complex number is a $2\times 2$ block.} A complex number $z = \alpha + \beta \mathsf T$ acts on $\psi = u_1 + u_2 \mathsf T$ by multiplication:
+\begin{align*}
+z\,\psi = (\alpha + \beta\mathsf T)(u_1 + u_2\mathsf T) &= \alpha u_1 + \alpha u_2\mathsf T + \beta u_1\mathsf T + \beta u_2\mathsf T^2 \\
+&= (\alpha u_1 - \beta u_2) + (\beta u_1 + \alpha u_2)\,\mathsf T && \mathsf T^2 = -1 .
+\end{align*}
+In the basis $(1, \mathsf T)$ this takes the column $(u_1, u_2)$ to $(\alpha u_1 - \beta u_2,\ \beta u_1 + \alpha u_2)$, so it is the real $2 \times 2$ matrix
+\begin{equation*}
+[z] = \begin{pmatrix} \alpha & -\beta \\ \beta & \alpha \end{pmatrix}, \qquad \alpha = \mathrm{Re}\, z,\ \beta = \mathrm{Im}\, z .
+\end{equation*}
+Two properties follow from the definition. A real number $r$ is the block $r I_2$. The conjugate $\bar z = \alpha - \beta\mathsf T$ has the block $\begin{pmatrix}\alpha & \beta\\ -\beta & \alpha\end{pmatrix} = [z]^T$.
+
+\paragraph{The complex system written in real numbers.} Row $i$ of~(\ref{eqn:ga_system})~[\,$(\mathrm M + \Delta t\,\mathrm L)\psi = \mathrm M\psi^0$\,] is $\sum_j S_{ij}\psi_j = b_i$ with $S = \mathrm M + \Delta t\,\mathrm L$ and $b = \mathrm M\psi^0$. Write $S_{ij} = \alpha_{ij} + \beta_{ij}\mathsf T$, $\psi_j = u_{j,1} + u_{j,2}\mathsf T$, $b_i = b_{i,1} + b_{i,2}\mathsf T$. By the multiplication rule, the real and imaginary parts of row $i$ are
+\begin{align*}
+\sum_j \big(\alpha_{ij}\, u_{j,1} - \beta_{ij}\, u_{j,2}\big) &= b_{i,1} , \\
+\sum_j \big(\beta_{ij}\, u_{j,1} + \alpha_{ij}\, u_{j,2}\big) &= b_{i,2} :
+\end{align*}
+two real equations, the rows $2i$ and $2i + 1$ of a $2n\times 2n$ real system whose block $(i, j)$ is $[S_{ij}]$, for the $2n$ real unknowns $(u_{j,1}, u_{j,2})$. It has the same solution as the complex system, since it says the same thing.
+
+\paragraph{The blocks, entry by entry.} We compare $[\mathrm L^f_{ij}]$ with the block~(\ref{eqn:element_stiffness}) of Part~\ref{part:matrix},
+\begin{equation*}
+\tag{\ref{eqn:element_stiffness}}
+\mathrm L^f_{ij} = A_f\, \big( g_i^f \cdot g_j^f \big)\, (R_i^f)^T R_j^f .
+\end{equation*}
+\emph{The scalar factor.} With $g_a^f = T_f^T\nabla\phi_a$ of~(\ref{eqn:grad_face}),
+\begin{align*}
+g_i^f\cdot g_j^f = (T_f^T\nabla\phi_i)^T(T_f^T\nabla\phi_j) &= \nabla\phi_i^T\,(T_fT_f^T)\,\nabla\phi_j \\
+&= \nabla\phi_i^T\,(I - n_fn_f^T)\,\nabla\phi_j = \nabla\phi_i\cdot\nabla\phi_j ,
+\end{align*}
+because the gradients lie in the face plane, $n_f^T\nabla\phi_j = 0$. \emph{The rotation factor.} Write $c_a = \cos\rho_a^f$, $s_a = \sin\rho_a^f$, and multiply the transpose of~(\ref{eqn:ga_matrix}) for $i$ by~(\ref{eqn:ga_matrix}) for $j$:
+\begin{equation*}
+(R_i^f)^T R_j^f = \begin{pmatrix} c_i & s_i \\ -s_i & c_i \end{pmatrix}\begin{pmatrix} c_j & -s_j \\ s_j & c_j \end{pmatrix} = \begin{pmatrix} c_ic_j + s_is_j & -c_is_j + s_ic_j \\ -s_ic_j + c_is_j & s_is_j + c_ic_j \end{pmatrix} .
+\end{equation*}
+With $\delta = \rho_j^f - \rho_i^f$ and the addition formulas $\cos(\rho_j - \rho_i) = c_jc_i + s_js_i$ and $\sin(\rho_j - \rho_i) = s_jc_i - c_js_i$, the four entries are
+\begin{align*}
+(1,1):&\quad c_ic_j + s_is_j = \cos\delta, & (1,2):&\quad -c_is_j + s_ic_j = -\sin\delta, \\
+(2,1):&\quad -s_ic_j + c_is_j = \sin\delta, & (2,2):&\quad s_is_j + c_ic_j = \cos\delta .
+\end{align*}
+So $(R_i^f)^TR_j^f = \begin{pmatrix}\cos\delta & -\sin\delta\\ \sin\delta & \cos\delta\end{pmatrix} = [e^{\mathsf T\delta}]$. \emph{The block.} Let $\lambda = A_f\,\nabla\phi_i\cdot\nabla\phi_j$. The complex element~(\ref{eqn:ga_element}) is $\mathrm L^f_{ij} = \lambda\, e^{\mathsf T\delta} = \lambda\cos\delta + \lambda\sin\delta\;\mathsf T$, so $\alpha = \lambda\cos\delta$, $\beta = \lambda\sin\delta$, and its block is
+\begin{equation*}
+\big[\lambda\, e^{\mathsf T\delta}\big] = \begin{pmatrix}\lambda\cos\delta & -\lambda\sin\delta\\ \lambda\sin\delta & \lambda\cos\delta\end{pmatrix} = \lambda\,(R_i^f)^TR_j^f = A_f\,(g_i^f\cdot g_j^f)\,(R_i^f)^TR_j^f ,
+\end{equation*}
+entry by entry the block~(\ref{eqn:element_stiffness}). \emph{The mass.} The real number $\frac{A_f}{3}$ is the block $\frac{A_f}{3}I_2$, the lumped mass~(\ref{eqn:lumped_mass}). \emph{The symmetry.} The block $(j, i)$ is $[\mathrm L_{ji}] = [\overline{\mathrm L_{ij}}] = [\mathrm L_{ij}]^T$: the Hermitian matrix becomes a symmetric one. \emph{The source.} The scaling by $\mathrm M^{-1}$ divides rows by real numbers, the same in both forms; the identity row of the source is the identity block $I_2$ in two real rows; and the prescribed value $e^{2\pi\mathsf T/3}$ is the pair $(\cos\frac{2\pi}3, \sin\frac{2\pi}3)$, which is \code{Vector2d(value.real(), value.imag())} below.
+
+The two derivations, with matrices and with geometric algebra, arrive at the same linear system; the complex form halves its size and shows that every block of the code has the structure ``scalar times rotation'' (Figure~\ref{fig:complex_block}).
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_complex_block}}
+\caption{Every $2 \times 2$ block of the code is a real multiple of a rotation, the matrix of multiplication by a complex number $e^{\mathsf T \delta}$ of the tangent plane; the complex form stores only that number.}
+\label{fig:complex_block}
+\end{figure}
+
+\paragraph{The comparison.} The program solves the cactus with both functions, the same mesh, the same source vector $e^{2\pi\mathrm i/3}$ and the same $\Delta t = \bar h^2$, and compares the solutions vertex by vertex:
+\lstinputlisting[firstline=1122, lastline=1131, firstnumber=1122]{../src/ga_fem.cpp}
+Lines~1122--1124 choose the source vertex as \code{FEM.cpp} does, line~1125 is the source value $\psi_s = e^{2\pi\mathsf T/3}$, and lines~1126--1127 solve with $\Delta t = \bar h^2$, the square of the mean edge length \code{h}. Line~1130 reads the two real coordinates of vertex $i$ as the complex number $u_{i,1} + \mathrm i\, u_{i,2}$ and measures its distance to the complex solution. The program prints
+\begin{lstlisting}[numbers=none]
+== Cactus (502 vertices, source 59): max |real form - complex form| = 5.76e-16
+\end{lstlisting}
+The two solutions agree to $6 \cdot 10^{-16}$, the rounding error of double precision: the two parts of this text compute the same thing.
+
+\subsection{From the spinors back to vectors}
+\label{section:r2_back}
+
+When the solution has been computed, the program turns the unit spinor coordinate $\hat\psi_i$ of every vertex into a vector of space, to draw it:
+\lstinputlisting[firstline=1134, lastline=1137, firstnumber=1134]{../src/ga_fem.cpp}
+Line~1135 normalizes the computed complex number, $\hat\psi_i = \psi_i/|\psi_i|$: only the direction is kept, which is the transported source vector. Line~1136 is~(\ref{eqn:ga_spinor})~[\,$U = t\psi,\ \psi = u_1 + u_2\mathsf T$\,] multiplied out:
+\begin{equation*}
+t_i\,\hat\psi_i = t_i\,\big(\mathrm{Re}\,\hat\psi_i + \mathrm{Im}\,\hat\psi_i\;\mathsf T_i\big) = \mathrm{Re}\,\hat\psi_i\; t_i + \mathrm{Im}\,\hat\psi_i\; (t_i\mathsf T_i) ,
+\end{equation*}
+where the quarter turn $t_i\mathsf T_i$ is computed by \code{quarterTurn} from the vertex normal. The \code{std::complex} number holds $\alpha + \beta\,\mathsf T$ as the pair $(\alpha, \beta)$, so its imaginary part is the coefficient of $\mathsf T$. Line~1137 writes the vertex and its vector, the data of Figure~\ref{fig:cactus}. By the frame independence of Stage~1, the drawn vector does not depend on the choice of $t_i$: turning the frame to $t_i' = t_i e^{\mathsf T\theta}$ turns the coordinate to $\hat\psi_i' = e^{-\mathsf T\theta}\hat\psi_i$, and $t_i'\hat\psi_i' = t_i\, e^{\mathsf T\theta}e^{-\mathsf T\theta}\,\hat\psi_i = t_i\hat\psi_i$.
+
+%%% ----------------------------------------------------------------------
+\section{Dictionary}
+\label{section:ga_dictionary}
+
+Table~\ref{tab:dictionary} lists each object of the two parts side by side, with its nature, intrinsic or extrinsic.
+
+\begin{table}[t]
+\centering
+\caption{The objects of Part~\ref{part:matrix} and of Part~\ref{part:ga}, and whether they depend only on the metric of the surface (intrinsic) or on its embedding in space (extrinsic).}
+\label{tab:dictionary}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.24\linewidth} p{0.27\linewidth} p{0.27\linewidth} p{0.14\linewidth}}
+\toprule
+Object & Matrices (Part~\ref{part:matrix}) & Geometric algebra & Nature \\
+\midrule
+tangent plane & $T T^T = I - n n^T$ & bivector $\mathsf T = I n$ & extrinsic \\
+frame & $T = [t \;\; n \times t]$ & one vector $t$, $b = t \mathsf T$ & a gauge choice \\
+coordinates & $u \in \R^2$ & spinor $\psi = u_1 + u_2 \mathsf T$ & gauge dependent \\
+inner product & $U\cdot V = u\cdot v$ & $\langle\psi\widetilde\chi\rangle$ & intrinsic \\
+rotation in the plane & $2 \times 2$ rotation & $e^{\mathsf T \theta}$ & intrinsic \\
+plane to plane & Rodrigues $Q$ & rotor $(1 + n_f n_i)/|1 + n_f n_i|$ & extrinsic tool \\
+discrete connection & $R_i^f = T_f^T Q T_i$ & $e^{\mathsf T \rho_i^f} = t_f Q t_i \widetilde Q$ & see Sec.~\ref{section:ga_intrinsic} \\
+transport $j \to i$ & $(R_i^f)^T R_j^f$ & $e^{\mathsf T (\rho_j - \rho_i)}$ & gauge covariant \\
+covariant derivative & $\partial u + \omega u$ & $D = \nabla + \omega \mathsf T$ & intrinsic \\
+hat gradients & $B (B^T B)^{-1} \hat\nabla\hat\phi$ & reciprocal frame, $\frac{(x_c - x_b)\mathsf T}{2A}$ & intrinsic \\
+stiffness block & $A (g_i \cdot g_j) R_i^T R_j$ & $A (\nabla\phi_i \cdot \nabla\phi_j) e^{\mathsf T(\rho_j - \rho_i)}$ & intrinsic up to the vertex planes \\
+global system & real $2n \times 2n$ & complex Hermitian $n \times n$ & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The geometric algebra formulation removes the frames from the geometry: a tangent plane is a bivector, a direction in it is a complex number of that plane, and transport is a rotor. Frames reappear only as the gauge in which coordinates are stored, and the gauge covariance~(\ref{eqn:ga_gauge})~[\,$D'_a\psi' = e^{-\mathsf T\theta}D_a\psi$\,] guarantees that they do not affect the result. What remains of the embedding is the choice of a tangent plane at each vertex, the one extrinsic ingredient of the discrete connection, and the place where the intrinsic method of Part~\ref{part:intrinsic} differs.

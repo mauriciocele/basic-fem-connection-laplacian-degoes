@@ -1,0 +1,1157 @@
+%%% ======================================================================
+\part{The Derivation with Matrices}
+\label{part:matrix}
+
+%%% ----------------------------------------------------------------------
+\section{The Finite Element Method as a Recipe}
+\label{section:r1_recipe}
+
+The finite element method is a mechanical procedure. It does not depend on the equation: one starts from a partial differential equation (a PDE), applies the same stages in the same order, and at the end holds a linear system whose solution approximates the solution of the PDE. Once the stages are known, they can be applied to a new equation without new ideas, only with new computations. This part applies them to one equation, a single time step of the heat equation for tangent vector fields on a curved surface, and it names every stage as it goes, so that the reader always knows where in the procedure we are and why. Parts~\ref{part:ga} and~\ref{part:intrinsic} run the same procedure again, with the same stage names, in other languages.
+
+Here are the eight stages, each with the object it produces.
+\begin{enumerate}
+\item \textbf{The PDE (strong form).} The problem in its usual form: the unknown, the domain, the equation and the side conditions. For us the unknown is a tangent field $U$ on a closed curved surface $\Omega$, the equation is one backward Euler step of the vector heat equation, $U + \Delta t\, \nabla^*\nabla U = U^0$, and the side condition prescribes the vector at one source vertex. \emph{Produces:} the equation, which involves second derivatives of $U$ (Section~\ref{section:pde}).
+\item \textbf{The function spaces.} Where the solution is looked for, and why there. \emph{Produces:} the space $H^1$ of tangent fields with square-integrable covariant derivatives, the guarantee that the problem has exactly one solution there, the guarantee that the discrete solution is the best one available, and the requirement (conformity) that the discrete fields must meet (Section~\ref{section:r1_spaces}).
+\item \textbf{The variational form.} An energy $J(U)$ whose minimizer is the solution. \emph{Produces:} a second reading of the problem, as a minimization (Section~\ref{section:r1_variational}).
+\item \textbf{The weak form (Galerkin).} Multiply the PDE by a test field, integrate, and integrate by parts. \emph{Produces:} the equation $a(U, V) = l(V)$ for every test field $V$, which contains only first derivatives (Section~\ref{section:weak}).
+\item \textbf{The discretization.} The mesh, and a finite dimensional space of fields on it. \emph{Produces:} the vertex and face frames, the discrete connection $R_i^f$, and $2n$ vector hat functions $\Psi_{i,k}$, two per vertex, which span the discrete space (Sections~\ref{section:geometry}, \ref{section:transport} and~\ref{section:galerkin}).
+\item \textbf{The discrete solution and the test functions.} Write the unknown as a combination of the basis functions, and test with every basis function. \emph{Produces:} $2n$ linear equations in $2n$ unknowns, $(\mathrm M + \Delta t\,\mathrm L)\,\mathrm u = \mathrm M\,\mathrm u^0$ (Section~\ref{section:r1_discrete}).
+\item \textbf{The element integrals.} Compute the integrals of the matrices face by face, on a reference triangle, with the chain rule and an affine map. \emph{Produces:} a $6\times 6$ element stiffness matrix and a lumped element mass matrix per face (Sections~\ref{section:r1_element_integrals}, \ref{section:gradients} and~\ref{section:element}).
+\item \textbf{Assembly and the linear system.} Add the element matrices into the global ones, impose the source, solve, and read the solution back as vectors. \emph{Produces:} the arrows of Figure~\ref{fig:cactus} (Sections~\ref{section:assembly} and~\ref{section:solve}).
+\end{enumerate}
+Table~\ref{tab:r1_stages} lists the same stages with the functions of \code{FEM.cpp} that carry them out. Every stage opens by saying what it wants and why, and closes by saying what it produced and which stage uses it next.
+
+\begin{table}[t]
+\centering
+\caption{The eight stages of the finite element method in this part, what each one produces, and where the code carries it out.}
+\label{tab:r1_stages}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.22\linewidth} >{\raggedright\arraybackslash}p{0.38\linewidth} >{\raggedright\arraybackslash}p{0.34\linewidth}}
+\toprule
+Stage & Produces & Code \\
+\midrule
+1. PDE (strong form) & $U + \Delta t\,\nabla^*\nabla U = U^0$, source $U(s) = U_s$ & the time step, \code{computeEdgeLengths} \\
+2. Function spaces & $H^1$ of tangent fields; existence, uniqueness, best approximation, conformity & (none: it is the guarantee) \\
+3. Variational form & the energy $J(U)$ & (none) \\
+4. Weak form & $a(U, V) = l(V)$ for all test fields $V$ & (none) \\
+5. Discretization & mesh, frames, $R_i^f$, basis $\Psi_{i,k}$ & \code{computeNormals}, \code{compute\-Vertex\-Tangent\-Space}, \code{computeFaceNormals}, \code{compute\-Face\-Tangent\-Space}, \code{alignVectors}, \code{Rvf} \\
+6. Discrete solution & $(\mathrm M + \Delta t\,\mathrm L)\,\mathrm u = \mathrm M\,\mathrm u^0$ & (the structure of the next two stages) \\
+7. Element integrals & $\mathrm L^f$, $\mathrm M^f$ per face & \code{AssembleStiffness\-Element\-Embedded2} \\
+8. Assembly and solve & global matrices, source rows, LU, arrows & \code{AssembleMatrix2}, \code{AssembleDiagonal\-Mass\-Matrix}, \code{IplusMinvTimesA}, \code{PreFactor}, \code{display} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Where the geometry comes in.} On a flat plate, with a scalar unknown such as a temperature, this recipe is the classical finite element method of every textbook \cite{Sayas2015, Langtangen2014}. Two things are different here, and both are geometric. The unknown is a \emph{tangent vector} at every point, and a curved surface has a different tangent plane at every point, so vectors at different points cannot simply be added or subtracted. And the computer replaces the curved surface by flat triangles, whose planes meet at angles along the edges and at the vertices. The tools that handle both are the covariant derivative and parallel transport, the Levi-Civita connection of the surface. They are built in the two sections that come before Stage 1, a geometric toolkit. Their smooth halves (tangent planes, frames, the covariant derivative) are the language in which the PDE of Stage 1 is written: the operator $\nabla^*\nabla$ is made of covariant derivatives. Their discrete halves (the mesh, its normals and frames, and the $2\times 2$ rotations $R_i^f$) are the ingredients of Stage 5, prepared early because the program computes them first. Stage 5 collects them again and explains how they enter the finite element machinery.
+
+%%% ----------------------------------------------------------------------
+\section{Geometric Toolkit I: Tangent Vectors on a Surface}
+\label{section:geometry}
+
+Everything in this part is about one kind of object: a vector that lies flat on a surface, an arrow that a small creature living on the surface could draw on the ground. Before we can diffuse such vectors, differentiate them or transport them, we need two things. We need to say precisely what it means for a vector to lie flat on a surface, and we need a way to store such a vector with two numbers instead of three. This section provides both, first for a smooth surface and then for the triangle mesh that the code uses, and it shows the functions of \code{FEM.cpp} that build the corresponding data. In the recipe of Section~\ref{section:r1_recipe} this is preparation: the smooth half is the language of Stage 1, and the discrete half, from Section~\ref{section:r1_discrete_surface} on, is the first ingredient of Stage 5.
+
+\subsection{Tangent planes and frames}
+
+Let $\Omega \subset \R^3$ be a smooth surface, and let $n(x)$ be its unit normal at the point $x$: the unit vector perpendicular to the surface there. Near $x$ the surface looks, under a strong magnifying glass, like a plane through $x$ perpendicular to $n(x)$. That plane, moved to the origin, is the \emph{tangent plane} $T_x \Omega$:
+\begin{equation*}
+T_x\Omega = \{\, v \in \R^3 : v \cdot n(x) = 0 \,\}.
+\end{equation*}
+A \emph{tangent vector} at $x$ is a vector of this plane, and a \emph{tangent vector field} $U$ is a rule that assigns to every point $x$ of the surface a tangent vector $U(x) \in T_x \Omega$. The velocity of a curve drawn on the surface is a tangent vector, and so is the direction of the wind on the surface of the Earth; the vertical direction is not.
+
+Note that the tangent plane changes from point to point. On a sphere, the tangent plane at the north pole is horizontal and the tangent plane at a point of the equator is vertical. This simple fact is the source of every difficulty in this text.
+
+\paragraph{Frames.} A vector of $\R^3$ needs three numbers, but a tangent vector needs only two, once we choose a basis of the tangent plane. We choose at each point an orthonormal, positively oriented \emph{frame} $(t(x), b(x))$: two unit tangent vectors, orthogonal to each other, with $b = n \times t$. The three vectors $(t, b, n)$ are then an orthonormal basis of $\R^3$, ordered like $(e_x, e_y, e_z)$. We collect the first two as the columns of a $3 \times 2$ matrix,
+\begin{equation}
+\label{eqn:frame}
+T(x) = \big[\, t(x) \;\; b(x) \,\big], \qquad T^T T = I_2, \qquad T T^T = I_3 - n n^T .
+\end{equation}
+Both identities are matrix products written out. The first multiplies the rows $t^T, b^T$ of $T^T$ by the columns $t, b$ of $T$:
+\begin{equation*}
+T^T T = \begin{pmatrix} t^T \\ b^T \end{pmatrix} \big[\, t \;\; b \,\big] = \begin{pmatrix} t\cdot t & t\cdot b \\ b\cdot t & b\cdot b \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix} = I_2 ,
+\end{equation*}
+because $t$ and $b$ are unit vectors orthogonal to each other. The second multiplies in the other order, a column times a row for each of the two columns:
+\begin{equation*}
+T T^T = \big[\, t \;\; b \,\big] \begin{pmatrix} t^T \\ b^T \end{pmatrix} = t\,t^T + b\,b^T .
+\end{equation*}
+For any orthonormal basis $(t, b, n)$ of $\R^3$, every vector is the sum of its three components, $w = (t\cdot w)\,t + (b\cdot w)\,b + (n\cdot w)\,n = (t\,t^T + b\,b^T + n\,n^T)\, w$, so $t\,t^T + b\,b^T + n\,n^T = I_3$. Subtracting $n\,n^T$ from both sides gives $t\,t^T + b\,b^T = I_3 - n\,n^T$, which is the second identity.
+
+The matrix $P = T T^T = I_3 - n n^T$ is the \emph{orthogonal projection onto the tangent plane}: applied to any vector $v$ it gives $P v = v - n\,(n^T v) = v - (n\cdot v)\, n$, which is $v$ with its component along $n$ removed. It will be used constantly, because it is the tool that turns an arbitrary vector of $\R^3$ into a tangent vector by discarding the part that sticks out of the surface. It leaves tangent vectors unchanged: if $n\cdot v = 0$, then $P v = v - 0\cdot n = v$.
+
+\paragraph{Coordinates.} A tangent vector $U$ at $x$ has the two coordinates
+\begin{equation*}
+u = T^T U = \begin{pmatrix} t \cdot U \\ b \cdot U \end{pmatrix} \in \R^2 ,
+\end{equation*}
+and is recovered from them as $U = T u = u_1\, t + u_2\, b$. The two operations undo each other: $T^T(T u) = (T^T T) u = I_2 u = u$, and $T(T^T U) = (T T^T) U = P U = U$ for tangent $U$. Because the frame is orthonormal, they preserve inner products: for two tangent vectors $U = Tu$ and $V = Tv$ at the same point,
+\begin{equation*}
+U\cdot V = (Tu)^T (Tv) = u^T (T^T T)\, v = u^T I_2\, v = u\cdot v .
+\end{equation*}
+So all the geometry of tangent vectors \emph{at one point} can be done with their coordinates. The difficulty, which the rest of this text addresses, is comparing vectors at \emph{different} points, whose frames are different. The coordinates $(1, 0)$ at one point and $(1, 0)$ at another mean ``the first frame vector here'' and ``the first frame vector there'', which may point in completely different directions of space.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_tangent_plane}}
+\caption{A point $x$ of a surface, its normal $n$, its tangent plane $T_x \Omega$ (blue), an orthonormal frame $(t, b)$ of the tangent plane, and a tangent vector $U$ with its two coordinates $u_1, u_2$ in that frame.}
+\label{fig:tangent_plane}
+\end{figure}
+
+The choice of $t$ is arbitrary: any rotation of the frame within the tangent plane is as good. The method does not depend on that choice, because every quantity that compares vectors at different points will carry the change of frames with it (Section~\ref{section:ga_gauge} works this out).
+
+\subsection{The discrete surface (an ingredient of Stage 5)}
+\label{section:r1_discrete_surface}
+
+The code does not have a smooth surface. It has a triangle mesh: vertices $x_1, \ldots, x_n$ and triangular faces, each face given by three vertices. For the cactus that \code{FEM.cpp} loads there are $502$ vertices and $1000$ faces, and the surface is closed: it has no boundary. To use the ideas above we must decide what the normal, the tangent plane and the frame are at the points of a mesh. There are two kinds of points that matter, the faces and the vertices, and they are treated differently.
+
+\paragraph{Faces.} A face is a flat triangle, so it has a well defined plane, and all its points share one tangent plane and one normal. For a face $f$ with vertices $x_{f_1}, x_{f_2}, x_{f_3}$ in counterclockwise order, take the two edge vectors leaving the first vertex, $e_1 = x_{f_2} - x_{f_1}$ and $e_2 = x_{f_3} - x_{f_1}$. Their cross product $e_1 \times e_2$ is orthogonal to both edges, hence to the face, and points to the side from which the three vertices are seen counterclockwise. Its length is the area of the parallelogram spanned by the two edges, which is twice the area of the triangle. So the unit normal and the area of the face are
+\begin{equation}
+\label{eqn:face_normal}
+n_f = \frac{(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})}{|(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})|}, \qquad A_f = \tfrac12 |(x_{f_2} - x_{f_1}) \times (x_{f_3} - x_{f_1})|.
+\end{equation}
+This is \code{computeFaceNormals}:
+\lstinputlisting[firstline=193, lastline=205, firstnumber=193]{../src/FEM.cpp}
+The mesh is stored as a \emph{half-edge structure}: every edge is split into two half-edges, one for each direction, and each half-edge knows the vertex where it starts (\code{vertex}), the next half-edge around its face (\code{next}), the half-edge of opposite direction (\code{pair}) and its face (\code{face}). A face stores one of its half-edges, \code{face.edge}. Lines~196--198 walk once around the face: the start of \code{face.edge} is $x_{f_1}$, the start of the next half-edge is $x_{f_2}$, and the start of the one after is $x_{f_3}$. Lines~199--200 are the edge vectors $e_1$ (\code{uu}) and $e_2$ (\code{vv}); line~201 is the unnormalized normal $e_1 \times e_2$; line~202 stores $A_f$, half its length; and line~203 stores $n_f$, the same vector normalized. The arrays are indexed by \code{face.ID}, the number of the face, counted from zero.
+
+\paragraph{Vertices.} A vertex has no tangent plane of its own: it is a corner where several faces, with several different planes, meet. Yet the unknowns of the method will live at the vertices, so we must choose a plane there. The code takes the plane orthogonal to a \emph{vertex normal}, an average of the normals of the faces around the vertex. The average is taken with the unnormalized face normals $e_1 \times e_2$, and since $e_1 \times e_2 = 2 A_f\, n_f$ by~(\ref{eqn:face_normal})~[\,$n_f = \frac{e_1\times e_2}{|e_1\times e_2|},\ A_f = \tfrac12|e_1\times e_2|$\,], it is an average of the unit face normals weighted by the areas of the faces:
+\begin{equation}
+\label{eqn:vertex_normal}
+n_i = \frac{\sum_{f \ni i} 2 A_f\, n_f}{\big|\sum_{f \ni i} 2 A_f\, n_f\big|}.
+\end{equation}
+The sum runs over the faces $f$ that contain the vertex $i$, the \emph{one-ring} of the vertex. Large faces pull the vertex normal more than small ones, which is reasonable: a large face represents a larger piece of the surface near the vertex. The function is \code{Mesh::computeNormals}, in \code{HalfEdge/Mesh.cpp}:
+\lstinputlisting[firstline=113, lastline=141, firstnumber=113]{../src/HalfEdge/Mesh.cpp}
+The first loop (lines~117--122) computes $e_1 \times e_2 = 2A_f\, n_f$ for every face, exactly as lines~199--201 of \code{computeFaceNormals}, and keeps it unnormalized. The second loop visits every vertex. The iterator of line~128 turns around the vertex, visiting its outgoing half-edges one after the other; each of them belongs to one face of the one-ring (line~132), whose vector is added to the sum (line~133). The test of line~130 skips the half-edges that have no face, which occur only on the boundary of an open mesh. Line~138 divides the sum by the number of faces and line~139 normalizes it; the division does not change the direction and is erased by the normalization, so the result is~(\ref{eqn:vertex_normal})~[\,$n_i \propto \sum_{f\ni i} 2A_f\, n_f$\,]. The function \code{main} calls it right after loading the mesh.
+
+\paragraph{Frames.} Each vertex and each face gets an orthonormal frame.
+\begin{itemize}
+\item \emph{Vertex $i$} (\code{computeVertex\-Tangent\-Space}). We need a unit vector $t_i$ in the tangent plane of the vertex. A natural candidate is the direction of an edge from $x_i$ to one of its neighbors $x_j$, but the edge vector $v = x_j - x_i$ is in general not orthogonal to $n_i$: the neighbor lies a little above or below the vertex plane. So we remove the normal component of $v$ with the projection $P = I - n_i n_i^T$, which gives $P v = v - (v\cdot n_i)\, n_i$, and normalize the result. The second frame vector is $b_i = n_i \times t_i$:
+\begin{equation}
+\label{eqn:vertex_frame}
+t_i = \frac{(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i}{\big|(x_j - x_i) - \big((x_j - x_i) \cdot n_i\big)\, n_i\big|}, \qquad T_i = \big[\, t_i \;\; n_i \times t_i \,\big].
+\end{equation}
+\item \emph{Face $f$} (\code{computeFace\-Tangent\-Space}). The first edge $x_{f_2} - x_{f_1}$ already lies in the plane of the face, so it only needs to be normalized: $t_f = (x_{f_2} - x_{f_1})/|x_{f_2} - x_{f_1}|$, and $T_f = [\, t_f \;\; n_f \times t_f \,]$.
+\end{itemize}
+Here is the code for the vertices, together with the helper \code{project} that it uses:
+\lstinputlisting[firstline=170, lastline=191, firstnumber=170]{../src/FEM.cpp}
+Line~176 is the projection $P v = v - (v\cdot n)\, n$, written as $v - \frac{v\cdot n}{n\cdot n}\, n$ so that it also works for a normal that is not of unit length; for our unit $n_i$ the two are the same. In \code{computeVertexTangentSpace}, \code{vi.edge} is a half-edge leaving the vertex $i$; its pair runs the other way and therefore starts at the neighbor, so \code{vi.edge->pair->vertex->p} (line~184) is $x_j$. Line~185 is the formula for $t_i$ in~(\ref{eqn:vertex_frame}): project $x_j - x_i$ and normalize. Line~186 is $b_i = n_i \times t_i$, and lines~187--189 store the matrix $T_i$, column by column, at the index \code{vi.ID} of the vertex. The neighbor $x_j$ is whichever one the half-edge structure happens to store; that is the arbitrary choice of frame mentioned above, and it does not matter. The faces are handled in the same way, without the projection:
+\lstinputlisting[firstline=207, lastline=218, firstnumber=207]{../src/FEM.cpp}
+Lines~211--213 take the first edge of the face, from $x_{f_1}$ to $x_{f_2}$, and normalize it to $t_f$; line~215 is $b_f = n_f \times t_f$, with the face normal computed before by \code{computeFaceNormals}. In \code{main} the three functions are called in the order vertex frames, face normals, face frames (lines~609--611 of \code{FEM.cpp}), since the face frames need the face normals.
+For a small example, let the vertex be $x_i = (0, 0, 0)$ with normal $n_i = (0, 0, 1)$, and let the stored neighbor be $x_j = (0, 2, 1)$. The edge vector $v = (0, 2, 1)$ has the normal component $v\cdot n_i = 1$, so the projection is $P v = (0, 2, 1) - 1\cdot(0, 0, 1) = (0, 2, 0)$, and normalizing it gives $t_i = (0, 1, 0)$. Then $b_i = n_i\times t_i = (0,0,1)\times(0,1,0) = (-1, 0, 0)$. These are the vertex frame vectors used in Example~\ref{ex:transport}.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_one_ring}}
+\caption{The one-ring of a vertex $x_i$. Each face has its own normal (gray arrows); the vertex normal $n_i$ (red) is their area-weighted average~(\ref{eqn:vertex_normal}). The vertex frame vector $t_i$ is the edge to a neighbor $x_j$ (orange), projected onto the vertex tangent plane (blue) and normalized, and $b_i = n_i \times t_i$.}
+\label{fig:one_ring}
+\end{figure}
+
+\paragraph{Unknowns.} The unknown field is represented by one tangent vector per vertex, stored by its two coordinates in the vertex frame: $u_i = (u_{i,1}, u_{i,2}) \in \R^2$, with the vector $T_i u_i = u_{i,1} t_i + u_{i,2} b_i \in \R^3$. All the unknowns form one vector of $2n$ numbers, the two coordinates of vertex $1$, then the two of vertex $2$, and so on:
+\begin{equation}
+\label{eqn:dofs}
+\mathrm u = (u_{1,1}, u_{1,2}, u_{2,1}, u_{2,2}, \ldots, u_{n,1}, u_{n,2}).
+\end{equation}
+These $2n$ numbers are the unknowns of the linear system of Stages 6 and 8. Vertex $i$ is preceded by $i - 1$ vertices, which use $2(i-1)$ entries, so its coordinate $k \in \{1, 2\}$ is the entry $2(i - 1) + k$. The code counts vertices and coordinates from zero, $i, k \in \{0, 1, \ldots\}$, and the same count gives the entry $2 i + k$. This is the expression \code{v->ID * 2 + row} that will appear in every function that touches the global vectors and matrices: \code{ID} is the zero-based number of the vertex and \code{row} is $k$.
+
+\paragraph{The complex reading.} It is often convenient to read $u_i$ as the complex number $u_{i,1} + \mathrm{i}\, u_{i,2}$, so that a rotation of the tangent plane by an angle $\alpha$ is a multiplication by $e^{\mathrm i \alpha}$. The code uses this reading to set the source vector and to draw the solution (Section~\ref{section:solve}), and Part~\ref{part:ga} builds the whole method on it.
+
+%%% ----------------------------------------------------------------------
+\section{Geometric Toolkit II: Parallel Transport and the Levi-Civita Connection}
+\label{section:transport}
+
+The heat equation of Section~\ref{section:pde} will need the derivative of a tangent field: how fast it changes as we move along the surface. For functions on the plane, derivatives are familiar from one-variable calculus once we know how to move in a direction. For tangent fields on a curved surface there is a new difficulty: the vectors at two nearby points live in two different planes, and part of their difference is caused by the surface and not by the field. This section takes these two steps in order. First we define the derivative of a function along a surface, and its gradient. Then we define the derivative of a tangent field, the \emph{covariant derivative}, which removes the part caused by the surface, and from it the notion of a field that does not turn, which is \emph{parallel transport}. Finally we build the discrete version that the code uses: a $2 \times 2$ rotation for every pair of a vertex and a face. In the recipe, the first three subsections give Stage 1 its operator, since the Laplacian of tangent fields is built from covariant derivatives; the last one, the discrete connection, is the second ingredient of Stage 5, the one that makes vector-valued basis functions possible on a curved mesh.
+
+\subsection{Derivatives of functions on a surface}
+
+\paragraph{The directional derivative in the plane.} Start with a function $f(x_1, x_2)$ on the plane and a point $x$. To ask how fast $f$ changes at $x$ we must say in which direction we move, because $f$ may grow to the east and decrease to the north. So take a vector $X$ and move along the straight line $x + sX$, where $s$ is a number. Along this line $f$ becomes a function of the single variable $s$, and we can differentiate it as in one-variable calculus:
+\begin{equation}
+\label{eqn:t1_dirderiv}
+X(f) = \frac{d}{ds}\, f(x + sX) \Big|_{s = 0} .
+\end{equation}
+This number is the \emph{directional derivative} of $f$ along $X$ at $x$. If $X$ has unit length, it is the slope of $f$ in that direction: the change of $f$ per unit of distance travelled. For example, for $f(x_1, x_2) = x_1^2 + 3x_2$, the point $x = (1, 2)$ and the direction $X = (1, 1)$, the function along the line is $f(1 + s, 2 + s) = (1 + s)^2 + 6 + 3s$, whose derivative at $s = 0$ is $2 + 3 = 5$. The two \emph{partial derivatives} $\partial f/\partial x_1$ and $\partial f/\partial x_2$ are the special cases $X = (1, 0)$ and $X = (0, 1)$: move along one axis and keep the other coordinate fixed.
+
+\paragraph{The gradient.} The directional derivative depends on $X$ in a simple way: it is linear in $X$. The reason is that a differentiable function looks, under a magnifying glass, like a linear one: near $x$,
+\begin{equation*}
+f(x + h) \approx f(x) + a_1 h_1 + a_2 h_2 = f(x) + a \cdot h
+\end{equation*}
+for some vector $a$, with an error that becomes negligible compared with $|h|$ as $h$ shrinks. Then $f(x + sX) \approx f(x) + s\, (a\cdot X)$, a linear function of $s$ with slope $a\cdot X$, so $X(f) = a\cdot X$. Taking $X = (1, 0)$ and $X = (0, 1)$ shows that the entries of $a$ are the two partial derivatives. This vector is the \emph{gradient} of $f$:
+\begin{equation}
+\label{eqn:t1_gradient}
+\nabla f = \Big( \frac{\partial f}{\partial x_1}, \frac{\partial f}{\partial x_2} \Big), \qquad X(f) = \nabla f \cdot X \quad \text{for every direction } X.
+\end{equation}
+In the example, $\nabla f = (2x_1, 3) = (2, 3)$ at $x = (1, 2)$, and $\nabla f\cdot X = (2, 3)\cdot(1, 1) = 5$, as computed directly. We will write $X\cdot\nabla f$ and $X(f)$ interchangeably.
+
+The gradient has a clear geometric meaning, which we will use in Section~\ref{section:gradients}. Since $X(f) = |\nabla f|\,|X| \cos\angle(\nabla f, X)$, among all unit directions the derivative is largest along $\nabla f$, where it equals $|\nabla f|$, and it is zero along the directions orthogonal to $\nabla f$. So \emph{the gradient points in the direction of steepest increase, its length is the slope in that direction, and it is orthogonal to the level lines}, the curves along which $f$ is constant.
+
+\paragraph{On a surface.} On a surface we cannot move along a straight line, because the line leaves the surface. Instead we move along a curve $x(s)$ drawn on the surface, with $x(0) = x$ and velocity $x'(0) = X$, which is a tangent vector. The directional derivative is defined as before, by differentiating along the curve:
+\begin{equation*}
+X(f) = \frac{d}{ds}\, f(x(s)) \Big|_{s = 0} .
+\end{equation*}
+To first order the curve is $x + sX$, so the result depends only on the velocity $X$ and not on the rest of the curve, and the same magnifying-glass argument applies: near $x$, $f(y) \approx f(x) + a\cdot (y - x)$ for the points $y$ of the surface, with some vector $a \in \R^3$, and $X(f) = a\cdot X$. Only the tangent part of $a$ matters here, because $X$ is tangent: $a\cdot X = (Pa)\cdot X$ with the projection $P = I - nn^T$ of~(\ref{eqn:frame})~[\,$TT^T = I_3 - nn^T$\,]. So we define the \emph{gradient of $f$ on the surface} as the tangent vector
+\begin{equation*}
+\nabla f \in T_x\Omega, \qquad X(f) = \nabla f\cdot X \quad \text{for every tangent vector } X .
+\end{equation*}
+There is only one such tangent vector: two candidates $g$ and $g'$ would satisfy $(g - g')\cdot X = 0$ for every tangent $X$, in particular for $X = g - g'$, which forces $g = g'$. In a frame, the coordinates of the gradient are the derivatives along the two frame vectors, $T^T \nabla f = (t(f), b(f))$, because $t\cdot\nabla f = t(f)$ and $b\cdot \nabla f = b(f)$. The case that matters most for us is a function that is linear on a flat triangle, $f(y) = f(x) + g \cdot (y - x)$ with $g$ in the plane of the triangle: then there is no approximation at all, and $\nabla f = g$ is constant on the triangle. The hat functions of Section~\ref{section:galerkin} are of this kind.
+
+\paragraph{Vectors and products.} The same definition applies to a function with values in $\R^3$, such as a vector field $U$ on the surface: $D_X U = \frac{d}{ds} U(x(s))\big|_{s = 0}$ is the vector of the directional derivatives of the three components of $U$. Each component has its own gradient, and $D_X U$ is the $3\times 3$ matrix whose rows are those three gradients, applied to $X$; in particular it is linear in $X$. Since all these derivatives are ordinary derivatives in the single variable $s$, the product rule of one-variable calculus holds for them: for functions $f, g$ and vector fields $U, V$,
+\begin{equation*}
+X(fg) = X(f)\, g + f\, X(g), \qquad D_X (f\, V) = X(f)\, V + f\, D_X V,
+\end{equation*}
+\begin{equation*}
+X(U\cdot V) = D_X U\cdot V + U\cdot D_X V .
+\end{equation*}
+For a pair of functions $u = (u_1, u_2)$, such as the two coordinates of a field, we write $X\cdot\nabla u = (X(u_1), X(u_2))$.
+
+\subsection{The covariant derivative}
+
+To differentiate a tangent field we would like to compare $U(x + \epsilon X)$ with $U(x)$, but they lie in different tangent planes, and their difference is not a tangent vector. The derivative $D_X U$ just defined is a perfectly good vector of $\R^3$, but it mixes two effects. An example shows them. On the unit sphere, walk along the equator, $x(s) = (\cos s, \sin s, 0)$, holding an arrow that always points straight ahead, $U(s) = x'(s) = (-\sin s, \cos s, 0)$. A walker on the sphere would say that the arrow never turns: it points forward all the time. Yet in space it does change,
+\begin{equation*}
+D_{x'} U = \frac{d}{ds} (-\sin s, \cos s, 0) = (-\cos s, -\sin s, 0) = -x(s),
+\end{equation*}
+and this derivative points to the center of the sphere: it is along the normal $n = x$. It is caused entirely by the sphere curving away under the walker, not by the arrow turning on the surface. A derivative that measures only how a field turns \emph{within} the surface must therefore discard the normal part.
+
+That is easy to do with the projection $P = I - n n^T$ of~(\ref{eqn:frame})~[\,$TT^T = I_3 - nn^T$\,]. Every vector of $\R^3$ splits into a tangent part and a normal part:
+\begin{equation*}
+D_X U = \underbrace{(I - n n^T)\, D_X U}_{\text{tangent}} + \underbrace{(n\cdot D_X U)\, n}_{\text{normal}} .
+\end{equation*}
+The tangent part measures how $U$ turns within the surface; the normal part measures only how the surface itself bends under $U$ (Section~\ref{section:ga_intrinsic} makes this precise). The \emph{covariant derivative} keeps the tangent part:
+\begin{equation}
+\label{eqn:covariant}
+\nabla_X U = \big( I - n n^T \big)\, D_X U = T T^T D_X U ,
+\end{equation}
+the two forms being equal by $T T^T = I - n n^T$, (\ref{eqn:frame})~[\,$T = [\,t\;\;b\,],\ T^TT = I_2,\ TT^T = I_3 - nn^T$\,]. For the walker on the equator, $\nabla_{x'} U = 0$: the forward arrow does not turn, as the walker says. Figure~\ref{fig:covariant} shows the split in a section of the surface.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_covariant}}
+\caption{The covariant derivative. $U$ at two nearby points lies in two different tangent planes; its ambient derivative $D_X U$ has a tangent part $\nabla_X U$, the covariant derivative, and a normal part, which depends only on how the surface bends (Section~\ref{section:ga_intrinsic}).}
+\label{fig:covariant}
+\end{figure}
+
+This is the \emph{Levi-Civita connection} of a surface in $\R^3$ \cite{doCarmo1976}. The name ``connection'' says what it does: it connects the tangent planes at nearby points, by telling us which change of a vector counts as a real change. Two of its properties will be used repeatedly.
+
+\paragraph{It is compatible with the metric.} We want a product rule for the inner product of two tangent fields that uses only covariant derivatives, because the energy of Section~\ref{section:pde} is built from inner products. Let $U, V$ be tangent fields and $X$ a tangent direction. The ordinary product rule gives $X(U\cdot V) = D_X U \cdot V + U \cdot D_X V$. Now split $D_X U$ into $\nabla_X U$ plus its normal part $(n\cdot D_X U)\, n$. The normal part has no inner product with $V$, because $V$ is tangent:
+\begin{equation*}
+\big((n\cdot D_X U)\, n\big)\cdot V = (n\cdot D_X U)\, (n \cdot V) = 0 .
+\end{equation*}
+So $D_X U\cdot V = \nabla_X U \cdot V$, and in the same way $U\cdot D_X V = U\cdot\nabla_X V$. Substituting both,
+\begin{equation}
+\label{eqn:metric_compatible}
+X (U \cdot V) = \nabla_X U \cdot V + U \cdot \nabla_X V .
+\end{equation}
+In words: the change of an inner product is completely explained by the covariant derivatives of the two fields. Throwing away the normal parts loses nothing that an inner product of tangent vectors could see.
+
+\paragraph{It is linear in $X$.} $D_X U$ is a matrix applied to $X$, and $\nabla_X U$ is that, projected. So at each point the covariant derivative defines a linear map $\nabla U : X \mapsto \nabla_X U$ from the tangent plane to itself, the \emph{total covariant derivative}. In a frame it is a $2 \times 2$ matrix whose column $k$ holds the coordinates of $\nabla_{e_k} U$ for the frame vector $e_k$, exactly as the columns of any matrix are the images of the basis vectors.
+
+\paragraph{In a frame.} The code does not store vectors of $\R^3$; it stores their two coordinates in a frame. So we want the covariant derivative in coordinates: not the vector $\nabla_X U \in \R^3$, but its two coordinates $T^T \nabla_X U \in \R^2$. Write $U = T u$ with a frame field $T$ and the coordinates $u = (u_1, u_2)$, two functions on the surface. We expect two contributions: the change of the coordinates, and the turning of the frame in which they are measured. The computation confirms it in three steps.
+
+\emph{Step 1: differentiate in space, one term at a time.} Written out, the field is
+\begin{equation*}
+U = T u = \big[\, t \;\; b \,\big] \begin{pmatrix} u_1 \\ u_2 \end{pmatrix} = u_1\, t + u_2\, b ,
+\end{equation*}
+a sum of two products, each of a function ($u_1$ or $u_2$) and a vector field ($t$ or $b$). We differentiate the sum term by term, apply the product rule $D_X(f\,V) = X(f)\,V + f\,D_X V$ to each product, and regroup:
+\begin{align*}
+D_X U &= D_X (u_1\, t) + D_X (u_2\, b) && \text{(derivative of a sum)} \\
+&= \big( X(u_1)\, t + u_1\, D_X t \big) + \big( X(u_2)\, b + u_2\, D_X b \big) && \text{(product rule, twice)} \\
+&= \big( X(u_1)\, t + X(u_2)\, b \big) + \big( u_1\, D_X t + u_2\, D_X b \big) && \text{(regroup)} .
+\end{align*}
+Each group is now a $3\times 2$ matrix applied to a vector of $\R^2$, read column by column: a matrix $[\,c_1\;\;c_2\,]$ applied to $(\alpha, \beta)$ is $\alpha\, c_1 + \beta\, c_2$. In the first group the columns are $t, b$ and the numbers are $X(u_1), X(u_2)$; in the second the columns are $D_X t, D_X b$ and the numbers are $u_1, u_2$:
+\begin{align*}
+X(u_1)\, t + X(u_2)\, b &= \big[\, t \;\; b \,\big] \begin{pmatrix} X(u_1) \\ X(u_2) \end{pmatrix} = T\, (X\cdot\nabla u) , \\
+u_1\, D_X t + u_2\, D_X b &= \big[\, D_X t \;\; D_X b \,\big] \begin{pmatrix} u_1 \\ u_2 \end{pmatrix} = (D_X T)\, u ,
+\end{align*}
+where $X\cdot\nabla u = (X(u_1), X(u_2))$ is the derivative of the two coordinate functions along $X$, and $D_X T = [\,D_X t \;\; D_X b\,]$ is the $3 \times 2$ matrix of the derivatives of the two frame vectors. Substituting the two groups,
+\begin{equation*}
+D_X U = T\,(X\cdot\nabla u) + (D_X T)\, u .
+\end{equation*}
+The first term is tangent (it is a combination of $t$ and $b$); the second is in general not, because the frame vectors turn out of the tangent plane as the surface bends.
+
+\emph{Step 2: keep the tangent part.} The covariant derivative is~(\ref{eqn:covariant})~[\,$\nabla_X U = TT^TD_XU$\,]. Into it we substitute Step 1 and use $T^T T = I_2$ from~(\ref{eqn:frame})~[\,$T = [\,t\;\;b\,],\ T^TT = I_2,\ TT^T = I_3 - nn^T$\,]:
+\begin{align*}
+\nabla_X U &= T T^T \big( T\,(X\cdot\nabla u) + (D_X T)\, u \big) && \text{(substitute Step 1)} \\
+&= T T^T T\,(X\cdot\nabla u) + T T^T (D_X T)\, u && \text{(distribute)} \\
+&= T\,(T^T T)\,(X\cdot\nabla u) + T\,(T^T D_X T)\, u && \text{(regroup the products)} \\
+&= T\, I_2\,(X\cdot\nabla u) + T\,(T^T D_X T)\, u && (T^TT = I_2) \\
+&= T\,(X\cdot\nabla u) + T\,(T^T D_X T)\, u .
+\end{align*}
+
+\emph{Step 3: read the coordinates.} Multiply the result of Step 2 on the left by $T^T$ and use $T^T T = I_2$ once more:
+\begin{align*}
+T^T \nabla_X U &= T^T \big( T\,(X\cdot\nabla u) + T\,(T^T D_X T)\, u \big) && \text{(Step 2)} \\
+&= (T^T T)\,(X\cdot\nabla u) + (T^T T)\,(T^T D_X T)\, u && \text{(distribute, regroup)} \\
+&= X\cdot\nabla u + (T^T D_X T)\, u && (T^TT = I_2).
+\end{align*}
+We give the $2\times 2$ matrix in the last term a name, and obtain
+\begin{equation}
+\label{eqn:covariant_frame}
+T^T \nabla_X U = X \cdot \nabla u + \omega(X)\, u, \qquad \omega(X) = T^T D_X T .
+\end{equation}
+Read column by column, the last term is $\omega(X)\,u = u_1\, T^T D_X t + u_2\, T^T D_X b$: the first column of $\omega(X)$ is the coordinate vector $T^T D_X t = (t\cdot D_X t,\ b\cdot D_X t)$ of the derivative of $t$, and the second is the coordinate vector $T^T D_X b = (t\cdot D_X b,\ b\cdot D_X b)$ of the derivative of $b$.
+
+The two expected contributions are there: $X\cdot\nabla u$, the change of the coordinates, and $\omega(X)\,u$, the correction for the turning of the frame. There is a shortcut to the same result: $T^T \nabla_X U = T^T (T T^T) D_X U = (T^T T)\, T^T D_X U = T^T D_X U$, after which one substitutes Step 1 and multiplies by $T^T$ directly. Geometrically, $T^T$ takes inner products with $t$ and $b$, and those already ignore any normal component, since $t \cdot n = b \cdot n = 0$. So \emph{reading coordinates in the frame already performs the projection}, which is why the projection never appears explicitly in the code.
+
+\paragraph{Why $T^T D_X T$ and not $T T^T D_X T$.} Both matrices appear, with different roles. Keep track of the sizes: $T$ is $3\times 2$, $D_X T$ is $3 \times 2$, $T^T$ is $2 \times 3$.
+\begin{center}
+\footnotesize
+\begin{tabular}{l c l}
+\toprule
+matrix & size & meaning \\
+\midrule
+$D_X T$ & $3 \times 2$ & derivatives of $t$ and $b$ in space: tangent and normal parts \\
+$T T^T D_X T = \nabla_X T$ & $3 \times 2$ & their tangent parts: how the frame turns \emph{within} the surface \\
+$T^T D_X T = \omega(X)$ & $2 \times 2$ & the same turning, in the coordinates of the frame \\
+\bottomrule
+\end{tabular}
+\end{center}
+The covariant derivative of the frame itself is $\nabla_X T = T T^T D_X T = T\, \omega(X)$: a pair of tangent vectors of $\R^3$, whose coordinates in the frame are the columns of $\omega(X)$. Equation~(\ref{eqn:covariant_frame})~[\,$T^T\nabla_X U = X\cdot\nabla u + \omega(X)\,u,\ \omega(X) = T^TD_XT$\,] is an equation between coordinates, vectors of $\R^2$; its term $\omega(X)\, u$ must be a $2 \times 2$ matrix applied to $u \in \R^2$, so that it can be added to $X \cdot \nabla u \in \R^2$. The $3 \times 2$ matrix $T T^T D_X T$ cannot be added to $X\cdot\nabla u$; it belongs to the vector form of the same equation, $\nabla_X U = T\,(X\cdot\nabla u) + (\nabla_X T)\, u$. What is discarded in passing from $D_X T$ to $\nabla_X T$ is its normal part $n n^T D_X T$, whose entries $n \cdot D_X t$ and $n \cdot D_X b$ are the second fundamental form of Section~\ref{section:ga_intrinsic}: how the surface bends, which the covariant derivative must not see.
+
+\paragraph{The entries of $\omega$.} Multiply the rows $t^T, b^T$ of $T^T$ by the columns $D_X t, D_X b$ of $D_X T$: the entry $(k, l)$ is the inner product of frame vector $k$ with the derivative of frame vector $l$,
+\begin{equation*}
+\omega(X) = T^T D_X T = \begin{pmatrix} t^T \\ b^T \end{pmatrix} \big[\, D_X t \;\; D_X b \,\big] = \begin{pmatrix} t \cdot D_X t & t \cdot D_X b \\ b \cdot D_X t & b \cdot D_X b \end{pmatrix}.
+\end{equation*}
+These four numbers are not independent, because the frame stays orthonormal as it moves: $t\cdot t = 1$, $b\cdot b = 1$ and $t\cdot b = 0$ at every point. A constant function has derivative zero, so we differentiate each of these three relations along $X$ with the product rule $X(U\cdot V) = D_X U\cdot V + U\cdot D_X V$.
+\begin{itemize}
+\item From $t\cdot t = 1$:
+\begin{equation*}
+0 = X(1) = X(t\cdot t) = D_X t\cdot t + t\cdot D_X t = 2\, t\cdot D_X t, \qquad\text{so}\qquad t\cdot D_X t = 0 .
+\end{equation*}
+\item From $b\cdot b = 1$, in the same way: $0 = X(b\cdot b) = D_X b\cdot b + b\cdot D_X b = 2\, b\cdot D_X b$, so $b\cdot D_X b = 0$.
+\item From $t\cdot b = 0$:
+\begin{equation*}
+0 = X(0) = X(t\cdot b) = D_X t\cdot b + t\cdot D_X b, \qquad\text{so}\qquad t\cdot D_X b = -\, b\cdot D_X t .
+\end{equation*}
+\end{itemize}
+So the diagonal vanishes and the two off-diagonal entries are opposite. Call $\theta(X) = b \cdot D_X t$ the entry $(2, 1)$; then the entry $(1, 2)$ is $t\cdot D_X b = -\theta(X)$, and substituting the four entries,
+\begin{equation*}
+\omega(X) = \begin{pmatrix} 0 & -\theta(X) \\ \theta(X) & 0 \end{pmatrix} = \theta(X)\, \mathcal J, \qquad \mathcal J = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix} .
+\end{equation*}
+The matrix $\mathcal J$ is the rotation of the plane by $90^\circ$, $\mathcal J(u_1, u_2) = (-u_2, u_1)$, so $\omega(X)\,u = \theta(X)\,(-u_2, u_1)$. And $\omega(X)$ is an \emph{infinitesimal rotation} by the angle $\theta(X)$: the rotation by a small angle $\alpha$ is
+\begin{equation*}
+\begin{pmatrix} \cos\alpha & -\sin\alpha \\ \sin\alpha & \cos\alpha \end{pmatrix} = \begin{pmatrix} 1 & 0 \\ 0 & 1 \end{pmatrix} + \alpha \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix} + O(\alpha^2) = I_2 + \alpha\, \mathcal J + O(\alpha^2),
+\end{equation*}
+using $\cos\alpha = 1 + O(\alpha^2)$ and $\sin\alpha = \alpha + O(\alpha^3)$, and its first-order part is $\alpha \mathcal J$. The matrix $\omega$ is the \emph{connection form} of the frame \cite{Liu2016}. The single number $\theta(X)$ is the rate at which $t$ turns towards $b$ as one moves along $X$; it is the $\omega(a)$ of Part~\ref{part:ga}, (\ref{eqn:ga_omega})~[\,$\nabla_a t = \omega(a)\, t\mathsf T$\,].
+
+\begin{example}
+\label{ex:polar_frame}
+The plane with the polar frame $t = e_r = (\cos\varphi, \sin\varphi, 0)$, $b = e_\varphi = (-\sin\varphi, \cos\varphi, 0)$, $n = e_z$, where $\varphi$ is the polar angle of the point. Moving along $X$ changes the polar angle at the rate $X\cdot\nabla\varphi$, and by the chain rule of one variable
+\begin{align*}
+D_X e_r &= (X\cdot\nabla\varphi)\, \frac{d}{d\varphi}(\cos\varphi, \sin\varphi, 0) \\
+&= (X\cdot\nabla\varphi)\, (-\sin\varphi, \cos\varphi, 0) = (X\cdot\nabla\varphi)\, e_\varphi , \\
+D_X e_\varphi &= (X\cdot\nabla\varphi)\, \frac{d}{d\varphi}(-\sin\varphi, \cos\varphi, 0) \\
+&= (X\cdot\nabla\varphi)\, (-\cos\varphi, -\sin\varphi, 0) = -(X\cdot\nabla\varphi)\, e_r .
+\end{align*}
+So $\theta(X) = e_\varphi \cdot D_X e_r = (X\cdot\nabla\varphi)\, (e_\varphi\cdot e_\varphi) = X \cdot \nabla\varphi$: the frame turns exactly by the polar angle, $\omega(X) = (X\cdot\nabla\varphi)\,\mathcal J$. The constant field $U = e_x = (1, 0, 0)$ has the coordinates
+\begin{equation*}
+u = (e_r\cdot e_x,\ e_\varphi\cdot e_x) = (\cos\varphi,\ -\sin\varphi),
+\end{equation*}
+which are not constant. Their derivative is, by the chain rule again, $X\cdot\nabla u = (X\cdot\nabla\varphi)\,(-\sin\varphi, -\cos\varphi)$, and the frame term is $\omega(X)\,u = \theta(X)\,(-u_2, u_1) = (X\cdot\nabla\varphi)\,(\sin\varphi, \cos\varphi)$. Substituting both into~(\ref{eqn:covariant_frame})~[\,$T^T\nabla_X U = X\cdot\nabla u + \omega(X)\,u,\ \omega(X) = T^TD_XT$\,],
+\begin{align*}
+T^T\nabla_X U &= \big((X\cdot\nabla\varphi)(-\sin\varphi, -\cos\varphi)\big) + \big((X\cdot\nabla\varphi)(\sin\varphi, \cos\varphi)\big) \\
+&= (X\cdot\nabla\varphi)\,\big(-\sin\varphi + \sin\varphi,\ -\cos\varphi + \cos\varphi\big) = (0, 0) :
+\end{align*}
+the change of the coordinates is exactly cancelled by the turning of the frame, as it must be for a field that does not change. Here the plane is flat and $D_X T$ has no normal part, so $T T^T D_X T = D_X T$; on a curved surface the two differ by the second fundamental form.
+\end{example}
+On a flat piece of surface with a constant frame, $D_X T = 0$, so $\omega = 0$, and the covariant derivative is the ordinary derivative of the coordinates. This is the situation inside one face of a mesh, and it is what will make the finite element computation simple.
+
+\subsection{Parallel transport}
+
+We can now say what it means to carry a vector along the surface without turning it. A field $U$ is \emph{parallel} along a curve $\gamma(s)$ if it does not change along it in the sense of the connection,
+\begin{equation*}
+\nabla_{\gamma'} U = 0 .
+\end{equation*}
+The forward arrow of the walker on the equator is an example. In a frame this reads, by~(\ref{eqn:covariant_frame})~[\,$T^T\nabla_X U = X\cdot\nabla u + \omega(X)\,u$\,] with $X = \gamma'$,
+\begin{equation*}
+\frac{du}{ds} + \omega(\gamma')\, u = 0 ,
+\end{equation*}
+two linear ordinary differential equations for the two coordinates, of the same kind as $y' = -a\, y$. Given $U$ at the start of the curve, they determine it along the whole curve; that is the \emph{parallel transport} of the vector along $\gamma$. We can write the solution. Substitute $\omega(\gamma') = \theta(\gamma')\,\mathcal J$ from the entries of $\omega$, and let $\alpha(s) = \int_0^s \theta(\gamma'(\sigma))\, d\sigma$ be the angle that the frame has turned, so that $\alpha' = \theta(\gamma')$. The equation is $du/ds = -\alpha'(s)\,\mathcal J\, u$. Let $\mathrm{Rot}(\beta)$ be the rotation of the plane by the angle $\beta$. Its derivative is
+\begin{align*}
+\frac{d}{d\beta}\begin{pmatrix} \cos\beta & -\sin\beta \\ \sin\beta & \cos\beta \end{pmatrix} &= \begin{pmatrix} -\sin\beta & -\cos\beta \\ \cos\beta & -\sin\beta \end{pmatrix} \\
+&= \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix}\begin{pmatrix} \cos\beta & -\sin\beta \\ \sin\beta & \cos\beta \end{pmatrix} = \mathcal J\,\mathrm{Rot}(\beta) .
+\end{align*}
+Try $u(s) = \mathrm{Rot}(-\alpha(s))\, u(0)$. By the chain rule with $\beta = -\alpha(s)$, $d\beta/ds = -\alpha'(s)$,
+\begin{equation*}
+\frac{du}{ds} = -\alpha'(s)\; \mathcal J\, \mathrm{Rot}(-\alpha(s))\, u(0) = -\alpha'(s)\,\mathcal J\, u(s) ,
+\end{equation*}
+which is the equation, and at $s = 0$ it gives $\mathrm{Rot}(0)\,u(0) = u(0)$. So the solution rotates the coordinates by \emph{minus} the angle $\alpha(s)$ that the frame has turned: the coordinates turn backwards exactly as fast as the frame turns forwards, so that the vector itself does not turn. This is what happened to the coordinates $(\cos\varphi, -\sin\varphi)$ in Example~\ref{ex:polar_frame}.
+
+\paragraph{Transport is a rotation.} Parallel transport preserves lengths and angles. To see it, take two parallel fields $U$ and $V$ along $\gamma$ and differentiate their inner product with~(\ref{eqn:metric_compatible})~[\,$X(U\cdot V) = \nabla_X U \cdot V + U\cdot\nabla_X V$\,], with $X = \gamma'$:
+\begin{equation*}
+\frac{d}{ds}\, (U \cdot V) = \nabla_{\gamma'} U \cdot V + U \cdot \nabla_{\gamma'} V = 0 \cdot V + U \cdot 0 = 0 .
+\end{equation*}
+So $U\cdot V$ is constant along the curve; with $V = U$ the length $|U|$ is constant too, and then so is the angle between them. A map between two planes that preserves lengths and angles (and orientation, by continuity) is a rotation: parallel transport is a rotation from one tangent plane onto another. This is the property that the discrete transport must have, too.
+
+\paragraph{The covariant derivative compares transported vectors.} The two notions fit together in a way that explains the whole discrete method. Move along the curve $\gamma$ from $\gamma(0)$ to $\gamma(s)$, and let $V_s$ be the vector $U(\gamma(s))$ transported back along the curve to the starting point. Now $V_s$ and $U(\gamma(0))$ lie in the same tangent plane and can be subtracted, and
+\begin{equation*}
+\nabla_{\gamma'} U = \lim_{s\to 0}\, \frac{V_s - U(\gamma(0))}{s} .
+\end{equation*}
+To see it, use along the curve a frame that is itself parallel, so that $\omega(\gamma') = 0$ (start with any frame at $\gamma(0)$ and transport its two vectors; they stay orthonormal, since transport is a rotation). Transporting back then leaves the coordinates unchanged, so $V_s$ has the coordinates $u(s)$ of $U(\gamma(s))$, and the difference quotient tends to $du/ds$, which is $T^T\nabla_{\gamma'} U$ by~(\ref{eqn:covariant_frame})~[\,$T^T\nabla_XU = X\cdot\nabla u + \omega(X)\,u$\,] with $\omega = 0$. In words: \emph{the covariant derivative is the ordinary derivative taken after every vector has been transported into one common plane}. The discrete method of Section~\ref{section:galerkin} does exactly this: it transports the vertex vectors into the plane of a face, and only then differentiates.
+
+\subsection{The discrete connection (an ingredient of Stage 5)}
+\label{section:r1_discrete_connection}
+
+\paragraph{The discrete transport.} On a mesh we need transport only between a vertex and an incident face, two points whose tangent planes, with normals $n_i$ and $n_f$, are close. Of all the rotations of $\R^3$ that take $n_i$ to $n_f$, and therefore the tangent plane of $i$ onto that of $f$, the natural one is the \emph{smallest}: the rotation about the axis $n_i \times n_f$ by the angle between the normals. It turns the plane of the vertex onto the plane of the face as a hinge would, without any additional twist about the normal, and it is the discrete analogue of the transport along the short path from the vertex into the face. When the two planes are those of two faces sharing an edge, the axis $n_f \times n_g$ is the direction of the shared edge, and this rotation is exactly the \emph{unfolding} of one face onto the plane of the other about their common edge, which is how a vector is transported across an edge of a polyhedral surface (Figure~\ref{fig:unfold}).
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_unfold}}
+\caption{Transport across an edge. Two faces sharing an edge meet at an angle in space; unfolding face $g$ into the plane of face $f$ (dashed) is a rotation about the shared edge, and that rotation is exactly the smallest rotation taking $n_f$ to $n_g$. The vector $v$ of face $f$ and its transport $Q v \widetilde Q$ into face $g$ are the same vector of the unfolded plane.}
+\label{fig:unfold}
+\end{figure}
+
+\paragraph{The smallest rotation as a matrix.} We want a formula for the matrix $Q$ of the smallest rotation taking a unit vector $a$ to a unit vector $c$, one that the code can evaluate with a few products and no trigonometric functions. We start from the Rodrigues formula for the rotation about a unit axis $k$ by an angle $\phi$, and we derive it first. Let $[k]_\times$ be the matrix of the cross product, $[k]_\times w = k\times w$.
+
+\emph{Step 0a: split $w$ along the axis.} Write $w = (k\cdot w)\,k + w_\perp$, with $w_\perp = w - (k\cdot w)\,k$ orthogonal to $k$. The rotation leaves the axial part $(k\cdot w)\,k$ alone, and turns $w_\perp$ by $\phi$ within the plane orthogonal to $k$. In that plane, $w_\perp$ and $k\times w$ are two orthogonal vectors of the same length ($k\times w = k\times w_\perp$, because $k\times k = 0$, and $|k\times w_\perp| = |w_\perp|$, because $k \perp w_\perp$ and $|k| = 1$), and $k\times w$ is $w_\perp$ turned by $90^\circ$ about $k$. So the rotated vector is
+\begin{equation*}
+R\,w = (k\cdot w)\,k + \cos\phi\; w_\perp + \sin\phi\; k\times w .
+\end{equation*}
+
+\emph{Step 0b: write $w_\perp$ with $[k]_\times$.} The double cross product rule $a\times(b\times c) = b\,(a\cdot c) - c\,(a\cdot b)$, with $a = b = k$ and $c = w$, gives
+\begin{equation*}
+[k]_\times^2\, w = k\times(k\times w) = k\,(k\cdot w) - w\,(k\cdot k) = (k\cdot w)\,k - w = -\,w_\perp .
+\end{equation*}
+So $w_\perp = -[k]_\times^2 w$, and the axial part is $(k\cdot w)\,k = w - w_\perp = w + [k]_\times^2 w$.
+
+\emph{Step 0c: substitute.} Put the two expressions of Step 0b into Step 0a:
+\begin{align*}
+R\,w &= \big( w + [k]_\times^2 w \big) + \cos\phi\, \big( -[k]_\times^2 w \big) + \sin\phi\; [k]_\times w && \text{(substitute)} \\
+&= w + \sin\phi\; [k]_\times w + (1 - \cos\phi)\, [k]_\times^2 w && \text{(collect)} .
+\end{align*}
+Since this holds for every $w$,
+\begin{equation*}
+R = I + \sin \phi\, [k]_\times + (1 - \cos \phi)\, [k]_\times^2 .
+\end{equation*}
+For our rotation the axis is $k = v/|v|$ with $v = a\times c$, and the angle $\phi$ is the angle between $a$ and $c$. We now express $\sin\phi$, $\cos\phi$ and $k$ through $v$ and $a\cdot c$, which are cheap to compute.
+
+\emph{Step 1: the sine and the cosine.} By the definitions of the inner and cross products of unit vectors, $a \cdot c = |a|\,|c|\cos \phi = \cos\phi$ and $|v| = |a\times c| = |a|\,|c|\sin \phi = \sin\phi$ (with $0 \le \phi < \pi$, so that $\sin\phi \ge 0$).
+
+\emph{Step 2: the first-order term.} Since $k = v/|v|$, we have $v = |v|\, k = \sin\phi\; k$, and the cross product matrix is linear in its vector, $[v]_\times w = (\sin\phi\, k)\times w = \sin\phi\, (k\times w) = \sin\phi\,[k]_\times w$. So $[v]_\times = \sin \phi\, [k]_\times$, and the second term of the Rodrigues formula, $\sin\phi\,[k]_\times$, is simply $[v]_\times$.
+
+\emph{Step 3: the second-order term.} Squaring Step 2,
+\begin{equation*}
+[v]_\times^2 = (\sin\phi\,[k]_\times)(\sin\phi\,[k]_\times) = \sin^2 \phi\, [k]_\times^2 ,
+\end{equation*} so $[k]_\times^2 = [v]_\times^2/\sin^2\phi$, and
+\begin{align*}
+(1 - \cos\phi)\, [k]_\times^2 &= \frac{1 - \cos\phi}{\sin^2\phi}\, [v]_\times^2 && \text{(substitute } [k]_\times^2\text{)} \\
+&= \frac{1 - \cos\phi}{(1 - \cos\phi)(1 + \cos\phi)}\, [v]_\times^2 && \text{(} \sin^2\phi = 1 - \cos^2\phi \text{)} \\
+&= \frac{1}{1 + a\cdot c}\, [v]_\times^2 && \text{(cancel, and } \cos\phi = a\cdot c\text{)}.
+\end{align*}
+\emph{Step 4: assemble.} The Rodrigues formula again, $R = I + \sin \phi\, [k]_\times + (1 - \cos \phi)\, [k]_\times^2$. Substituting Step 2 into its second term and Step 3 into its third,
+\begin{equation*}
+Q = I + \big( [v]_\times \big) + \Big( \frac{1}{1 + a\cdot c}\, [v]_\times^2 \Big),
+\end{equation*}
+that is,
+\begin{equation}
+\label{eqn:rodrigues}
+Q = I + [v]_\times + \frac{1}{1 + a \cdot c}\, [v]_\times^2 , \qquad v = a \times c .
+\end{equation}
+The cancellation of Step 3 is allowed as long as $1 - \cos\phi \neq 0$; but the final formula makes sense even when $a = c$, where $v = 0$ and $Q = I$, which is the right answer. It fails only when $a\cdot c = -1$, for opposite vectors, where the axis is undetermined: every axis orthogonal to $a$ works equally well.
+
+\emph{Check: $Q a = c$.} We apply~(\ref{eqn:rodrigues}) to $a$ term by term, with the double cross product rule $x\times(y\times z) = y\,(x\cdot z) - z\,(x\cdot y)$ and $a\cdot a = c\cdot c = 1$. The second term:
+\begin{equation*}
+[v]_\times a = (a\times c)\times a = -\,a\times(a\times c) = -\big( a\,(a\cdot c) - c\,(a\cdot a) \big) = c - (a\cdot c)\, a .
+\end{equation*}
+For the third term we also need $v\times c = (a\times c)\times c = -\,c\times(a\times c) = -\big(a\,(c\cdot c) - c\,(c\cdot a)\big) = -a + (a\cdot c)\,c$. Then
+\begin{align*}
+[v]_\times^2 a &= v\times\big( c - (a\cdot c)\,a \big) && \text{(the second term)} \\
+&= v\times c - (a\cdot c)\, v\times a && \text{(distribute)} \\
+&= \big( -a + (a\cdot c)\,c \big) - (a\cdot c)\big( c - (a\cdot c)\,a \big) && \text{(substitute both)} \\
+&= -a + (a\cdot c)^2\, a = -\big(1 - (a\cdot c)^2\big)\, a && \text{(the } c \text{ terms cancel)} .
+\end{align*}
+Dividing by $1 + a\cdot c$ and using $1 - (a\cdot c)^2 = (1 - a\cdot c)(1 + a\cdot c)$, the third term is $-(1 - a\cdot c)\, a$. Adding the three terms,
+\begin{equation*}
+Q a = a + \big( c - (a\cdot c)\,a \big) + \big( -(1 - a\cdot c)\,a \big) = a + c - (a\cdot c)\,a - a + (a\cdot c)\,a = c .
+\end{equation*}
+\begin{prop}
+\label{prop:rodrigues}
+For unit vectors $a, c$ with $a \cdot c \neq -1$, the matrix~(\ref{eqn:rodrigues}) is the rotation about the axis $a\times c$ that takes $a$ to $c$.
+\end{prop}
+
+\paragraph{The code.} Formula~(\ref{eqn:rodrigues}) is \code{alignVectors}$(n_i, n_f)$, and the cross product matrix $[v]_\times$ is \code{bracket}:
+\lstinputlisting[firstline=220, lastline=229, firstnumber=220]{../src/FEM.cpp}
+The three rows of lines~225--227 are the three components of $v \times w$: for instance $(v\times w)_1 = v_2 w_3 - v_3 w_2$, which is the first row $(0, -v_3, v_2)$ applied to $w$. The code numbers components from zero, so \code{n(0)}, \code{n(1)}, \code{n(2)} are $v_1, v_2, v_3$.
+\lstinputlisting[firstline=267, lastline=279, firstnumber=267]{../src/FEM.cpp}
+Line~271 computes $a\cdot c$, here $n_i\cdot n_f$. Lines~273--274 catch the case of opposite normals, $a\cdot c = -1$, where the formula would divide by zero; the code then returns $-I$, which only occurs for degenerate meshes (a face folded over onto its vertex) and is not a rotation (its determinant is $-1$). Line~276 is $v = a\times c$, line~277 is $[v]_\times$, and line~278 is~(\ref{eqn:rodrigues})~[\,$Q = I + [v]_\times + \frac{[v]_\times^2}{1 + a\cdot c}$\,] term by term. Figure~\ref{fig:rotor_transport} shows the rotation and the planes it connects.
+
+\paragraph{The discrete connection.} The rotation $Q_{i \to f}$ takes tangent vectors of vertex $i$ to tangent vectors of face $f$. But the code works with coordinates, so we follow a vector through the three steps. A tangent vector of $i$ with coordinates $u$ is the vector $T_i u$ of $\R^3$; the rotation turns it into $Q_{i \to f} T_i u$, a tangent vector of the face; and its coordinates in the face frame are $T_f^T Q_{i \to f} T_i u$. So the transport from vertex $i$ to face $f$, in coordinates, is the product of the three matrices,
+\begin{equation}
+\label{eqn:connection}
+R_i^f = T_f^T\, Q_{i \to f}\, T_i ,
+\end{equation}
+of sizes $2\times 3$, $3\times 3$ and $3 \times 2$, which is a $2\times 2$ matrix. It is \code{Rvf}$(v_i, f)$:
+\lstinputlisting[firstline=282, lastline=287, firstnumber=282]{../src/FEM.cpp}
+Line~286 reads from right to left exactly as~(\ref{eqn:connection}): the stored vertex frame \code{vertex\_tangent\_space[v->ID]} is $T_i$; the call of \code{alignVectors} with the vertex normal \code{v->n} and the face normal \code{face\_normals[f->ID]} is $Q_{i\to f}$, the smallest rotation from $n_i$ to $n_f$; and the transposed face frame, \code{face\_tangent\_space[f->ID].transpose()}, is $T_f^T$. The rotation is recomputed at every call; nothing is cached.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_rotor_transport}}
+\caption{The discrete transport from vertex $i$ into face $f$. The smallest rotation $Q$, about the axis $n_i \times n_f$ (dashed), takes the vertex plane (blue) onto the face plane (orange); the frame vector $t_i$ becomes $Q t_i \widetilde Q$ (green, written as a rotor as in Part~\ref{part:ga}), which makes the angle $\rho_i^f$ with the face frame vector $t_f$. The matrix $R_i^f$ is the rotation by $\rho_i^f$.}
+\label{fig:rotor_transport}
+\end{figure}
+
+\paragraph{$R_i^f$ is a rotation of the plane.} Continuous parallel transport is a rotation, and we want the discrete one to be a rotation too: a $2\times 2$ matrix with $(R_i^f)^T R_i^f = I_2$ and determinant $1$. The idea is simple. The columns of $Q T_i$ are the rotated frame vectors $Q t_i$ and $Q b_i$, an orthonormal basis of the plane of $f$; the columns of $T_f$ are another orthonormal basis of the same plane; and the matrix that changes between two orthonormal bases of the same plane is orthogonal. In matrix algebra, write $Q = Q_{i\to f}$; then
+\begin{align*}
+(R_i^f)^T R_i^f &= (T_f^T Q T_i)^T (T_f^T Q T_i) && \text{(definition)}\\
+&= T_i^T Q^T\, (T_f T_f^T)\, Q\, T_i && ((ABC)^T = C^TB^TA^T) \\
+&= T_i^T Q^T Q\, T_i && (\text{see below})\\
+&= T_i^T T_i = I_2 && (Q^TQ = I_3,\ T_i^TT_i = I_2).
+\end{align*}
+The third line needs a word: $T_f T_f^T$ leaves the columns of $Q T_i$ unchanged. Indeed, $T_f T_f^T = I - n_f n_f^T$ is the projection onto the plane of $f$, by~(\ref{eqn:frame})~[\,$TT^T = I_3 - nn^T$\,], and the columns of $Q T_i$ already lie in that plane: $t_i$ and $b_i$ are orthogonal to $n_i$, and a rotation preserves inner products, so $Q t_i\cdot n_f = Q t_i \cdot Q n_i = t_i\cdot n_i = 0$, and the same for $b_i$. As for the determinant: both bases are positively oriented with respect to $n_f$, $T_f$ by construction, and $Q T_i$ because the rotation $Q$ preserves orientation and takes $b_i = n_i \times t_i$ to $Q n_i \times Q t_i = n_f\times Q t_i$. So the determinant is $+1$.
+\begin{prop}
+\label{prop:connection_rotation}
+$R_i^f$ is a rotation of $\R^2$: $(R_i^f)^T R_i^f = I_2$ and $\det R_i^f = 1$.
+\end{prop}
+
+\begin{example}
+\label{ex:transport}
+Let the vertex have the normal $n_i = (0, 0, 1)$ and the frame vector $t_i = (0, 1, 0)$, so $b_i = n_i \times t_i = (-1, 0, 0)$, and let the face have the normal $n_f = (0, -1, 1)/\sqrt 2$ and the frame vector $t_f = (1, 0, 0)$, so $b_f = n_f \times t_f = (0, 1, 1)/\sqrt 2$ (this is the face of Example~\ref{ex:triangle}). Then $n_i \cdot n_f = 1/\sqrt 2$ and $v = n_i \times n_f = (1/\sqrt 2, 0, 0)$. Write $s = 1/\sqrt2$. The cross-product matrix of $v = (s, 0, 0)$ and its square are
+\begin{equation*}
+[v]_\times = \begin{pmatrix} 0 & 0 & 0 \\ 0 & 0 & -s \\ 0 & s & 0 \end{pmatrix}, \qquad [v]_\times^2 = \begin{pmatrix} 0 & 0 & 0 \\ 0 & -s^2 & 0 \\ 0 & 0 & -s^2 \end{pmatrix},
+\end{equation*}
+and the factor of~(\ref{eqn:rodrigues})~[\,$Q = I + [v]_\times + \frac{[v]_\times^2}{1 + a\cdot c}$\,] is $\frac{1}{1 + a\cdot c} = \frac{1}{1 + s}$. The diagonal entries of $Q = I + [v]_\times + \frac{1}{1+s}[v]_\times^2$ are therefore $1$ and $1 - \frac{s^2}{1+s} = 1 - \frac{1/2}{1 + 1/\sqrt2} = 1 - \frac{1}{2 + \sqrt 2} = \frac{1 + \sqrt 2}{2 + \sqrt 2} = \frac{1}{\sqrt 2} = s$ (twice), so
+\begin{equation*}
+Q = \begin{pmatrix} 1 & 0 & 0 \\ 0 & s & -s \\ 0 & s & s \end{pmatrix},
+\end{equation*}
+the rotation by $45^\circ$ about the $x$ axis. As a check, $Q n_i$ is the third column, $(0, -s, s) = n_f$. The rotation takes $t_i = (0, 1, 0)$ to its second column, $(0, s, s) = (0, 1, 1)/\sqrt 2 = b_f$, and $b_i = (-1, 0, 0)$ to itself. So the transported $t_i$ is the second face frame vector, and the four entries are the inner products $t_f\cdot Q t_i = (1,0,0)\cdot(0,s,s) = 0$, $t_f\cdot Q b_i = -1$, $b_f \cdot Q t_i = |b_f|^2 = 1$ and $b_f\cdot Q b_i = 0$:
+\begin{equation*}
+R_i^f = T_f^T Q T_i = \begin{pmatrix} t_f \cdot Q t_i & t_f \cdot Q b_i \\ b_f \cdot Q t_i & b_f \cdot Q b_i \end{pmatrix} = \begin{pmatrix} 0 & -1 \\ 1 & 0 \end{pmatrix},
+\end{equation*}
+the rotation by $\rho_i^f = 90^\circ$. The program \code{ga\_fem} prints these numbers (Section~\ref{section:ga_code}).
+\end{example}
+
+A rotation of the plane is multiplication by a unit complex number, $R_i^f \leftrightarrow e^{\mathrm i \rho_i^f}$: the angle $\rho_i^f$ is the discrete connection between the frame of vertex $i$ and that of face $f$. The angle has two contributions, the turning of the tangent plane, from $Q$, and the arbitrary choice of the two frames. In the example the planes turn by only $45^\circ$, but $\rho_i^f = 90^\circ$, because the two frame vectors $t_i$ and $t_f$ were chosen in unrelated directions. That is why only combinations in which the frame choices cancel have a geometric meaning.
+
+\paragraph{Transport between two vertices.} The stiffness matrix will couple pairs of vertices, so we need to bring a vector from vertex $j$ to vertex $i$. Through a face $f$ that contains both, the natural route is to go from $j$ into the face, and from the face back to $i$:
+\begin{equation}
+\label{eqn:vertex_transport}
+R_{j \to i}^f = (R_i^f)^{-1} R_j^f = (R_i^f)^T R_j^f .
+\end{equation}
+The inverse is the transpose because $R_i^f$ is orthogonal (Proposition~\ref{prop:connection_rotation}). In this product the choice of the face frame cancels, as it should, since the face frame is only an intermediate station. To see it, replace $T_f$ by $T_f S$ for a rotation $S$ of the plane ($S^T S = S S^T = I_2$). Then $R_i^f = T_f^T Q T_i$ becomes $(T_f S)^T Q T_i = S^T T_f^T Q T_i = S^T R_i^f$, likewise $R_j^f$ becomes $S^T R_j^f$, and
+\begin{equation*}
+(S^T R_i^f)^T (S^T R_j^f) = (R_i^f)^T\, S\, S^T\, R_j^f = (R_i^f)^T R_j^f :
+\end{equation*}
+unchanged. The choices of the vertex frames do not cancel, and should not: they define the coordinates of the unknowns, so the matrix that takes coordinates at $j$ to coordinates at $i$ must know them. This product is the matrix that will appear in the stiffness matrix.
+
+The first version of the code, \code{AssembleStiffness\-Element\-Embedded}, uses instead the smallest rotation from $n_j$ to $n_i$ directly, without passing through the face:
+\lstinputlisting[firstline=289, lastline=294, firstnumber=289]{../src/FEM.cpp}
+Line~293 is $T_j^T Q_{i\to j} T_i$ for the arguments \code{(vi, vj)}: it transports from its first argument to its second, so the call \code{Rvv(v[j], v[i])} in that version is $T_i^T Q_{j \to i} T_j$. (Its comment, copied from \code{Rvf}, still says ``to face f''.) This is the same as~(\ref{eqn:vertex_transport}) to first order in the angles between the normals. The version used, \code{AssembleStiffness\-Element\-Embedded2}, goes through the face as in~(\ref{eqn:vertex_transport})~[\,$R^f_{j\to i} = (R_i^f)^T R_j^f$\,], which is what the finite element derivation produces in Stage 7 (Section~\ref{section:r1_element_integrals}).
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[b]{0.52\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_holonomy_cone}}\end{minipage}\hfill
+\begin{minipage}[b]{0.42\textwidth}\centering\adjustbox{max width=\linewidth}{\input{figures/fig_sphere_holonomy}}\end{minipage}
+\caption{Holonomy. Left: the one-ring of a vertex of five equilateral triangles, unfolded into the plane; its angles add up to $300^\circ$, and a vector transported around the vertex (constant in the unfolded plane) comes back turned by the angle defect $60^\circ$ when the gap is closed. Right: on the unit sphere, a vector carried around the octant bounded by three quarter great circles comes back turned by $90^\circ$, the area $\pi/2$ of the octant.}
+\label{fig:holonomy}
+\end{figure}
+
+\begin{rem}[Curvature]
+Going around a vertex from face to face, the transports~(\ref{eqn:vertex_transport})~[\,$R^f_{j\to i} = (R_i^f)^T R_j^f$\,] through consecutive faces compose to a rotation that is not the identity in general. For the intrinsic transport of the polyhedral surface (unfolding the faces one after another) its angle is the \emph{angle defect} $2\pi - \sum_f \alpha_f$ of the vertex, the discrete Gaussian curvature; for the transport through vertex normals used here, it approximates the angle defect on fine meshes (Section~\ref{section:ga_intrinsic}). This is the path dependence of parallel transport mentioned in the introduction, and the reason why the transported field must be defined globally by an equation, rather than by composing transports along one particular path.
+\end{rem}
+
+\begin{example}
+\label{ex:holonomy}
+Five equilateral triangles around a vertex (Figure~\ref{fig:holonomy}, left) form a cone with total angle $5 \cdot 60^\circ = 300^\circ$, a pentagonal pyramid. Cutting it along an edge and laying it flat leaves a gap of $60^\circ$. A vector carried around the vertex keeps its direction in the flat layout, and when the gap is glued shut it meets its starting copy turned by $60^\circ = 2\pi - 300^\circ$, the angle defect. On the unit sphere (right), start at the north pole with a vector, go down a meridian to the equator, along the equator by a quarter turn, and up another meridian back to the pole. Along each great circle the vector keeps its angle with the direction of motion, as the walker's arrow did, and it returns turned by $90^\circ$, which is the area $4\pi/8 = \pi/2$ of the octant: on a sphere of curvature $K = 1$, holonomy is enclosed area.
+\end{example}
+
+%%% ----------------------------------------------------------------------
+\section{Stage 1. The PDE: the Connection Laplacian and the Vector Heat Equation}
+\label{section:pde}
+
+\paragraph{What we want.} The first stage of the recipe states the problem in its usual, \emph{strong} form: an equation that must hold at every point of the surface, together with its side conditions. Every later stage starts from it, so it must be written precisely: what the unknown is (a tangent field $U$), where it lives (a closed curved surface $\Omega$), which operator acts on it, and what is prescribed. We now have a way to differentiate tangent fields. This section uses it to write the continuous problem that the code solves. We first measure how much a field turns, with an energy; differentiating that energy produces an operator, the connection Laplacian, and the tool needed for that differentiation is an integration by parts on the surface, Green's identity, which in turn rests on the divergence theorem. Then we let a field flow downhill in the energy, which is the heat equation, and take one step of it in time with the backward Euler method.
+
+\subsection{The Dirichlet energy}
+
+How much does a field turn? At a single point, the total covariant derivative $\nabla U$ tells us how fast $U$ turns in every direction. A natural single number for its size is the sum of the squares of the rates in two orthogonal directions, and a natural measure for the whole surface is the integral of that number. This is the \emph{Dirichlet energy}
+\begin{equation}
+\label{eqn:dirichlet}
+E(U) = \frac12 \int_\Omega |\nabla U|^2\, dA, \qquad |\nabla U|^2 = \nabla U : \nabla U = \sum_{k=1}^2 |\nabla_{e_k} U|^2,
+\end{equation}
+where $e_1, e_2$ is any orthonormal basis of the tangent plane and $A : B = \tr(A^T B) = \sum_{k,l} A_{kl} B_{kl}$ is the inner product of $2 \times 2$ matrices, the sum of the products of their entries. The factor $\frac12$ only makes later formulas cleaner.
+
+\paragraph{Integrals over a surface.} The symbol $\int_\Omega g\, dA$ means what one expects: cut the surface into many small pieces, multiply the value of $g$ on each piece by the area of the piece, add, and refine the pieces until the sum stops changing. On a mesh the pieces can be taken inside the faces, so the integral over the surface is the sum of the integrals over the faces. If $g$ is constant on a face, its integral over the face is that constant times the area $A_f$; this simple fact will make all the integrals of Stage 7 (Section~\ref{section:r1_element_integrals}) exact.
+
+\paragraph{The two expressions of $|\nabla U|^2$.} In the frame $e_1, e_2$, column $k$ of the matrix $A$ of $\nabla U$ holds the coordinates of the vector $\nabla_{e_k} U$ (Section~\ref{section:transport}): $A_{lk} = e_l\cdot\nabla_{e_k} U$. The sum of the squares of all the entries is regrouped column by column,
+\begin{equation*}
+\nabla U : \nabla U = \sum_{k=1}^2 \sum_{l=1}^2 A_{lk}^2 = \sum_{k=1}^2 \Big( \sum_{l=1}^2 (e_l\cdot\nabla_{e_k} U)^2 \Big) = \sum_{k=1}^2 |\nabla_{e_k} U|^2 ,
+\end{equation*}
+the inner sum being the squared length of $\nabla_{e_k} U$ computed from its two coordinates. In the same way, for two fields with matrices $A$ and $B$, $\nabla U : \nabla V = \sum_k\sum_l A_{lk}B_{lk} = \sum_k \nabla_{e_k} U\cdot \nabla_{e_k} V$, the inner product of the columns, summed over the columns. The result does not depend on the orthonormal basis. Another orthonormal frame is $e'_k$ with $[\,e'_1\;\;e'_2\,] = [\,e_1\;\;e_2\,]\, S$ for a rotation $S$, and in it the matrix of $\nabla U$ is $A' = S^T A S$ (coordinates are read with $S^T$, and the columns are taken along the new directions, $S$). Then, with $\tr(XY) = \tr(YX)$ and $S S^T = S^T S = I_2$,
+\begin{align*}
+A' : A' &= \tr\big( (S^TAS)^T (S^TAS) \big) && \text{(definition of } : \text{)} \\
+&= \tr\big( S^T A^T S\, S^T A S \big) && ((XYZ)^T = Z^TY^TX^T) \\
+&= \tr\big( S^T A^T A\, S \big) && (S S^T = I_2) \\
+&= \tr\big( A^T A\, S S^T \big) && (\tr(XY) = \tr(YX)) \\
+&= \tr(A^TA) = A : A && (S S^T = I_2).
+\end{align*}
+
+$E(U) = 0$ exactly when $\nabla U = 0$ everywhere, that is, when $U$ is parallel along every curve. On a curved surface such fields do not exist, because of holonomy (Example~\ref{ex:holonomy}): transporting a vector around a vertex or around a loop brings it back turned. So the energy cannot be made zero, and the fields of smallest energy are the ``most parallel'' ones.
+
+A simple field in the plane shows what the energy density $|\nabla U|^2$ measures. Let $U(x) = (\cos kx_1, \sin kx_1)$, a unit field that turns at the constant rate $k$ (radians per unit length) as one moves along the $x_1$ axis, and does not change along $x_2$. In the plane, with the constant frame of the axes, the covariant derivative is the ordinary derivative, so $\nabla_{e_1} U = k\,(-\sin kx_1, \cos kx_1)$, of length $|k|$, and $\nabla_{e_2} U = 0$. Hence $|\nabla U|^2 = k^2$: the energy density is the square of the rate of turning. A field that turns twice as fast costs four times as much energy, so minimizing the energy spreads the unavoidable turning as evenly and as slowly as possible.
+
+\paragraph{The derivative of the energy.} The operator associated with this energy is found, as always, by differentiating it: we ask how $E$ changes when $U$ changes a little. Perturb $U$ by $\epsilon V$, with $V$ another tangent field and $\epsilon$ a small number.
+
+\emph{Step 1: the derivative of the perturbed field.} The covariant derivative is linear: by~(\ref{eqn:covariant})~[\,$\nabla_X U = (I - nn^T)\,D_X U$\,] and the linearity of the ordinary derivative,
+\begin{align*}
+\nabla_X (U + \epsilon V) &= (I - nn^T)\, D_X(U + \epsilon V) = (I - nn^T)\,\big( D_X U + \epsilon\, D_X V \big) \\
+&= (I - nn^T)\, D_X U + \epsilon\, (I - nn^T)\, D_X V = \nabla_X U + \epsilon\,\nabla_X V ,
+\end{align*}
+for every $X$, so $\nabla(U + \epsilon V) = \nabla U + \epsilon\,\nabla V$.
+
+\emph{Step 2: expand the square at one point.} The product $:$ is linear in each factor and symmetric, $A : B = B : A$. Expanding as for numbers, $(a + \epsilon b)^2 = a^2 + 2\epsilon ab + \epsilon^2 b^2$:
+\begin{align*}
+|\nabla(U + \epsilon V)|^2 &= (\nabla U + \epsilon\nabla V) : (\nabla U + \epsilon\nabla V) && \text{(Step 1)} \\
+&= \nabla U : \nabla U + \epsilon\, \nabla U : \nabla V \\
+&\qquad + \epsilon\, \nabla V : \nabla U + \epsilon^2\, \nabla V : \nabla V && \text{(distribute)} \\
+&= |\nabla U|^2 + 2\epsilon\, \nabla U : \nabla V + \epsilon^2\, |\nabla V|^2 && \text{(symmetry of } : \text{)} .
+\end{align*}
+
+\emph{Step 3: integrate.} Substitute Step 2 into the definition~(\ref{eqn:dirichlet})~[\,$E(U) = \frac12\int_\Omega |\nabla U|^2\,dA$\,], and split the integral of the sum into three integrals, moving the constants out:
+\begin{align*}
+E(U + \epsilon V) &= \frac12 \int_\Omega \big( |\nabla U|^2 + 2\epsilon\, \nabla U : \nabla V + \epsilon^2\, |\nabla V|^2 \big)\, dA \\
+&= \frac12 \int_\Omega |\nabla U|^2\, dA + \epsilon \int_\Omega \nabla U : \nabla V\, dA + \frac{\epsilon^2}{2} \int_\Omega |\nabla V|^2\, dA \\
+&= E(U) + \epsilon \int_\Omega \nabla U : \nabla V\, dA + \epsilon^2\, E(V) .
+\end{align*}
+
+\emph{Step 4: differentiate in $\epsilon$.} This is a quadratic polynomial in $\epsilon$, of the form $p + q\,\epsilon + r\,\epsilon^2$ with $p = E(U)$, $q = \int \nabla U : \nabla V\, dA$, $r = E(V)$. Its derivative is $q + 2 r\,\epsilon$, and at $\epsilon = 0$ only the coefficient of $\epsilon$ is left:
+\begin{equation*}
+\frac{d}{d\epsilon} E(U + \epsilon V)\Big|_{\epsilon = 0} = \Big( \int_\Omega \nabla U : \nabla V\, dA + 2\epsilon\, E(V) \Big)\Big|_{\epsilon = 0} = \int_\Omega \nabla U : \nabla V\, dA .
+\end{equation*}
+This is the rate of change of the energy when $U$ moves in the direction $V$. For a function of finitely many variables, the rate of change in the direction $v$ is $\nabla F\cdot v$, the gradient times the direction, and we would like the same form here: $\int (\cdots) \cdot V\, dA$, with $V$ appearing by itself and not through its derivative. Then $(\cdots)$, the ``gradient'' of the energy, can be read off. Moving the derivative from $V$ to $U$ is the job of an integration by parts, and on a surface integration by parts rests on the divergence theorem.
+
+\subsection{The divergence theorem}
+\label{section:t1_divergence}
+
+\paragraph{In one variable.} Recall the fundamental theorem of calculus, $\int_a^b w'(x)\, dx = w(b) - w(a)$: the integral of a derivative over an interval is determined by the values at its two ends. Applied to a product, $(fg)' = f'g + fg'$, it gives integration by parts,
+\begin{equation*}
+\int_a^b f'(x)\, g(x)\, dx = \big[\, f g\, \big]_a^b - \int_a^b f(x)\, g'(x)\, dx ,
+\end{equation*}
+which moves the derivative from one factor to the other at the price of a boundary term. The divergence theorem is the same statement for a region of the plane or of a surface, whose ``ends'' are a whole boundary curve.
+
+\paragraph{Flux.} Let $W$ be a vector field in the plane, and think of it as the velocity of a thin layer of fluid. Let $\Omega$ be a region with boundary curve $\partial\Omega$, and let $\nu$ be the \emph{outward unit normal} of the boundary: at each point of the curve, the unit vector perpendicular to it and pointing out of the region. Through a short piece of the boundary, of length $ds$, the fluid leaves the region at the rate $W\cdot\nu\, ds$: only the component of the velocity across the boundary carries fluid out. The total rate at which fluid leaves, the \emph{flux} of $W$ through the boundary, is the integral $\oint_{\partial\Omega} W\cdot\nu\, ds$ around the curve.
+
+\paragraph{Divergence.} The \emph{divergence} of $W = (W_1, W_2)$ is the number
+\begin{equation*}
+\operatorname{div} W = \frac{\partial W_1}{\partial x_1} + \frac{\partial W_2}{\partial x_2} .
+\end{equation*}
+It measures how much fluid is produced at a point, per unit area and unit time. To see why, take a small rectangle $[a_1, b_1] \times [a_2, b_2]$ and integrate the first term over it, first in $x_1$ and then in $x_2$. The inner integral is an integral of a derivative, so the fundamental theorem of calculus applies:
+\begin{equation*}
+\int_{a_2}^{b_2} \int_{a_1}^{b_1} \frac{\partial W_1}{\partial x_1}\, dx_1\, dx_2 = \int_{a_2}^{b_2} \big( W_1(b_1, x_2) - W_1(a_1, x_2) \big)\, dx_2 .
+\end{equation*}
+On the right side of the rectangle, $x_1 = b_1$, the outward normal is $\nu = (1, 0)$ and $W\cdot\nu = W_1$; on the left side, $x_1 = a_1$, it is $\nu = (-1, 0)$ and $W\cdot\nu = -W_1$. Along both sides the arc length is $ds = dx_2$. So the right-hand side is
+\begin{equation*}
+\int_{a_2}^{b_2} W_1(b_1, x_2)\, dx_2 + \int_{a_2}^{b_2} \big(-W_1(a_1, x_2)\big)\, dx_2 = \int_{\text{right}} W\cdot\nu\, ds + \int_{\text{left}} W\cdot\nu\, ds ,
+\end{equation*}
+the flux of $W$ through the left and right sides of the rectangle. The second term is the same computation with the roles of the coordinates exchanged: integrate first in $x_2$, by the fundamental theorem of calculus,
+\begin{equation*}
+\int_{a_1}^{b_1} \int_{a_2}^{b_2} \frac{\partial W_2}{\partial x_2}\, dx_2\, dx_1 = \int_{a_1}^{b_1} \big( W_2(x_1, b_2) - W_2(x_1, a_2) \big)\, dx_1 ,
+\end{equation*}
+and on the top side, $x_2 = b_2$, $\nu = (0, 1)$ and $W\cdot\nu = W_2$, while on the bottom side, $x_2 = a_2$, $\nu = (0, -1)$ and $W\cdot\nu = -W_2$, with $ds = dx_1$: this is the flux through the top and bottom sides. Adding the two integrals, $\operatorname{div} W = \partial W_1/\partial x_1 + \partial W_2/\partial x_2$ on the left, and the four sides on the right,
+\begin{equation*}
+\int_{\text{rectangle}} \operatorname{div} W\, dA = \int_{\text{right}} + \int_{\text{left}} + \int_{\text{top}} + \int_{\text{bottom}} W\cdot\nu\, ds = \oint_{\partial\, \text{rectangle}} W\cdot\nu\, ds .
+\end{equation*}
+Now cut any region into many small rectangles (or triangles, with the same argument) and add their equations. On the left, the integrals over the pieces add up to the integral over the region. On the right, every side shared by two neighboring pieces appears twice, with opposite outward normals, and the two fluxes cancel: what leaves one piece enters its neighbor. Only the sides on the boundary of the region survive. This is the \emph{divergence theorem}: the total production inside equals the total outflow through the boundary.
+
+\paragraph{A check.} Take $W(x) = x = (x_1, x_2)$ on the unit disk. Its divergence is $\partial x_1/\partial x_1 + \partial x_2/\partial x_2 = 1 + 1 = 2$ everywhere, so the left side is $2$ times the area $\pi$ of the disk, $2\pi$. On the unit circle the outward normal is $\nu = x$ itself, so $W\cdot\nu = x\cdot x = |x|^2 = 1$, and the right side is $\oint 1\, ds$, the length of the circle, $2\pi$. The two agree.
+
+\paragraph{On a surface.} On a surface, $W$ is a tangent field, the boundary curve lies on the surface, and $\nu$ is the \emph{outward conormal}: the unit vector tangent to the surface, perpendicular to the boundary curve, pointing out of the region. The divergence must be written so that it does not depend on coordinates, and the covariant derivative does that. In an orthonormal frame field $e_1, e_2$,
+\begin{equation*}
+\operatorname{div} W = \sum_{k=1}^2 (\nabla_{e_k} W)\cdot e_k ,
+\end{equation*}
+the sum of the diagonal entries of the $2\times 2$ matrix of $\nabla W$, its trace. In the plane with the constant frame $e_1 = (1, 0)$, $e_2 = (0, 1)$, the covariant derivative is the ordinary derivative, $(\nabla_{e_k} W)\cdot e_k = \partial W_k/\partial x_k$, and this is the divergence above. In general it does not depend on the frame: in another orthonormal frame, rotated by $S$, the matrix of $\nabla W$ is $S^T A S$ (as for $|\nabla U|^2$ above), and $\tr(S^T A S) = \tr(A S S^T) = \tr(A)$. A small piece of surface is nearly a piece of plane, so the rectangle argument applies to it, and the cancellation across shared sides works as before. So the theorem holds on surfaces in the same form:
+\begin{equation}
+\label{eqn:t1_divergence}
+\int_\Omega \operatorname{div} W\, dA = \oint_{\partial\Omega} W\cdot \nu\, ds .
+\end{equation}
+On a closed surface, such as the cactus or the sphere, there is no boundary and the right-hand side is zero: what is produced in one place is absorbed in another.
+
+\subsection{Green's identity and the connection Laplacian}
+
+\paragraph{What we want.} We want to move the derivative off $V$ in $\int_\Omega \nabla U : \nabla V\, dA$. The one-variable model is $\int f' g' = [f' g] - \int f'' g$, integration by parts with $f'$ in the role of $f$; it puts both derivatives on $f$ and leaves $g$ alone, at the price of a second derivative and a boundary term. On a surface the result will be
+\begin{equation}
+\label{eqn:green}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds,
+\end{equation}
+where $\nu$ is the outward conormal and $\nabla^*\nabla U$ is a tangent field built from second covariant derivatives of $U$, which the derivation will produce. This is \emph{Green's identity} for tangent fields.
+
+\paragraph{The idea.} In one variable, $\int f'g' = [f'g] - \int f''g$ comes from integrating the product rule $(f'g)' = f''g + f'g'$: we look for a quantity whose derivative contains $f'g'$, and integrate. Here we look for a tangent field $W$ whose divergence contains $\nabla U : \nabla V$, and apply the divergence theorem. The analogue of $f'g$, ``the derivative of $U$ times $V$'', is the field $W$ defined by
+\begin{equation*}
+W \cdot X = (\nabla_X U) \cdot V \qquad \text{for every tangent } X .
+\end{equation*}
+This defines a tangent vector at each point, because the right-hand side is linear in $X$ (and a linear function of a tangent vector $X$ is the inner product with one tangent vector, as for the gradient in Section~\ref{section:transport}).
+
+In the frame $e_1, e_2$ its two coordinates are $W\cdot e_l = (\nabla_{e_l} U)\cdot V$, so $W = \sum_l \big((\nabla_{e_l} U)\cdot V\big)\, e_l$.
+
+\emph{Step 1: the divergence of $W$, first rewriting.} Use an orthonormal frame field $e_1, e_2$, so that $\operatorname{div} W = \sum_k (\nabla_{e_k} W)\cdot e_k$. Metric compatibility~(\ref{eqn:metric_compatible}) again,
+\begin{equation*}
+X(U\cdot V) = \nabla_X U\cdot V + U\cdot\nabla_X V , \tag{\ref{eqn:metric_compatible}}
+\end{equation*}
+applied with $W$ in the place of $U$, $e_k$ in the place of $V$, and $X = e_k$, gives
+\begin{equation*}
+e_k(W\cdot e_k) = (\nabla_{e_k} W)\cdot e_k + W \cdot (\nabla_{e_k} e_k) .
+\end{equation*}
+We solve it for the term we want, by subtracting $W\cdot(\nabla_{e_k} e_k)$ from both sides:
+\begin{equation*}
+(\nabla_{e_k} W)\cdot e_k = e_k(W\cdot e_k) - W\cdot(\nabla_{e_k} e_k) .
+\end{equation*}
+Now the definition $W\cdot X = (\nabla_X U)\cdot V$ is used twice: with $X = e_k$ it gives $W\cdot e_k = (\nabla_{e_k} U)\cdot V$, and with $X = \nabla_{e_k} e_k$ (a tangent vector, the turning of the frame vector $e_k$) it gives $W\cdot(\nabla_{e_k} e_k) = (\nabla_{\nabla_{e_k} e_k} U)\cdot V$. Substituting both,
+\begin{equation*}
+(\nabla_{e_k} W)\cdot e_k = e_k\big((\nabla_{e_k} U)\cdot V\big) - (\nabla_{\nabla_{e_k} e_k} U)\cdot V .
+\end{equation*}
+
+\emph{Step 2: the product rule once more.} The first term on the right is the derivative of an inner product of two tangent fields, $\nabla_{e_k} U$ and $V$. Metric compatibility~(\ref{eqn:metric_compatible}), now with $\nabla_{e_k} U$ in the place of $U$, $V$ in the place of $V$, and $X = e_k$:
+\begin{equation*}
+e_k\big((\nabla_{e_k} U)\cdot V\big) = (\nabla_{e_k}\nabla_{e_k} U)\cdot V + (\nabla_{e_k} U) \cdot (\nabla_{e_k} V) .
+\end{equation*}
+
+\emph{Step 3: substitute and sum over $k$.} Substituting Step 2 into the result of Step 1, and then collecting the two terms that are inner products with $V$:
+\begin{align*}
+(\nabla_{e_k} W)\cdot e_k &= \Big( (\nabla_{e_k}\nabla_{e_k} U)\cdot V + (\nabla_{e_k} U) \cdot (\nabla_{e_k} V) \Big) \\
+&\qquad - (\nabla_{\nabla_{e_k} e_k} U)\cdot V \qquad \text{(substitute)} \\
+&= \big( \nabla_{e_k}\nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big)\cdot V \\
+&\qquad + (\nabla_{e_k} U) \cdot (\nabla_{e_k} V) \qquad \text{(collect)} .
+\end{align*}
+Summing over $k = 1, 2$, and moving the sum inside the inner product with $V$ in the first term,
+\begin{align*}
+\operatorname{div} W = \sum_{k=1}^2 (\nabla_{e_k} W)\cdot e_k &= \Big( \sum_{k=1}^2 \big( \nabla_{e_k}\nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big) \Big)\cdot V \\
+&\qquad + \sum_{k=1}^2 (\nabla_{e_k} U) \cdot (\nabla_{e_k} V) .
+\end{align*}
+The last sum is $\nabla U : \nabla V$, by the column argument used for $|\nabla U|^2$ above: the inner product of the columns of the two matrices, summed over the columns. For the first sum we \emph{define} the \emph{connection Laplacian}
+\begin{equation*}
+\nabla^* \nabla U = -\sum_{k=1}^2 \big( \nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big),
+\end{equation*}
+so that the first sum is $-\nabla^*\nabla U$. Substituting both,
+\begin{equation*}
+\operatorname{div} W = -(\nabla^* \nabla U) \cdot V + \nabla U : \nabla V .
+\end{equation*}
+The second term of the definition of $\nabla^*\nabla$ corrects for the turning of the frame. In the plane, with the constant frame $e_1 = (1, 0)$, $e_2 = (0, 1)$ of the coordinate axes, $\nabla_{e_k} e_k = 0$ and $\nabla_{e_k} = \partial/\partial x_k$, so the second term vanishes and $\nabla^*\nabla U = -\big(\frac{\partial^2 U}{\partial x_1^2} + \frac{\partial^2 U}{\partial x_2^2}\big)$: minus the ordinary Laplacian, applied to each component of $U$.
+
+\emph{Step 4: integrate.} Integrate the last equation over $\Omega$, the integral of the sum on the right being the sum of the integrals:
+\begin{equation*}
+\int_\Omega \operatorname{div} W\, dA = -\int_\Omega (\nabla^*\nabla U)\cdot V\, dA + \int_\Omega \nabla U : \nabla V\, dA .
+\end{equation*}
+On the left we use the divergence theorem~(\ref{eqn:t1_divergence})~[\,$\int_\Omega\operatorname{div}W\,dA = \oint_{\partial\Omega}W\cdot\nu\,ds$\,], and then the definition of $W$ with $X = \nu$, which gives $W\cdot\nu = (\nabla_\nu U)\cdot V$:
+\begin{equation*}
+\int_\Omega \operatorname{div} W\, dA = \oint_{\partial\Omega} W\cdot\nu\, ds = \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds .
+\end{equation*}
+Substituting this for the left side,
+\begin{equation*}
+\oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds = -\int_\Omega (\nabla^*\nabla U)\cdot V\, dA + \int_\Omega \nabla U : \nabla V\, dA .
+\end{equation*}
+Add $\int_\Omega (\nabla^*\nabla U)\cdot V\, dA$ to both sides and exchange the two sides:
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^*\nabla U)\cdot V\, dA + \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds ,
+\end{equation*}
+which is~(\ref{eqn:green}).
+\begin{prop}[Green's identity]
+\label{prop:green}
+For tangent fields $U$ and $V$ on a surface $\Omega$ with boundary $\partial \Omega$ and outward unit conormal $\nu$, the identity~(\ref{eqn:green}) holds, with the connection Laplacian $\nabla^* \nabla U = -\sum_k \big( \nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big)$ in any orthonormal frame field.
+\end{prop}
+
+\paragraph{What it gives.} With $V$ vanishing on the boundary, or on a closed surface, which has no boundary, the boundary term of~(\ref{eqn:green}) is zero and Green's identity reads
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA :
+\end{equation*}
+moving $\nabla$ off $V$ turns it into $\nabla^*\nabla$ on $U$. In the language of linear algebra, $\nabla^*\nabla$ is $\nabla$ transposed and then multiplied by $\nabla$, like the matrix $A^T A$; $\nabla^*$ is the \emph{adjoint} of $\nabla$, hence the notation. The derivative of the energy computed above is therefore $\int (\nabla^*\nabla U)\cdot V\, dA$: the gradient of $E$ is $\nabla^*\nabla U$. Taking $V = U$ shows that the operator is \emph{positive}, like $A^TA$:
+\begin{equation*}
+\int (\nabla^* \nabla U) \cdot U\, dA = \int \nabla U : \nabla U\, dA = \int |\nabla U|^2\, dA \geq 0 .
+\end{equation*}
+Its negative, $\Delta U = -\nabla^* \nabla U$, is the \emph{rough} or \emph{Bochner} Laplacian of tangent fields; on scalar functions the same construction gives the familiar Laplace--Beltrami operator. The sign matters: the energy decreases along $-\nabla^* \nabla U$, which is the direction in which the heat equation must move.
+
+\paragraph{What the Laplacian measures.} In one variable, Taylor's formula gives $u(x \pm h) = u(x) \pm h\, u'(x) + \frac{h^2}{2} u''(x) + \cdots$. Adding the two expansions, the terms $\pm h\,u'(x)$ cancel,
+\begin{equation*}
+u(x + h) + u(x - h) = 2\,u(x) + h^2\, u''(x) + \cdots ,
+\end{equation*}
+and dividing by $2$ and subtracting $u(x)$,
+\begin{equation*}
+\frac{u(x + h) + u(x - h)}{2} - u(x) = \frac{h^2}{2}\, u''(x) + \cdots .
+\end{equation*}
+So $u''$ measures how much the average of the neighbors exceeds the value at the point, and $-u''$, the one-variable $\nabla^*\nabla$, how much the value exceeds the average of its neighbors. For a tangent field the neighbors' vectors live in other tangent planes, and they must be transported to the point before they can be averaged with its vector. We will see in Section~\ref{section:r1_element_integrals} that the discrete connection Laplacian does exactly that, edge by edge.
+
+\subsection{The vector heat equation}
+
+For a temperature $u$ on a line, the heat equation is $\partial u/\partial t = u''$: by the previous paragraph, the temperature rises where it is below the average of its neighbors and falls where it is above. Heat flows from hot to cold, and the profile smooths out. The heat equation for tangent fields does the same with vectors: it lets a field flow downhill in the Dirichlet energy,
+\begin{equation}
+\label{eqn:heat}
+\frac{\partial U}{\partial t} = -\nabla^* \nabla U = \Delta U .
+\end{equation}
+Here $U$ depends on the point and on the time $t$, and $\partial U/\partial t$ is its derivative in time at a fixed point. Along the flow the field smooths out and decays. To see it, differentiate its total squared length in time, use the equation, and then Green's identity with $V = U$. Green's identity~(\ref{eqn:green}) again:
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds. \tag{\ref{eqn:green}}
+\end{equation*}
+With $V = U$, and with no boundary (a closed surface) or with $U = 0$ or $\nabla_\nu U = 0$ on the boundary, the boundary term vanishes, and $\nabla U : \nabla U = |\nabla U|^2$, so it reads $\int_\Omega (\nabla^*\nabla U)\cdot U\, dA = \int_\Omega |\nabla U|^2\, dA$. Then
+\begin{align*}
+\frac{d}{dt}\, \frac12 \int_\Omega |U|^2\, dA &= \int_\Omega U \cdot \frac{\partial U}{\partial t}\, dA && \text{(product rule)} \\
+&= -\int_\Omega U \cdot \nabla^*\nabla U\, dA && \text{(the heat equation~(\ref{eqn:heat}))} \\
+&= -\int_\Omega |\nabla U|^2\, dA \leq 0 && \text{(Green's identity with } V = U\text{)}.
+\end{align*}
+(The first step is $\frac{d}{dt}\frac12 |U|^2 = U\cdot\partial_t U$, the product rule.) Starting from a vector concentrated at a source point $s$, Sharp, Soliman and Crane \cite{Sharp2019} show that for short times the solution at a point $x$ points in the direction of the source vector transported along the shortest geodesic from $s$ to $x$, and that only its magnitude depends on the distance. Normalizing the solution at every point therefore gives the parallel transport of the source vector.
+
+\subsection{Backward Euler}
+
+The heat equation is continuous in time; the computer takes steps. The simplest step replaces the time derivative by a difference quotient over a step of length $\Delta t$. With $U^0$ the field at time $0$ and $U$ the field at time $\Delta t$, there are two simple choices for where to evaluate the right-hand side: at the old time (\emph{forward} Euler) or at the new time (\emph{backward} Euler). We take the backward one:
+\begin{equation}
+\label{eqn:backward_euler}
+\frac{U - U^0}{\Delta t} = -\nabla^* \nabla U \qquad \Longleftrightarrow \qquad U + \Delta t\, \nabla^* \nabla U = U^0 .
+\end{equation}
+(Multiplying by $\Delta t$ gives $U - U^0 = -\Delta t\, \nabla^*\nabla U$; moving the right side to the left and $U^0$ to the right gives the second form.) The price is that the new field is not given by a formula but by an equation, a linear system in the discrete setting. The reward is stability.
+
+\paragraph{Why backward.} The difference is clearest on the single equation $y' = -\lambda y$ with $\lambda > 0$, whose solution $y(t) = e^{-\lambda t} y(0)$ decays. Forward Euler gives $y^1 = (1 - \lambda\Delta t)\, y^0$, backward Euler gives $y^1 + \lambda\Delta t\, y^1 = y^0$, that is $y^1 = y^0/(1 + \lambda\Delta t)$. For $\lambda\Delta t = 3$, say, forward Euler multiplies by $1 - 3 = -2$ at every step, a growing oscillation, while backward Euler multiplies by $1/(1+3) = 0.25$, a decay, as the true solution does. Backward Euler decays for every $\Delta t > 0$; forward Euler only for $\lambda\Delta t < 2$. On a mesh, the discrete Laplacian has fields that change sign from one vertex to the next, which behave like $\lambda$ of the order of $1/h^2$, with $h$ the spacing of the mesh. Forward Euler would need $\Delta t$ below the order of $h^2$, and many small steps to get anywhere; backward Euler can take any step.
+
+In operator form, stability rests on the fact that $I + \Delta t\, \nabla^* \nabla$ is positive definite: for every field $U \ne 0$, splitting the integral in two and replacing the second part by Green's identity with $V = U$ on the closed surface, $\int_\Omega (\nabla^*\nabla U)\cdot U\, dA = \int_\Omega |\nabla U|^2\, dA$ (shown just above),
+\begin{align*}
+\int_\Omega \big(U + \Delta t\,\nabla^*\nabla U\big)\cdot U\, dA &= \int_\Omega |U|^2\, dA + \Delta t\int_\Omega (\nabla^*\nabla U)\cdot U\, dA \\
+&= \int_\Omega |U|^2\, dA + \Delta t \int_\Omega |\nabla U|^2\, dA > 0 .
+\end{align*}
+(The first term alone is already positive for $U \neq 0$, and the second is not negative.)
+So the step is always solvable and stable for any $\Delta t$, and a single large step can be taken. After one step of length $\Delta t$ the field is still nonzero at every vertex, only exponentially small far from the source; this is what allows the direction to be read everywhere, as the sphere of Example~\ref{ex:sphere} will show. The vector heat method takes exactly one step, with $\Delta t$ of the order of the square of the mesh spacing $h$, the time it takes heat to cross a few elements. The code uses $\Delta t = \bar h^2$, with $\bar h$ the mean edge length, computed by \code{computeEdgeLengths}:
+\lstinputlisting[firstline=461, lastline=473, firstnumber=461]{../src/FEM.cpp}
+The loop of line~466 visits the half-edges of the mesh; lines~467--468 take the two end points of each, and line~469 adds its length. Every edge is stored as two half-edges, one for each direction, of the same length, so the mean over half-edges (line~472) is the mean over edges, $\bar h$. In \code{main}, the result is stored in \code{avgEdgeLength} (line~613), and the time step is passed to the assembly as \code{avgEdgeLength*avgEdgeLength} (line~638).
+
+\paragraph{The boundary condition used by the code.} The source can be imposed in two ways. Sharp et al.\ put it in the initial condition, $U^0 = \delta_s\, U_s$, a vector concentrated at the source vertex. The code instead prescribes the value at the source vertex and starts from zero everywhere else: it solves
+\begin{equation}
+\label{eqn:dirichlet_problem}
+U + \Delta t\, \nabla^* \nabla U = 0 \quad \text{away from } s, \qquad U(s) = U_s,
+\end{equation}
+a \emph{Dirichlet} condition at one point (a condition that prescribes the value of the unknown itself). Both produce a field that decays away from the source and whose direction is transported along the paths of steepest heat flow; the direction, which is all we keep, is the same to the accuracy of the method. Equation~(\ref{eqn:dirichlet_problem})~[\,$U + \Delta t\,\nabla^*\nabla U = 0 \text{ off } s,\ U(s) = U_s$\,] is a \emph{screened} Poisson equation for the connection Laplacian: the term $U$ makes the influence of the source decay over a distance of order $\sqrt{\Delta t} \approx \bar h$.
+
+The one-dimensional version shows where that distance comes from. On a line, the equation reads $u - \Delta t\, u'' = 0$ away from a source at $x = 0$, with $u(0) = 1$. Try an exponential $u(x) = e^{-x/L}$ for $x > 0$. Differentiating twice, $u' = -\frac1L e^{-x/L}$ and $u'' = \frac{1}{L^2} e^{-x/L}$. Substituting into the equation,
+\begin{equation*}
+\big(e^{-x/L}\big) - \Delta t\, \Big(\frac{1}{L^2}\, e^{-x/L}\Big) = e^{-x/L}\,\Big(1 - \frac{\Delta t}{L^2}\Big) = 0 ,
+\end{equation*}
+and since $e^{-x/L} > 0$ this holds exactly when $1 - \Delta t/L^2 = 0$, that is, $L = \sqrt{\Delta t}$. By symmetry the solution is $u(x) = e^{-|x|/\sqrt{\Delta t}}$ on both sides (the growing exponential $e^{+|x|/L}$ also solves the equation, but it is not a field that dies away from the source). The solution drops by a factor $e \approx 2.718$ every $\sqrt{\Delta t}$, that is, with the choice $\Delta t = \bar h^2$, roughly every edge.
+
+\paragraph{What Stage 1 produced.} The strong form of the problem. The domain is a closed surface $\Omega$ (the cactus has no boundary); the unknown is a tangent field $U$ on it; and $U$ must satisfy, at every point, the backward Euler step~(\ref{eqn:backward_euler}) and the source condition of~(\ref{eqn:dirichlet_problem}), which together read
+\begin{equation}
+\label{eqn:r1_strong}
+\boxed{\;\begin{aligned} & U + \Delta t\, \nabla^*\nabla U = U^0 \ \text{ on } \Omega, \qquad U(s) = U_s, \\ & \text{with } \nabla^*\nabla U = -\sum_{k=1}^2 \big( \nabla_{e_k} \nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U \big), \end{aligned}\;}
+\end{equation}
+with $U^0 = 0$ away from the source in the code. The word \emph{strong} refers to the demand that the equation hold point by point, which needs the two covariant derivatives of $\nabla^*\nabla U$ to exist. That demand is the obstacle to computing with piecewise linear fields, and the next three stages remove it: Stage 2 says which fields we are willing to accept, Stage 3 rewrites the equation as a minimization, and Stage 4 rewrites it with only one derivative on $U$.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 2. The Function Spaces}
+\label{section:r1_spaces}
+
+\paragraph{What we want.} Stage 1 asks for a field with two covariant derivatives at every point. The fields that the computer can build (Stage 5) are linear on each face and have kinks along the edges: they have no second derivatives at all. Before changing the equation we must decide which fields we are willing to accept as candidate solutions. That decision is the choice of a \emph{function space}: a set of fields that can be added and multiplied by numbers, like the vectors of $\R^N$, together with a way to measure lengths and angles between them. Two requirements pull in opposite directions. The space must be large enough to contain the discrete fields, so that the computed field is a candidate at all. And it must be well behaved enough that the problem has exactly one solution in it, and that the computed field is close to that solution. This stage names the space, states the assumptions under which everything works, and states, without proofs, the three theorems on which the finite element method relies. No functional analysis is assumed: each notion is introduced through its model in $\R^N$, which the reader knows.
+
+\paragraph{Assumptions.} We state them once, plainly. The surface $\Omega$ is smooth and closed (bounded, without boundary), like the sphere, or like the smooth surface of which the cactus mesh is an approximation; for a surface with a boundary, the test fields are required to vanish on it. The unknown and the test fields are tangent fields. The time step $\Delta t$ is a positive number. The data $U^0$ is square integrable, in the sense defined next. The source condition $U(s) = U_s$ at one point needs a separate comment, given at the end of this stage.
+
+\paragraph{Fields as vectors with infinitely many entries.} A vector of $\R^N$ is a list of $N$ numbers, and the inner product of two of them is the sum of the products of their entries, $\mathrm u\cdot \mathrm v = \sum_m \mathrm u_m \mathrm v_m$. A tangent field assigns a vector to every point of the surface, so it is a list with one entry per point, infinitely many entries. The sum over the entries becomes an integral over the points, and we get the inner product and the length of tangent fields:
+\begin{equation}
+\label{eqn:r1_L2}
+(U, V)_{L^2} = \int_\Omega U\cdot V\, dA, \qquad \|U\|_{L^2} = \Big(\int_\Omega |U|^2\, dA\Big)^{1/2} .
+\end{equation}
+It behaves like a dot product: it is symmetric, linear in each argument, and $(U, U)_{L^2} > 0$ for $U \neq 0$. The fields of finite length form the space $L^2$ of \emph{square-integrable} tangent fields. Most fields one meets are in it. One that is not, on the unit disk of the plane: the field $U(x) = x/|x|^2$, of length $1/r$ at the distance $r$ from the center. Here $|U|^2 = |x|^2/|x|^4 = 1/r^2$. Cutting the disk into thin rings of radius $r$, width $dr$ and area $2\pi r\, dr$,
+\begin{equation*}
+\int |U|^2\, dA = \int_0^1 \frac{1}{r^2}\, 2\pi r\, dr = 2\pi \int_0^1 \frac{dr}{r} = \infty .
+\end{equation*}
+Since only the properties of a dot product are used in its proof, the Cauchy--Schwarz inequality of $\R^N$ holds as well: $|(U, V)_{L^2}| \leq \|U\|_{L^2}\, \|V\|_{L^2}$.
+
+\paragraph{Adding the derivative: the space $H^1$.} The weak form of Stage 4 will contain $\nabla U : \nabla V$ besides $U\cdot V$. So we measure a field together with its covariant derivative, and define
+\begin{equation}
+\label{eqn:r1_H1}
+\begin{aligned}
+(U, V)_{H^1} &= \int_\Omega U\cdot V\, dA + \int_\Omega \nabla U : \nabla V\, dA, \\
+\|U\|_{H^1}^2 &= \int_\Omega |U|^2\, dA + \int_\Omega |\nabla U|^2\, dA .
+\end{aligned}
+\end{equation}
+The second term of the norm is twice the Dirichlet energy~(\ref{eqn:dirichlet})~[\,$E(U) = \frac12\int_\Omega|\nabla U|^2\,dA$\,]. The \emph{Sobolev space} $H^1$ of tangent fields consists of the tangent fields for which both integrals are finite: the field is square integrable, and so is its covariant derivative. We write $\|\nabla U\|_{L^2}^2 = \int_\Omega |\nabla U|^2\, dA$ for the second part.
+
+What does ``covariant derivative'' mean for a field with kinks? For a field that is smooth inside each face and continuous across the edges, $\nabla U$ is computed face by face, and the edges, curves of zero area, contribute nothing to the integrals. (In general, the derivative used in $H^1$ is the \emph{weak derivative}: the field that makes integration by parts, Green's identity, hold against every smooth test field. For the fields of this text it is the face-by-face derivative, and that is all we need.) The one-variable model shows exactly where the line is drawn.
+\begin{itemize}
+\item The tent $u(x) = 1 - |x|$ on $[-1, 1]$ has $u' = +1$ on the left and $-1$ on the right, so $\int_{-1}^1 u'^2\, dx = 2$: finite. The tent belongs to $H^1$, kink and all.
+\item The step, $u = 0$ for $x < 0$ and $u = 1$ for $x > 0$, does not. Replace it by a ramp that rises from $0$ to $1$ over a small width $\epsilon$. Its slope is $1/\epsilon$ on an interval of length $\epsilon$, so $\int u'^2\, dx = \epsilon/\epsilon^2 = 1/\epsilon$, which grows without bound as the ramp becomes the step.
+\end{itemize}
+So a field of $H^1$ may have kinks, but not jumps. For fields that are smooth on every face of a mesh: if they are continuous across the edges, they are in $H^1$; if they jump across an edge, they are not. This is the origin of the conformity requirement below.
+
+\paragraph{Why the strong form asks for more.} The strong form~(\ref{eqn:r1_strong}) contains $\nabla^*\nabla U$, two derivatives, and asks for it at every point (or at least as a square-integrable field: the space $H^2$ of fields with two square-integrable derivatives). The tent fails: its second derivative is zero on both sides and, at the kink, the derivative of a jump, which is not even a function. The weak form of Stage 4 puts one derivative on $U$ and one on the test field $V$, so $H^1$ is enough for both. Since $H^2 \subset H^1 \subset L^2$, every smooth solution remains a solution: the weak form does not change the answer, it only lets the question be asked for more fields.
+
+\paragraph{Complete spaces: why $H^1$ and not the smooth fields.} The space $\R^N$ has a property that we use without noticing: if the terms of a sequence of vectors come closer and closer to each other, the sequence converges to a vector of $\R^N$. The rational numbers do not have it: the terms of $1, 1.4, 1.41, 1.414, \ldots$ come as close to each other as we like, but their limit, $\sqrt 2$, is not rational. A space with an inner product in which every such sequence has a limit in the space is called \emph{complete}, and a complete inner product space is a \emph{Hilbert space}. The spaces $L^2$ and $H^1$ are Hilbert spaces. The smooth fields, measured with the norm of $H^1$, are not: rounding off the kink of the tent over a smaller and smaller width gives smooth functions that approach the tent in that norm, and the limit has a kink. Completeness is what makes ``find the field of smallest energy'' a question with an answer: a sequence of fields with decreasing energy that come closer to each other has a limit, the minimizer, in the space; in an incomplete space it could be missing, as $\sqrt 2$ is missing from the rationals.
+
+\paragraph{The problem in two abbreviations.} Stages 3 and 4 will lead to a problem that is best written with two abbreviations, a \emph{bilinear form} $a$ (a number that depends linearly on each of two fields) and a \emph{linear form} $l$ (a number that depends linearly on one field):
+\begin{equation}
+\label{eqn:r1_forms}
+a(U, V) = \int_\Omega U\cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA, \qquad l(V) = \int_\Omega U^0\cdot V\, dA .
+\end{equation}
+The problem will be:
+\begin{equation}
+\label{eqn:r1_abstract}
+\text{find } U \in H^1 \text{ such that } a(U, V) = l(V) \text{ for every } V \in H^1 .
+\end{equation}
+In $\R^N$ the same structure is a linear system. With a matrix $A$ and a vector $\mathrm b$, take $a(\mathrm u, \mathrm v) = \mathrm v^T A\, \mathrm u$ and $l(\mathrm v) = \mathrm v^T\mathrm b$; then ``$a(\mathrm u, \mathrm v) = l(\mathrm v)$ for every $\mathrm v$'' says $\mathrm v^T(A\mathrm u - \mathrm b) = 0$ for every $\mathrm v$, which is $A\mathrm u = \mathrm b$ (take $\mathrm v = A\mathrm u - \mathrm b$, whose squared length is then zero). A linear system with a symmetric positive definite matrix has exactly one solution. The three properties of $a$ that correspond to ``symmetric'', ``finite entries'' and ``positive definite'' are the following. In them we use the abbreviations
+\begin{gather*}
+\|U\|_{L^2}^2 = \int_\Omega |U|^2\, dA, \qquad \|\nabla U\|_{L^2}^2 = \int_\Omega |\nabla U|^2\, dA, \\
+\|U\|_{H^1}^2 = \|U\|_{L^2}^2 + \|\nabla U\|_{L^2}^2 ,
+\end{gather*}
+the last being~(\ref{eqn:r1_H1}) again.
+
+\paragraph{Symmetric.} $a(U, V) = a(V, U)$, because $U\cdot V = V\cdot U$ and $\nabla U : \nabla V = \nabla V : \nabla U$ at every point, so the two integrals of~(\ref{eqn:r1_forms})~[\,$a(U, V) = \int U\cdot V + \Delta t\int \nabla U:\nabla V$\,] do not change when $U$ and $V$ are exchanged.
+
+\paragraph{Bounded.} We want a constant $C$ with $|a(U, V)| \leq C\, \|U\|_{H^1} \|V\|_{H^1}$ for all $U, V$: small fields give small values. Three inequalities are used.
+\begin{itemize}
+\item The \emph{triangle inequality} for numbers, $|x + y| \le |x| + |y|$.
+\item \emph{Cauchy--Schwarz} for the two integral inner products, $\big|\int_\Omega U\cdot V\, dA\big| \leq \|U\|_{L^2}\|V\|_{L^2}$, and $\big|\int_\Omega \nabla U : \nabla V\, dA\big| \leq \|\nabla U\|_{L^2}\|\nabla V\|_{L^2}$. The second is the same inequality for the inner product $\int A : B\, dA$ of matrix fields, which has the properties of a dot product too.
+\item \emph{Cauchy--Schwarz in $\R^2$}: for numbers $\alpha, \beta, \gamma, \delta$, $\alpha\beta + \gamma\delta \le (\alpha^2 + \gamma^2)^{1/2} (\beta^2 + \delta^2)^{1/2}$. To see it, expand the difference of the squares of the two sides:
+\begin{align*}
+&(\alpha^2 + \gamma^2)(\beta^2 + \delta^2) - (\alpha\beta + \gamma\delta)^2 \\
+&= \alpha^2\beta^2 + \alpha^2\delta^2 + \gamma^2\beta^2 + \gamma^2\delta^2 - \big(\alpha^2\beta^2 + 2\alpha\beta\gamma\delta + \gamma^2\delta^2\big) \\
+&= \alpha^2\delta^2 - 2\alpha\delta\,\gamma\beta + \gamma^2\beta^2 = (\alpha\delta - \gamma\beta)^2 \ \ge\ 0 .
+\end{align*}
+\end{itemize}
+Let $C = \max(1, \Delta t)$, so that $1 \le C$ and $\Delta t \le C$. Then, writing $\alpha = \|U\|_{L^2}$, $\gamma = \|\nabla U\|_{L^2}$, $\beta = \|V\|_{L^2}$, $\delta = \|\nabla V\|_{L^2}$, the chain below uses in turn the definition of $a$, the triangle inequality (with $\Delta t > 0$), Cauchy--Schwarz (C--S) for both integrals, the bounds $1 \le C$ and $\Delta t \le C$, the four names, and Cauchy--Schwarz in $\R^2$:
+\begin{align*}
+|a(U, V)| &= \Big| \int_\Omega U\cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA \Big| && \text{(def.)} \\
+&\leq \Big| \int_\Omega U\cdot V\, dA \Big| + \Delta t\, \Big| \int_\Omega \nabla U : \nabla V\, dA \Big| && \text{(triangle)} \\
+&\leq \|U\|_{L^2}\|V\|_{L^2} + \Delta t\, \|\nabla U\|_{L^2}\|\nabla V\|_{L^2} && \text{(C--S)} \\
+&\leq C\, \|U\|_{L^2}\|V\|_{L^2} + C\, \|\nabla U\|_{L^2}\|\nabla V\|_{L^2} && (1, \Delta t \le C) \\
+&= C\, (\alpha\beta + \gamma\delta) && \text{(names)} \\
+&\leq C\, (\alpha^2 + \gamma^2)^{1/2} (\beta^2 + \delta^2)^{1/2} && \text{(C--S in } \R^2\text{)} \\
+&= C\, \big(\|U\|_{L^2}^2 + \|\nabla U\|_{L^2}^2\big)^{1/2} \big(\|V\|_{L^2}^2 + \|\nabla V\|_{L^2}^2\big)^{1/2} \\
+&= C\, \|U\|_{H^1}\|V\|_{H^1} && \text{(def.\ of } \|\cdot\|_{H^1}\text{)}.
+\end{align*}
+
+\paragraph{Coercive.} We want a constant $c > 0$ with $a(U, U) \geq c\, \|U\|_{H^1}^2$ for every $U$. Let $c = \min(1, \Delta t)$, so that $1 \ge c$ and $\Delta t \ge c$, and $c > 0$ because $\Delta t > 0$. Each of the two integrals below is at least zero, so multiplying it by a smaller nonnegative coefficient can only decrease it:
+\begin{align*}
+a(U, U) &= \int_\Omega U\cdot U\, dA + \Delta t \int_\Omega \nabla U : \nabla U\, dA && \text{(def., } V = U\text{)} \\
+&= \int_\Omega |U|^2\, dA + \Delta t \int_\Omega |\nabla U|^2\, dA && \text{(squares)} \\
+&\geq c \int_\Omega |U|^2\, dA + c \int_\Omega |\nabla U|^2\, dA && (1 \ge c,\ \Delta t \ge c) \\
+&= c\, \big( \|U\|_{L^2}^2 + \|\nabla U\|_{L^2}^2 \big) = c\, \|U\|_{H^1}^2 .
+\end{align*}
+This is positive definiteness with a margin, like a symmetric matrix whose smallest eigenvalue is at least $c$: no field of size $1$ makes $a(U, U)$ smaller than $c$. For the cactus, $\Delta t = \bar h^2$ is small, so $c = \Delta t$ and $C = 1$.
+
+\paragraph{The linear form is bounded.} We want a constant $\Lambda$ with $|l(V)| \le \Lambda\, \|V\|_{H^1}$. By Cauchy--Schwarz, and because $\|V\|_{L^2}^2 \le \|V\|_{L^2}^2 + \|\nabla V\|_{L^2}^2 = \|V\|_{H^1}^2$,
+\begin{equation*}
+|l(V)| = \Big| \int_\Omega U^0\cdot V\, dA \Big| \leq \|U^0\|_{L^2}\|V\|_{L^2} \leq \|U^0\|_{L^2}\|V\|_{H^1} ,
+\end{equation*}
+so $\Lambda = \|U^0\|_{L^2}$, and this is where we need $U^0 \in L^2$.
+
+\paragraph{Exactly one solution: the theorems of Lax--Milgram and Riesz.} The theorem usually quoted in finite element texts is the following.
+\begin{quote}
+\emph{Lax--Milgram theorem.} Let $H$ be a Hilbert space, $a$ a bilinear form on $H$ that is bounded with constant $C$ and coercive with constant $c > 0$, and $l$ a linear form bounded with constant $\Lambda$. Then there is exactly one $U \in H$ with $a(U, V) = l(V)$ for every $V \in H$, and $\|U\|_H \le \Lambda / c$.
+\end{quote}
+Here $H = H^1$, and the three hypotheses are the three inequalities just written out. Two parts of the conclusion follow from coercivity in a few lines, and we show them.
+\begin{itemize}
+\item \emph{At most one solution.} If $U_1$ and $U_2$ both solve the problem, subtract the two equations: $a(U_1, V) - a(U_2, V) = l(V) - l(V) = 0$, so $a(U_1 - U_2, V) = 0$ for every $V$, by the linearity of $a$ in its first argument. Choose $V = U_1 - U_2$ and use coercivity:
+\begin{equation*}
+c\, \|U_1 - U_2\|_{H^1}^2 \le a(U_1 - U_2, U_1 - U_2) = 0 ,
+\end{equation*}
+and since $c > 0$, $\|U_1 - U_2\|_{H^1} = 0$, that is, $U_1 = U_2$.
+\item \emph{The bound.} Test the equation with $V = U$ itself, and use coercivity on the left and the bound of $l$ on the right:
+\begin{equation*}
+c\, \|U\|_{H^1}^2 \le a(U, U) = l(U) \le \Lambda\, \|U\|_{H^1} ;
+\end{equation*}
+dividing by $c\, \|U\|_{H^1}$ (if $U \neq 0$) gives $\|U\|_{H^1} \le \Lambda/c$.
+\end{itemize}
+Existence is where completeness enters, and for our symmetric $a$ it is the \emph{Riesz representation theorem}: in a Hilbert space every bounded linear form is the inner product with exactly one element of the space. A bilinear form that is symmetric, bounded and coercive is itself an inner product on $H^1$, the \emph{energy inner product}, with the \emph{energy norm} $\|U\|_a = a(U, U)^{1/2}$. Coercivity, and boundedness with $V = U$, give
+\begin{equation*}
+c\,\|U\|_{H^1}^2 \;\leq\; a(U, U) = \|U\|_a^2 \;\leq\; C\,\|U\|_{H^1}^2 :
+\end{equation*}
+the two norms measure the same closeness, and $H^1$ is complete in either. Applied to $l$ and the energy inner product, Riesz gives exactly one $U \in H^1$ with $l(V) = a(U, V)$ for every $V$, the solution of~(\ref{eqn:r1_abstract})~[\,find $U\in H^1$ with $a(U, V) = l(V)$ for every $V\in H^1$\,]. In $\R^N$ this is the familiar fact: with the inner product $\langle \mathrm u, \mathrm v\rangle_A = \mathrm v^T A\mathrm u$ of a symmetric positive definite $A$, the linear form $\mathrm v^T \mathrm b$ equals $\langle \mathrm u, \mathrm v\rangle_A$ for every $\mathrm v$ exactly when $\mathrm u = A^{-1}\mathrm b$. Lax--Milgram reaches the same conclusion without symmetry.
+
+\paragraph{Stability in the energy norm.} A sharper bound than $\Lambda/c$ comes from using the energy norm on both sides. Since $a(U, U) = \|U\|_{L^2}^2 + \Delta t\,\|\nabla U\|_{L^2}^2 \ge \|U\|_{L^2}^2$, we have $\|U\|_{L^2} \le \|U\|_a$. Then, testing with $V = U$,
+\begin{align*}
+\|U\|_a^2 = a(U, U) &= l(U) && \text{(the equation with } V = U\text{)} \\
+&= \int_\Omega U^0\cdot U\, dA \leq \|U^0\|_{L^2}\|U\|_{L^2} && \text{(Cauchy--Schwarz)} \\
+&\leq \|U^0\|_{L^2}\|U\|_a && (\|U\|_{L^2} \le \|U\|_a) ,
+\end{align*}
+and dividing by $\|U\|_a$, $\|U\|_a \leq \|U^0\|_{L^2}$: the step never amplifies its data, whatever $\Delta t$, which is the stability of backward Euler found in Stage 1, now in the norm of the weak problem.
+
+\paragraph{The best approximation: Galerkin and C\'ea.} Stage 5 will build a finite dimensional space $V_h$ of fields on the mesh, and Stage 6 will ask~(\ref{eqn:r1_abstract}) only for the fields of $V_h$:
+\begin{equation}
+\label{eqn:r1_galerkin_abstract}
+\text{find } U_h \in V_h \text{ such that } a(U_h, V_h) = l(V_h) \text{ for every } V_h \in V_h .
+\end{equation}
+How good is $U_h$? Suppose that $V_h \subset H^1$. Then every $V_h$ is also an allowed test field of~(\ref{eqn:r1_abstract}), and we may subtract the two equations, tested with the same $V_h$:
+\begin{align*}
+a(U, V_h) - a(U_h, V_h) &= l(V_h) - l(V_h) = 0 && \text{(subtract)} \\
+a(U - U_h, V_h) &= 0 \qquad \text{for every } V_h \in V_h && \text{(linearity)}.
+\end{align*}
+This is \emph{Galerkin orthogonality}: the error $U - U_h$ is orthogonal, in the energy inner product, to the whole discrete space. So $U_h$ is the orthogonal projection of $U$ onto $V_h$, the foot of the perpendicular from $U$, and the foot of the perpendicular is the closest point. To see it, take any $W_h \in V_h$ and split $U - W_h = X + Y$ with $X = U - U_h$ and $Y = U_h - W_h$. The second part lies in $V_h$ (a difference of two of its fields), so $a(X, Y) = 0$ by Galerkin orthogonality, and expanding the energy norm with the bilinearity and symmetry of $a$,
+\begin{align*}
+\|U - W_h\|_a^2 &= a(X + Y, X + Y) && \text{(definition)} \\
+&= a(X, X) + a(X, Y) + a(Y, X) + a(Y, Y) && \text{(bilinearity)} \\
+&= a(X, X) + 2\,a(X, Y) + a(Y, Y) && \text{(symmetry)} \\
+&= \|U - U_h\|_a^2 + 0 + \|U_h - W_h\|_a^2 && \text{(orthogonality)} \\
+&\geq \|U - U_h\|_a^2 .
+\end{align*}
+This is Pythagoras' theorem and \emph{C\'ea's lemma}: of all the fields of $V_h$, the Galerkin solution is the closest to the true solution in the energy norm. In the norm of $H^1$, with the two constants above,
+for every $W_h \in V_h$,
+\begin{equation*}
+c\,\|U - U_h\|_{H^1}^2 \;\le\; \|U - U_h\|_a^2 \;\le\; \|U - W_h\|_a^2 \;\le\; C\,\|U - W_h\|_{H^1}^2 ,
+\end{equation*}
+so $\|U - U_h\|_{H^1} \leq (C/c)^{1/2} \min_{W_h \in V_h} \|U - W_h\|_{H^1}$. The meaning for practice is that the finite element method throws nothing away: its error is as small as the best approximation that the chosen space permits. The accuracy is a question of approximation alone, of how well fields of $V_h$ can imitate the solution; for piecewise linear functions on a mesh of spacing $h$, the error in the norm of $H^1$ is of the order of $h$ \cite{Sayas2015}.
+
+
+\paragraph{Conformity.} All of this assumed $V_h \subset H^1$; a discrete space with this property is called \emph{conforming}. It was used at one precise point: to test the continuous equation with the discrete fields. By the tent and the step, a field that is smooth inside each face is in $H^1$ when it is continuous across every edge, and not when it jumps. For scalar hat functions this holds by construction (Stage 5). For tangent fields on a piecewise flat surface, ``continuous across an edge'' needs care, because the two faces of an edge lie in different planes: a vector of one face cannot equal a vector of the other unless it points along the edge. The right comparison is the parallel transport of the polyhedral surface across the edge, the unfolding of Figure~\ref{fig:unfold}: rotate the neighboring face about the shared edge into the plane of the first, and ask that, at every point of the edge, the unfolded value from one side equal the value from the other side. Stage 5 (Section~\ref{section:r1_conformity}) checks this for the space of this part. It holds exactly where the normals around a vertex lie on one great circle, as for faces folded along parallel lines, and approximately in general, with a mismatch of second order in the angles between neighboring normals. A space that is conforming only approximately is a mild \emph{variational crime}, in the language of the finite element literature: the guarantees above hold up to an additional error that shrinks as the mesh is refined. Part~\ref{part:intrinsic} returns to this question with a connection built from the edge lengths.
+
+\paragraph{The source condition, honestly.} One idealization remains. On a surface, a field of $H^1$ need not be continuous, and need not have a value at a single point. The scalar function $u = \log\log(1/r)$ near the center of a small disk of radius $r_0 < 1/e$ is unbounded at $r = 0$, yet its gradient is square integrable. By the chain rule, with $\log(1/r) = -\log r$,
+\begin{equation*}
+\frac{du}{dr} = \frac{1}{\log(1/r)}\cdot\frac{d}{dr}\big(-\log r\big) = \frac{1}{\log(1/r)}\cdot\Big(-\frac1r\Big), \qquad |\nabla u| = \Big|\frac{du}{dr}\Big| = \frac{1}{r\log(1/r)} .
+\end{equation*}
+Integrating over rings of area $2\pi r\, dr$, and then substituting $\tau = \log(1/r)$, $d\tau = -dr/r$, which maps $r = 0$ to $\tau = \infty$ and $r = r_0$ to $\tau = \log(1/r_0)$,
+\begin{align*}
+\int |\nabla u|^2\, dA &= \int_0^{r_0} \frac{1}{r^2 \log^2(1/r)}\, 2\pi r\, dr = 2\pi \int_0^{r_0} \frac{1}{\log^2(1/r)}\,\frac{dr}{r} \\
+&= 2\pi \int_{\log(1/r_0)}^{\infty} \frac{d\tau}{\tau^2} = 2\pi \Big[ -\frac1\tau \Big]_{\log(1/r_0)}^{\infty} = \frac{2\pi}{\log(1/r_0)} < \infty .
+\end{align*}
+So the condition $U(s) = U_s$ at one point is not a condition that the space $H^1$ can express (and the alternative of Sharp et al., $U^0 = \delta_s U_s$ concentrated at a point, is not in $L^2$ either). Both are idealizations that become meaningful after discretization: the discrete fields are continuous and have values at the vertices, and the code prescribes the value at one vertex. This is also why the time step is tied to the mesh, $\Delta t = \bar h^2$: the problem being approximated is heat from a source of the size of an edge, spreading for the time it takes to cross a few edges, and both shrink together when the mesh is refined. For the discrete problem with the vertex prescribed, the theory above applies as it stands: the test fields vanish at $s$ (Stage 4), and the equations of the free unknowns form a symmetric positive definite system (Section~\ref{section:solve}).
+
+\paragraph{What Stage 2 produced.} The space $H^1$ of tangent fields with square-integrable covariant derivatives, in which the solution is sought; the three properties of the form $a$ (symmetric, bounded, coercive) and the boundedness of $l$; and three guarantees: the weak problem has exactly one solution (Riesz, Lax--Milgram), the Galerkin solution is the best approximation in the energy norm (C\'ea), and both hold provided the discrete space is conforming, that is, made of fields that are continuous across the edges. Stage 3 next reads the same problem as a minimization, Stage 4 derives the weak problem~(\ref{eqn:r1_abstract}) from the PDE, and Stage 5 builds $V_h$ and checks its conformity.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 3. The Variational Form}
+\label{section:r1_variational}
+
+\paragraph{What we want.} A PDE that comes from an energy can be read as a minimization: its solution is the field of smallest energy. This reading tells us why the problem has exactly one solution, and, later, what the discrete solution is: the minimizer of the same energy over a smaller set of fields. Here we write the energy, compute the condition for its minimum, and show that this condition is equivalent to the PDE of Stage 1.
+
+\paragraph{The energy.} For a field $U$ of $H^1$ consider
+\begin{equation}
+\label{eqn:weak_energy}
+J(U) = \frac12 \int_\Omega |U|^2\, dA + \frac{\Delta t}{2} \int_\Omega |\nabla U|^2\, dA - \int_\Omega U^0 \cdot U\, dA .
+\end{equation}
+The three integrals are finite exactly for the fields of $H^1$ (with $U^0 \in L^2$), which is one reason for the choice of Stage 2. The middle term is $\Delta t$ times the Dirichlet energy~(\ref{eqn:dirichlet})~[\,$E(U) = \frac12\int_\Omega|\nabla U|^2\,dA$\,] of Stage 1.
+
+\paragraph{The condition for a minimum.} At a minimizer, the rate of change of $J$ in every direction $V$ must be zero, as for the minimum of a function of several variables: if $U$ is a minimizer, the function of one variable $g(\epsilon) = J(U + \epsilon V)$ has its minimum at $\epsilon = 0$, so $g'(0) = 0$. To compute $g$, we expand $J(U + \epsilon V)$ term by term, as we expanded $E$ in Section~\ref{section:pde}. The energy~(\ref{eqn:weak_energy}) with $U + \epsilon V$ in the place of $U$ is
+\begin{equation*}
+J(U + \epsilon V) = \frac12 \int_\Omega |U + \epsilon V|^2\, dA + \frac{\Delta t}{2} \int_\Omega |\nabla (U + \epsilon V)|^2\, dA - \int_\Omega U^0 \cdot (U + \epsilon V)\, dA .
+\end{equation*}
+\emph{The first term.} At each point, $|U + \epsilon V|^2 = (U + \epsilon V)\cdot(U + \epsilon V) = U\cdot U + \epsilon\, U\cdot V + \epsilon\, V\cdot U + \epsilon^2\, V\cdot V = |U|^2 + 2\epsilon\, U\cdot V + \epsilon^2 |V|^2$. Integrating and moving the constants out,
+\begin{align*}
+\frac12 \int_\Omega |U + \epsilon V|^2\, dA &= \frac12 \int_\Omega |U|^2\, dA + \epsilon \int_\Omega U\cdot V\, dA \\
+&\qquad + \frac{\epsilon^2}{2}\int_\Omega |V|^2\, dA .
+\end{align*}
+\emph{The second term.} Step 2 of the derivative of $E$ gave $|\nabla(U + \epsilon V)|^2 = |\nabla U|^2 + 2\epsilon\, \nabla U : \nabla V + \epsilon^2\, |\nabla V|^2$. Integrating and multiplying by $\Delta t/2$,
+\begin{align*}
+\frac{\Delta t}{2} \int_\Omega |\nabla (U + \epsilon V)|^2\, dA &= \frac{\Delta t}{2} \int_\Omega |\nabla U|^2\, dA + \epsilon\, \Delta t \int_\Omega \nabla U : \nabla V\, dA \\
+&\qquad + \frac{\epsilon^2\,\Delta t}{2}\int_\Omega |\nabla V|^2\, dA .
+\end{align*}
+\emph{The third term.} It is linear, so there is no $\epsilon^2$:
+\begin{equation*}
+-\int_\Omega U^0 \cdot (U + \epsilon V)\, dA = -\int_\Omega U^0 \cdot U\, dA - \epsilon \int_\Omega U^0 \cdot V\, dA .
+\end{equation*}
+\emph{Collect by powers of $\epsilon$.} The three terms without $\epsilon$ add up to $J(U)$. The three terms with $\epsilon$, and the two with $\epsilon^2$, are grouped:
+\begin{align*}
+J(U + \epsilon V) = J(U) &+ \epsilon\Big( \int_\Omega U\cdot V\, dA + \Delta t\int_\Omega \nabla U : \nabla V\, dA - \int_\Omega U^0 \cdot V\, dA \Big) \\
+&+ \frac{\epsilon^2}{2}\Big(\int_\Omega |V|^2\, dA + \Delta t\int_\Omega |\nabla V|^2\, dA\Big).
+\end{align*}
+With the abbreviations~(\ref{eqn:r1_forms})~[\,$a(U, V) = \int U\cdot V + \Delta t\int \nabla U:\nabla V,\ l(V) = \int U^0\cdot V$\,], the first bracket is $a(U, V) - l(V)$, and the second is $a(V, V)$ (since $V\cdot V = |V|^2$ and $\nabla V:\nabla V = |\nabla V|^2$):
+\begin{equation*}
+J(U + \epsilon V) = J(U) + \epsilon\, \big( a(U, V) - l(V) \big) + \frac{\epsilon^2}{2}\, a(V, V) .
+\end{equation*}
+\emph{Differentiate.} The derivative in $\epsilon$ is $\big(a(U, V) - l(V)\big) + \epsilon\, a(V, V)$, and at $\epsilon = 0$
+\begin{equation*}
+g'(0) = \frac{d}{d\epsilon} J(U + \epsilon V)\Big|_{\epsilon = 0} = a(U, V) - l(V) .
+\end{equation*}
+It vanishes for every $V$ exactly when
+\begin{equation}
+\label{eqn:r1_stationary}
+\int_\Omega U\cdot V\, dA + \Delta t\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega U^0 \cdot V\, dA \qquad \text{for every } V \in H^1,
+\end{equation}
+which is $a(U, V) = l(V)$: the problem~(\ref{eqn:r1_abstract})~[\,find $U\in H^1$ with $a(U, V) = l(V)$ for every $V\in H^1$\,] of Stage 2.
+
+\paragraph{The condition is also sufficient.} Conversely, let $U$ satisfy~(\ref{eqn:r1_stationary}), so that the bracket $a(U, V) - l(V)$ is zero for every $V$. Any other field $W$ of $H^1$ can be written $W = U + V$ with $V = W - U$, and the expansion with $\epsilon = 1$ gives
+\begin{equation*}
+J(W) = J(U + V) = J(U) + \big(0\big) + \frac12\, a(V, V) \ \geq\ J(U) + \frac{c}{2}\, \|V\|_{H^1}^2 ,
+\end{equation*}
+by coercivity, with $c = \min(1, \Delta t) > 0$. So $J(W) > J(U)$ whenever $W \neq U$: $U$ is the minimizer, and the only one. $J$ is strictly convex, curved upwards in every direction like a bowl, and its bottom is the solution.
+
+\paragraph{What the energy says.} The first and last terms of $J$ together measure the distance to $U^0$. Expanding a square at one point, $\frac12|U - U^0|^2 = \frac12 (U - U^0)\cdot(U - U^0) = \frac12|U|^2 - U^0\cdot U + \frac12|U^0|^2$, so
+\begin{equation*}
+\frac12|U|^2 - U^0\cdot U = \frac12|U - U^0|^2 - \frac12|U^0|^2 ,
+\end{equation*}
+and, integrating, $J(U) = \frac12\int_\Omega |U - U^0|^2\, dA + \frac{\Delta t}{2}\int_\Omega |\nabla U|^2\, dA - \frac12\int_\Omega |U^0|^2\, dA$. The last integral does not depend on $U$. So the backward Euler step looks for the field that is closest to $U^0$ and also as parallel as possible, with $\Delta t$ trading one against the other.
+
+\paragraph{Back to the strong form.} Why is the minimizer the solution of the PDE? Suppose the minimizer is smooth, with at least two covariant derivatives, and move the derivative off $V$ in the middle term of~(\ref{eqn:r1_stationary}) with Green's identity. Green's identity~(\ref{eqn:green}) again:
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds. \tag{\ref{eqn:green}}
+\end{equation*}
+Substituting its right side, in parentheses, for $\int_\Omega \nabla U : \nabla V\, dA$ in~(\ref{eqn:r1_stationary}):
+\begin{multline*}
+\int_\Omega U\cdot V\, dA + \Delta t\Big( \int_\Omega (\nabla^*\nabla U)\cdot V\, dA + \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds \Big) \\
+= \int_\Omega U^0 \cdot V\, dA .
+\end{multline*}
+We drop the boundary integral, move $\Delta t$ inside the second integral and the right side to the left, and collect the three integrals into one:
+\begin{align*}
+\int_\Omega U\cdot V\, dA + \Delta t\, \int_\Omega (\nabla^*\nabla U)\cdot V\, dA - \int_\Omega U^0 \cdot V\, dA &= 0 && (\partial\Omega = \emptyset) \\
+\int_\Omega U\cdot V\, dA + \int_\Omega (\Delta t\, \nabla^*\nabla U)\cdot V\, dA - \int_\Omega U^0 \cdot V\, dA &= 0 && (\Delta t \text{ in}) \\
+\int_\Omega \big( U + \Delta t\, \nabla^*\nabla U - U^0 \big)\cdot V\, dA &= 0 && \text{(collect)} .
+\end{align*}
+The first of these lines uses that on a closed surface there is no boundary, and the boundary integral, an integral over nothing, is zero. The last line uses that the integral of a sum is the sum of the integrals and that $(A + B - C)\cdot V = A\cdot V + B\cdot V - C\cdot V$. This holds for every $V$.
+
+\emph{From ``for every $V$'' to ``at every point''.} Call the field in brackets $R = U + \Delta t\,\nabla^*\nabla U - U^0$, the \emph{residual}; for smooth $U$ and $U^0$ it is a smooth field, and therefore an allowed choice of $V$. With $V = R$,
+\begin{equation*}
+\int_\Omega R\cdot R\, dA = \int_\Omega |R|^2\, dA = 0 .
+\end{equation*}
+The integrand $|R|^2$ is continuous and never negative. If it were positive at some point $x_0$, say $|R(x_0)|^2 = m > 0$, then by continuity $|R|^2 > m/2$ on a small disk around $x_0$, of some area $\delta > 0$, and the integral would be at least $\frac m2\,\delta > 0$, not zero. So $|R|^2 = 0$, that is $R = 0$, at every point:
+\begin{equation*}
+U + \Delta t\, \nabla^*\nabla U - U^0 = 0 \qquad\Longleftrightarrow\qquad U + \Delta t\, \nabla^*\nabla U = U^0 ,
+\end{equation*}
+which is the strong form~(\ref{eqn:r1_strong})~[\,$U + \Delta t\,\nabla^*\nabla U = U^0$ on $\Omega$, $U(s) = U_s$\,]. Conversely, a smooth solution of the PDE satisfies~(\ref{eqn:r1_stationary}): that is the derivation of Stage 4, which runs the same steps backwards. So for smooth fields, minimizing $J$ and solving the PDE are the same thing; for fields that are only in $H^1$, such as the piecewise linear ones, the minimization still makes sense and the PDE does not. With the source condition, the minimization is over the fields with $U(s) = U_s$, and the directions $V$ are those that vanish at $s$, so that $U + \epsilon V$ keeps the prescribed value.
+
+
+\paragraph{What Stage 3 produced.} The energy $J$ of~(\ref{eqn:weak_energy}), whose unique minimizer is the solution, and the condition for its minimum,~(\ref{eqn:r1_stationary}), which is the weak problem $a(U, V) = l(V)$. Stage 4 reaches the same equation from the PDE alone, by the Galerkin route of test fields and integration by parts, which also works for equations that do not come from an energy. Stage 6 uses the minimization to explain why the matrix of the linear system is symmetric.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 4. The Weak Form (Galerkin)}
+\label{section:weak}
+
+\paragraph{What we want.} An equation with only first derivatives, which makes sense for every field of $H^1$ (Stage 2), obtained from the PDE of Stage 1 by a procedure that works for any PDE. The procedure has three moves: multiply by a test field, integrate, integrate by parts. It is the \emph{Galerkin} route to the weak form; Stage 3 reached the same equation from an energy, but not every PDE has one.
+
+\paragraph{The obstacle.} The equation~(\ref{eqn:backward_euler})~[\,$U + \Delta t\,\nabla^*\nabla U = U^0$\,] involves second derivatives of $U$, through $\nabla^* \nabla$. The fields that the computer can represent on a mesh are piecewise linear, with a kink across every edge like the tent of Stage 2: their first derivatives exist on each face but jump from face to face, and they have no second derivatives. So the equation, as written, cannot even be evaluated for the fields we can compute with.
+
+The way out has two steps. First we replace the equation by a family of averaged versions of it, one for each \emph{test field}. Then we move one of the two derivatives from $U$ onto the test field, by Green's identity. The result, the \emph{weak form}, contains only first derivatives, and it makes sense for piecewise linear fields.
+
+\paragraph{Test fields.} The first step rests on a fact from linear algebra. A vector $r \in \R^N$ is zero if and only if $r \cdot v = 0$ for every $v \in \R^N$ (take $v = r$ to get $|r|^2 = 0$). The same holds for fields, with the integral of the inner product in the role of the inner product of vectors: a tangent field $R$ is zero if and only if
+\begin{equation*}
+\int_\Omega R\cdot V\, dA = 0 \qquad \text{for every tangent field } V ,
+\end{equation*}
+because the choice $V = R$ gives $\int |R|^2\, dA = 0$, which forces $R = 0$ at every point (for continuous $R$, by the argument written out in Stage 3: a positive value of $|R|^2$ at one point would make the integral positive). Apply this to the \emph{residual} of the backward Euler step, $R = U + \Delta t\, \nabla^*\nabla U - U^0$, which is zero exactly when $U$ solves the step. So the step is equivalent to: multiply~(\ref{eqn:backward_euler})~[\,$U + \Delta t\,\nabla^*\nabla U = U^0$\,] by an arbitrary tangent field $V$, the test field, take the inner product, integrate, and ask that the result hold for every $V$:
+\begin{equation}
+\label{eqn:r1_tested}
+\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega (\nabla^* \nabla U) \cdot V\, dA = \int_\Omega U^0 \cdot V\, dA .
+\end{equation}
+(The inner product of a sum is the sum of the inner products, and the integral of a sum is the sum of the integrals, which splits the left side in two.) Nothing has been lost; the equation has only been rewritten. But it has been rewritten in a form that suggests what to do when we cannot ask for every $V$: ask for a finite number of them, as many as there are unknowns. In linear algebra this is the familiar statement that a vector is zero when its inner products with the vectors of a basis are zero. The Galerkin method of Stages 5 and 6 (Sections~\ref{section:galerkin} and~\ref{section:r1_discrete}) will do exactly that, with a finite family of test fields.
+
+\paragraph{Integration by parts.} The second step removes the second derivatives. Green's identity~(\ref{eqn:green}) again:
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds. \tag{\ref{eqn:green}}
+\end{equation*}
+Solved for the term with $\nabla^*\nabla$ (subtract the boundary integral from both sides and exchange the two sides), it reads
+\begin{equation*}
+\int_\Omega (\nabla^*\nabla U)\cdot V\, dA = \int_\Omega \nabla U : \nabla V\, dA - \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds .
+\end{equation*}
+Substituting this into the second term of the tested equation~(\ref{eqn:r1_tested}),
+\begin{equation*}
+\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega (\nabla^* \nabla U) \cdot V\, dA = \int_\Omega U^0 \cdot V\, dA , \tag{\ref{eqn:r1_tested}}
+\end{equation*}
+with the substituted expression in parentheses, and then distributing $\Delta t$:
+\begin{align*}
+\int_\Omega U \cdot V\, dA + \Delta t \Big( \int_\Omega \nabla U : \nabla V\, dA - \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds \Big) &= \int_\Omega U^0 \cdot V\, dA , \\
+\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA - \Delta t \oint_{\partial\Omega} (\nabla_\nu U)\cdot V\, ds &= \int_\Omega U^0 \cdot V\, dA .
+\end{align*}
+\paragraph{Why the boundary term vanishes.} The cactus and the sphere are closed surfaces: they have no boundary curve, and an integral over an empty curve is zero. On a surface with a boundary, we would choose test fields that vanish on the boundary, where $U$ is prescribed, and then the integrand $(\nabla_\nu U)\cdot V$ is zero there. Either way the boundary term drops out, and the \emph{weak form} of the backward Euler step is: find $U$ such that
+\begin{equation}
+\label{eqn:weak}
+\boxed{\;\int_\Omega U \cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA = \int_\Omega U^0 \cdot V\, dA \;}
+\end{equation}
+for every test field $V$.
+
+\paragraph{Which test fields.} On the cactus the surface is closed, so there is no boundary term at all. What remains is the prescribed value at the source vertex, $U(s) = U_s$, of~(\ref{eqn:dirichlet_problem})~[\,$U + \Delta t\,\nabla^*\nabla U = 0 \text{ off } s,\ U(s) = U_s$\,]. It is handled as in every finite element method: where the value of $U$ is prescribed we do not need an equation to determine it, so we do not test there, and the test fields are those that vanish at $s$. In the discrete method this will mean that there is no equation for the two coordinates of $s$: the two equations tested with the basis functions of $s$ are discarded and replaced by the prescribed values. That is exactly the row replacement that the code performs in Section~\ref{section:solve}.
+
+\paragraph{The same steps in one variable.} On an interval $[a, b]$ the backward Euler step reads $u - \Delta t\, u'' = u^0$. Multiply by a test function $v$ that vanishes at both ends, and integrate:
+\begin{equation*}
+\int_a^b u\, v\, dx - \Delta t \int_a^b u''\, v\, dx = \int_a^b u^0\, v\, dx .
+\end{equation*}
+For the middle term, integrate the product rule $(u'v)' = u''v + u'v'$ from $a$ to $b$: the left side gives $[\,u'v\,]_a^b$ by the fundamental theorem of calculus, so
+\begin{align*}
+\int_a^b u''\, v\, dx &= [\,u' v\,]_a^b - \int_a^b u' v'\, dx \\
+&= \big( u'(b)\cdot 0 - u'(a)\cdot 0 \big) - \int_a^b u' v'\, dx = -\int_a^b u'v'\, dx ,
+\end{align*}
+the boundary term vanishing with $v$. Substituting, $\int u v - \Delta t\,\big(-\int u'v'\big) = \int u^0 v$, so the weak form is
+\begin{equation*}
+\int_a^b u\, v\, dx + \Delta t \int_a^b u'\, v'\, dx = \int_a^b u^0\, v\, dx \qquad \text{for every such } v .
+\end{equation*}
+For the tent $u(x) = 1 - |x|$ the original equation is meaningless at the kink, where $u''$ does not exist; but $\int u'v'\, dx$ is a perfectly good number, since $u'$ is simply $+1$ on one side and $-1$ on the other. The surface version~(\ref{eqn:weak}) is the same statement, with $\nabla U : \nabla V$ in place of $u'v'$.
+
+\paragraph{What has been gained.} Only first derivatives appear, of $U$ and of $V$, and they appear symmetrically. A piecewise linear field has first derivatives on every face, constant on each, and $\nabla U : \nabla V$ can be integrated face by face, even though the derivatives jump across edges: a jump on a curve of zero area does not change an integral. So the equation makes sense for every field of $H^1$, which is the meaning of ``weak''.
+
+\paragraph{The weak form and the energy.} Compare~(\ref{eqn:weak}) with the condition for the minimum of the energy of Stage 3, (\ref{eqn:r1_stationary})~[\,$\int U\cdot V + \Delta t\int\nabla U:\nabla V = \int U^0\cdot V$ for every $V$\,]: they are the same equation. The two routes meet, as they must for a PDE that comes from an energy. So the weak solution is the minimizer of $J$, and the discrete solution of Stage 6 will be its minimizer over the discrete space.
+
+\paragraph{What Stage 4 produced.} With the abbreviations of Stage 2, (\ref{eqn:r1_forms}) again,
+\begin{equation*}
+a(U, V) = \int_\Omega U\cdot V\, dA + \Delta t \int_\Omega \nabla U : \nabla V\, dA, \qquad l(V) = \int_\Omega U^0\cdot V\, dA , \tag{\ref{eqn:r1_forms}}
+\end{equation*}
+the left side of the weak form~(\ref{eqn:weak}) is $a(U, V)$ and its right side is $l(V)$. So the weak form is the problem~(\ref{eqn:r1_abstract}) announced in Stage 2,
+\begin{equation*}
+\text{find } U \in H^1 \text{ such that } a(U, V) = l(V) \text{ for every } V \in H^1 , \tag{\ref{eqn:r1_abstract}}
+\end{equation*}
+with $U(s) = U_s$ and test fields that vanish at $s$. It contains only first derivatives, it holds for every field of $H^1$, and by Stage 2 it has exactly one solution. The bilinear form $a$ is symmetric, because the PDE came from an energy; it is the object that Stages 6 and 7 turn into a matrix, entry by entry, and $l$ becomes the right-hand side. Stage 5 now builds the finite dimensional space on which this is done.
+

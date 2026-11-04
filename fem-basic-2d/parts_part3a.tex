@@ -1,0 +1,765 @@
+%%% ======================================================================
+\part{The Intrinsic Method: Everything from Edge Lengths}
+\label{part:intrinsic}
+
+Part~\ref{part:ga} ended with one extrinsic ingredient left in the method: the tangent plane of a vertex, which the code takes orthogonal to the vertex normal. This part removes it. We build the whole method from the edge lengths of the mesh, and nothing else: no normal, no rotor of space, no position in $\R^3$. The program of this part reads from the mesh only two things: which triangles there are and how they are glued together, and the length of every edge. The positions of the vertices are read exactly once, to measure those lengths, and once more at the very end, to draw the result.
+
+\paragraph{The same machine, fed in another way.} Parts~\ref{part:matrix} and~\ref{part:ga} ran the finite element method in eight stages, which we run here once more, under the same names:
+\begin{enumerate}
+\item the PDE (strong form): the equation, the unknown, the surface, the source condition;
+\item the function spaces: where the solution lives, and why the problem has exactly one solution there;
+\item the variational form: the energy whose minimizer solves the PDE;
+\item the weak form (Galerkin): multiply by a test field, integrate, and integrate by parts;
+\item the discretization: the mesh and the finite dimensional space;
+\item the discrete solution and the test functions;
+\item the element integrals, face by face;
+\item assembly and the linear system.
+\end{enumerate}
+What changes from part to part is the way differential geometry is fed into the machine. Part~\ref{part:ga} fed it \emph{extrinsically}: a tangent plane is a plane of space, written as a bivector $\mathsf T$, and parallel transport is a rotor of space that rolls one plane onto another. This part feeds it \emph{intrinsically}, in the language of a small \emph{gauge theory}, the two dimensional version of the gauge theory of gravity of Doran and Lasenby \cite{Doran2003}. All the computation happens in flat planes: the plane of each face, laid out from its lengths, and a plane for each vertex, made from the angles around it. Two fields say how those flat planes are related to the surface: the \emph{displacement gauge} $h$, which says what a step in a flat plane is on the surface, and so how to measure lengths, and the \emph{rotation gauge} $\Omega$, which says how to compare vectors at nearby points, and so how to differentiate. We build both from the start in Section~\ref{section:r3_continuous}.
+
+The element matrix~(\ref{eqn:ga_element}) of Part~\ref{part:ga},
+\begin{equation*}
+\mathrm L^f_{ij} = A_f\,(\nabla\phi_i\cdot\nabla\phi_j)\; e^{\mathsf T(\rho_j^f - \rho_i^f)} ,
+\end{equation*}
+will come out of the machine again, and it needs three things per face: an area $A_f$, the inner products $\nabla\phi_i \cdot \nabla\phi_j$ of the gradients of the three hat functions, and the connection angle $\rho_i^f$ of each corner. In gauge language, the first two come from the metric, which is all that the displacement gauge leaves intrinsic; we compute them from the lengths of the face (Section~\ref{section:int_triangle}). The third comes from the rotation gauge, and it is the real work. Inside a face the rotation gauge vanishes; the curvature of the mesh sits at its vertices, and it must be carried by the rotations that connect a plane for each vertex (Section~\ref{section:int_vertex}) with the plane of each face (Section~\ref{section:int_connection}).
+
+\paragraph{Three facts about $e^{\mathsf T\theta}$ used everywhere.} From Part~\ref{part:ga} we need the spinor coordinates and the unit complex numbers $e^{\mathsf T\theta}$ of a plane (the reader may read $\mathsf T$ as $i$). Since we shall use them in almost every line, we derive their three properties once, from $\mathsf T^2 = -1$ only. The powers of $\mathsf T$ repeat with period four: $\mathsf T^2 = -1$, $\mathsf T^3 = \mathsf T^2\,\mathsf T = -\mathsf T$, $\mathsf T^4 = (\mathsf T^2)^2 = 1$. In the exponential series we split the even and the odd powers:
+\begin{align*}
+e^{\mathsf T\theta} &= \sum_{n \ge 0} \frac{(\theta\mathsf T)^n}{n!} && \text{the series} \\
+&= \sum_{m \ge 0} \frac{\theta^{2m}\,(\mathsf T^2)^m}{(2m)!} + \sum_{m \ge 0} \frac{\theta^{2m+1}\,(\mathsf T^2)^m\,\mathsf T}{(2m+1)!} && \text{even, odd } n \\
+&= \sum_{m \ge 0} \frac{(-1)^m\theta^{2m}}{(2m)!} + \mathsf T\sum_{m \ge 0} \frac{(-1)^m\theta^{2m+1}}{(2m+1)!} && \mathsf T^2 = -1 \\
+&= \cos\theta + \mathsf T\sin\theta && \text{cos and sin.}
+\end{align*}
+\emph{(a) Its reverse.} The reverse of a scalar is itself and the reverse of the bivector $\mathsf T$ is $\widetilde{\mathsf T} = -\mathsf T$, so
+\begin{equation}
+\label{eqn:s3a_exp_rev}
+\widetilde{e^{\mathsf T\theta}} = \cos\theta + \widetilde{\mathsf T}\sin\theta = \cos\theta - \mathsf T\sin\theta = \cos(-\theta) + \mathsf T\sin(-\theta) = e^{-\mathsf T\theta} .
+\end{equation}
+\emph{(b) Its derivative.} If $\theta$ depends on a variable $s$, then, with the chain rule on $\cos$ and $\sin$,
+\begin{align}
+\frac{d}{ds}\, e^{\mathsf T\theta} &= -\theta'\sin\theta + \mathsf T\,\theta'\cos\theta = \theta'\,\big(\mathsf T\cos\theta - \sin\theta\big) && \text{chain rule} \notag \\
+&= \theta'\,\big(\mathsf T\cos\theta + \mathsf T^2\sin\theta\big) = \theta'\,\mathsf T\,\big(\cos\theta + \mathsf T\sin\theta\big) = \theta'\,\mathsf T\, e^{\mathsf T\theta} && -1 = \mathsf T^2 . \label{eqn:s3a_exp_deriv}
+\end{align}
+With $-\theta$ in place of $\theta$: $\frac{d}{ds}e^{-\mathsf T\theta} = -\theta'\,\mathsf T\, e^{-\mathsf T\theta}$. For small $\theta$, $\cos\theta \approx 1$ and $\sin\theta \approx \theta$, so $e^{\mathsf T\theta} \approx 1 + \theta\,\mathsf T$.
+\emph{(c) Commutation.} All numbers $p + q\,\mathsf T$ commute with each other: $(p + q\mathsf T)(r + s\mathsf T) = pr + ps\mathsf T + qr\mathsf T + qs\mathsf T^2$, and the same four terms come out of $(r + s\mathsf T)(p + q\mathsf T)$, because the real numbers $p, q, r, s$ commute with everything and $\mathsf T$ commutes with itself. Spinor coordinates, $\mathsf T$, $e^{\mathsf T\theta}$ and their products are all numbers of this kind, so we may reorder them freely. Finally, for the scalar part of a product of any two multivectors, $\langle AB\rangle = \langle BA\rangle$.
+
+\paragraph{The plan.} Section~\ref{section:int_meaning} says what it means to be intrinsic, with a folded sheet of paper. Section~\ref{section:r3_continuous} builds the gauge language and runs Stages 1 to 4 in it, for a smooth surface. Stage 5, the discretization, takes three sections: the faces, flat charts in which the displacement gauge is constant and the rotation gauge vanishes (Section~\ref{section:int_triangle}); the vertices, each with a flat chart made by stretching its cone of angles (Section~\ref{section:int_vertex}); and the gauge transitions between the two, which carry the curvature (Section~\ref{section:int_connection}). Section~\ref{section:int_fem} runs Stages 6 to 8. The program of this part is the header \code{IntrinsicConnection.h}, about one hundred and seventy lines that compute the whole geometry, with the function \code{intrinsicform::solve} of \code{ga\_fem.cpp}, which assembles and solves the system. We show every function next to the formula it evaluates, at the stage it serves. Section~\ref{section:int_experiments} compares the method with that of Part~\ref{part:ga} on folded sheets, on spheres and on the cactus, with the code that does the comparison, and Section~\ref{section:int_summary} compares the two ways of feeding the machine.
+
+%%% ----------------------------------------------------------------------
+\section{What It Means to Be Intrinsic}
+\label{section:int_meaning}
+
+\subsection{A folded sheet of paper}
+
+To test a method of parallel transport we need surfaces on which we know the answer, and on which a method can fail. The folded sheet of paper is such a test.
+
+Take a flat sheet of paper and draw on it a field of parallel arrows, all pointing the same way. On the flat sheet these arrows are the parallel transport of each other: the vector heat method started from one of them should return all of them. Now fold the sheet, without stretching or tearing it, along a few straight lines. An ant walking on the paper cannot tell that the paper was folded: it measures the same lengths and the same angles as before, and to it the arrows are still parallel. Parallel transport is defined by what the ant can measure (Section~\ref{section:ga_intrinsic}), so the correct answer on the folded sheet is the same field of arrows, drawn on the folded paper.
+
+A mesh carries two kinds of information. The first is what the ant measures: lengths, and the angles computed from them. The second is how the surface sits in space: the positions of the vertices, the normals, the angles at which neighboring faces meet. Folding changes the second kind and leaves the first kind exactly as it was. Since parallel transport depends only on the first kind, a method that gives a different answer after folding is using information it should not use. The exact answer is known at every resolution, so a correct method must reproduce it up to rounding errors, not merely approximately. On a curved surface such as the sphere no mesh is exact, and the test is instead how fast the error decreases under refinement; Section~\ref{section:int_experiments} uses both kinds of tests.
+
+The method of Parts~\ref{part:matrix} and~\ref{part:ga} gives the right answer for some foldings and not for others. If all the folds are parallel, as when the sheet is folded into a prism, it is exact. If the folds meet at angles, as in the Miura-ori pattern of Figure~\ref{fig:miura}, in which four creases meet at every vertex, its vectors deviate from the drawn ones by $7.4^\circ$ on average and by up to $21.9^\circ$ (Section~\ref{section:int_experiments}), although the paper is not stretched anywhere.
+
+The culprit is the vertex normal~(\ref{eqn:vertex_normal}),
+\begin{equation*}
+n_i = \frac{\sum_{f \ni i} 2 A_f\, n_f}{\big|\sum_{f \ni i} 2 A_f\, n_f\big|} ,
+\end{equation*}
+the average of the normals of the faces around the vertex, weighted by their areas. Part~\ref{part:ga} gives the vertex the plane orthogonal to that normal, and carries the vectors of each face into it by \emph{rolling} the face about the axis $n_f \times n_i$, the line where the plane of the face meets the plane of the vertex. At a vertex of the Miura-ori the four faces are tilted in four different directions. Their averaged normal defines a plane that is none of them, and each face is rolled into it about a different axis; the rolled faces no longer fit together edge to edge as they do on the paper. When all the folds through a vertex are parallel, every face is rolled about the same line, the fold, and rolling a face about the fold is exactly unfolding the paper: that is why the prism comes out right.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=0.85\linewidth}{\input{figures/fig_miura}}
+\caption{A Miura-ori fold: $24 \times 16$ parallelograms, each cut into two triangles, folded so that four creases meet at every vertex. The four angles at every vertex still add up to $2\pi$, so the folded sheet is isometric to a flat one, and parallel transport on it is the transport of the flat sheet. Arrows: the exact field, started at the center, which the method of this part reproduces to $2 \cdot 10^{-13}$ degrees. Shading: the error of the method of Part~\ref{part:ga} in each face, from $0^\circ$ (white) to $21.9^\circ$ (red).}
+\label{fig:miura}
+\end{figure}
+
+\subsection{Intrinsic quantities of a mesh}
+
+On a triangle mesh, what the ant can measure is the length of every edge, and from the lengths, the angles of every triangle, by the law of cosines. Inside a face it sees a flat triangle, and a flat triangle is determined, up to its position in space, by its three side lengths. So a mesh, as the ant knows it, is a list of triangles, the information of which triangles share which edges, and one length per edge.
+
+Two meshes with the same triangles, glued in the same way, and the same edge lengths are called \emph{isometric}: the second may be a folded copy of the first, as in Figure~\ref{fig:miura}. A quantity is \emph{intrinsic} if it can be computed from the edge lengths alone; it is then the same on all isometric meshes. A quantity that changes under folding, such as a normal, is \emph{extrinsic}.
+
+The program of Parts~\ref{part:matrix} and~\ref{part:ga} reads from the mesh:
+\begin{enumerate}
+\item the positions $x_a$ of the vertices of each face, through the matrix $B$, to compute the area and the gradients of the hat functions (Section~\ref{section:gradients});
+\item the face normal $n_f$, for the face frame and the rotor $Q_{i \to f}$;
+\item the vertex normal $n_i$, for the vertex frame and the rotor $Q_{i \to f}$.
+\end{enumerate}
+Item 1 only looks extrinsic: the area and the gradients depend on the three edge lengths alone (Section~\ref{section:r3_displacement} in general, Section~\ref{section:int_triangle} for a face). Items 2 and 3 enter only through the connection angle $\rho_i^f$; we replace them by angles measured on the faces (Sections~\ref{section:int_vertex} and~\ref{section:int_connection}). In the language of the next section: the positions enter through the displacement gauge $h$, the lengths through the metric that $h$ produces, and the method will be allowed to use the metric only.
+
+\paragraph{In the code.} The program keeps the mesh in the half-edge structure of \code{src/HalfEdge}, which we describe in Section~\ref{section:int_vertex}. For now we need only this: each face has a first half edge \code{f.edge}, and \code{next} goes to the following half edge of the same face, counterclockwise. The helper \code{faceCorners} collects the three vertices and the three half edges of a face, with \code{h[a]} going from \code{v[a]} to \code{v[a+1]}:
+\lstinputlisting[firstline=24, lastline=29, firstnumber=24]{../src/IntrinsicConnection.h}
+In the notation of Part~\ref{part:matrix}, \code{v[0]}, \code{v[1]}, \code{v[2]} are $x_1, x_2, x_3$: the code counts from zero, the text from one. The first loop of \code{intrinsic::compute} is the only place where the positions \code{p} of the vertices are read. It stores the three lengths of each face and then calls \code{layOut}, which computes everything else about the face from those three numbers:
+\lstinputlisting[firstline=86, lastline=95, firstnumber=86]{../src/IntrinsicConnection.h}
+Line 93 writes \code{length[a]} $= |x_{a+1} - x_a|$, the length of \code{h[a]}, with the index taken modulo three. So \code{length[0]} $= \ell_{12}$, \code{length[1]} $= \ell_{23}$ and \code{length[2]} $= \ell_{13}$, in the notation of Section~\ref{section:int_triangle}. After line 95, the positions are not used again until the result is drawn.
+
+%%% ----------------------------------------------------------------------
+\section{Stages 1 to 4 in Gauge Language}
+\label{section:r3_continuous}
+
+\paragraph{What we want.} Before we discretize, we write the continuous problem in a form that uses only what the ant can measure. Part~\ref{part:ga} wrote it with vectors of space: a tangent field is a vector of $\R^3$ at each point, the tangent plane is a bivector $\mathsf T$ of space, and the covariant derivative removes from the derivative the part that leaves the plane. The ant has no $\R^3$. We now rewrite the same problem as a small gauge theory on flat planes, and then run Stages 1 to 4 in it. Nothing in this section is discrete: the surface is smooth, and the mesh returns in Section~\ref{section:int_triangle}. The reward comes at Stage 5: the discretization will consist in choosing the two gauge fields piece by piece on the mesh.
+
+\subsection{The idea: compute in flat planes, keep the geometry in two fields}
+\label{section:r3_idea}
+
+The finite element method computes in flat planes anyway: Part~\ref{part:matrix} integrated over the reference triangle, a triangle of the plane $\R^2$, and carried the results to the face with the affine map. How can a method that integrates over flat triangles solve an equation on a curved surface? The gauge language answers: the integrals are done in flat planes; the geometry of the surface enters only through the \emph{metric}, which the displacement gauge produces in each plane, and through the \emph{rotations} that relate the planes to each other, which the rotation gauge produces. Both fields contain arbitrary choices, and no measurable quantity may depend on them; a change of those choices is a \emph{gauge transformation}, and a formula that does not change under it is \emph{gauge invariant}.
+
+In this part there are three kinds of flat planes: a \emph{chart} of a smooth surface, that is, a patch $P$ of $\R^2$ whose points label points of the surface (in this section); the plane of a face, which is the reference triangle or the layout of the face (Section~\ref{section:int_triangle}); and the plane of a vertex, the stretched cone (Section~\ref{section:int_vertex}).
+
+A word on notation. Parts~\ref{part:matrix} and~\ref{part:ga} use $\Omega$ alone for the surface, the domain of the integrals, and we keep that. The rotation gauge is written $\Omega(a)$, always with its argument, a flat direction $a$. In a chart we write $\partial_k = \partial/\partial\xi_k$, and for a flat vector $a = (a_1, a_2)$ the flat directional derivative is $a\cdot\hat\nabla = a_1\partial_1 + a_2\partial_2$.
+
+\subsection{The displacement gauge and the metric}
+\label{section:r3_displacement}
+
+\paragraph{The displacement gauge.} Take a chart: a patch $P$ of the plane with coordinates $\xi = (\xi_1, \xi_2)$, and a map $x(\xi)$ that places it on the surface. For the derivation we may picture the surface in space, but we shall keep only what survives without space. A small flat step $\epsilon a$, with $a = (a_1, a_2)$, at $\xi$ goes to the step $x(\xi + \epsilon a) - x(\xi)$ on the surface. Taylor's formula in each of the two variables gives
+\begin{align*}
+x(\xi + \epsilon a) - x(\xi) &= \epsilon a_1\, \partial_1 x + \epsilon a_2\, \partial_2 x + O(\epsilon^2) && \text{Taylor} \\
+&= \epsilon\, \big(a_1\, \partial_1 x + a_2\, \partial_2 x\big) + O(\epsilon^2) && \text{$\epsilon$ out,}
+\end{align*}
+and the coefficient of $\epsilon$ is
+\begin{equation}
+\label{eqn:r3_h}
+h(a) = a_1\, \frac{\partial x}{\partial \xi_1} + a_2\, \frac{\partial x}{\partial \xi_2} ,
+\end{equation}
+the derivative of $x$ in the direction $a$. The map $h$ is linear, from the flat plane $\R^2$ to the tangent plane of the surface at $x(\xi)$; as a matrix it is the $3 \times 2$ matrix whose columns are $h(\varepsilon_1) = \partial_1 x$ and $h(\varepsilon_2) = \partial_2 x$, with $\varepsilon_1 = (1, 0)$ and $\varepsilon_2 = (0, 1)$. This is the \emph{displacement gauge} of the chart: the rule that says what a flat vector ``is'' on the surface. (Doran and Lasenby write the map that acts on displacements as $h^{-1}$; we write $h$ for it, because on a face it is $B$, as we now see.)
+
+\emph{On a face.} The affine map~(\ref{eqn:affine}) is
+\begin{equation*}
+F(\xi) = x_1 + B\,\xi = x_1 + \xi_1\, e_1 + \xi_2\, e_2, \qquad B = \big[\, e_1 \;\; e_2 \,\big] = \big[\, x_2 - x_1 \;\; x_3 - x_1 \,\big] .
+\end{equation*}
+Its partial derivatives are $\partial_1 F = e_1$ and $\partial_2 F = e_2$, the same at every point, so by~(\ref{eqn:r3_h})~[\,$h(a) = a_1\partial_1 x + a_2\partial_2 x$\,] the displacement gauge of the face is $h(a) = a_1 e_1 + a_2 e_2 = B a$: $h = B$, constant on the face.
+
+\paragraph{The metric.} The ant measures the lengths of steps and the angles between them, that is, inner products of surface vectors. For two flat steps $a$ and $b$, writing $h$ as a matrix, the inner product of their images is
+\begin{align*}
+h(a)\cdot h(b) &= (ha)^T (hb) && \text{inner product as } v^T w \\
+&= \big(a^T h^T\big)(h\, b) && (ha)^T = a^T h^T \\
+&= a^T\, \big(h^T h\big)\, b && \text{regroup.}
+\end{align*}
+The entry $(k, l)$ of $h^T h$ is the product of column $k$ and column $l$ of $h$, that is $h(\varepsilon_k)\cdot h(\varepsilon_l)$. So
+\begin{equation}
+\label{eqn:r3_metric}
+g(a, b) = h(a)\cdot h(b) = a^T G\, b, \qquad G = h^T h = \begin{pmatrix} h(\varepsilon_1)\cdot h(\varepsilon_1) & h(\varepsilon_1)\cdot h(\varepsilon_2) \\ h(\varepsilon_1)\cdot h(\varepsilon_2) & h(\varepsilon_2)\cdot h(\varepsilon_2) \end{pmatrix}.
+\end{equation}
+The bilinear function $g$, or its symmetric matrix $G$, is the \emph{metric} of the chart. We write $G^{kl}$ for the entries of the inverse matrix $G^{-1}$; it is symmetric too, because $(G^{-1})^T = (G^T)^{-1} = G^{-1}$.
+
+\paragraph{Only the metric is intrinsic.} The gauge $h$ says where a step goes in space; the metric says only how long it is and at what angle to the others. Rotate the surface in space by a rotation $R$, with $R^T R = I$. The gauge becomes $Rh$, and the metric becomes
+\begin{equation*}
+(Rh)^T(Rh) = \big(h^T R^T\big)(R\, h) = h^T\,\big(R^T R\big)\, h = h^T\, I\, h = h^T h = G :
+\end{equation*}
+it does not change. Fold the surface without stretching it: each piece is moved rigidly, its gauge changes by its own rotation, and by the same lines its metric does not change. So everything the ant can measure is a function of $g$, and we adopt the rule of this part: \emph{the method may use the displacement gauge only through the metric}. The folded paper of Section~\ref{section:int_meaning} is the test of this rule.
+
+\paragraph{What the finite element method needs from the metric.} Three things: the area element, the inner product of gradients, and sums over an orthonormal basis.
+
+\emph{(i) The area element and the change of variables.} Cut the chart into small rectangles with sides $d\xi_1\,\varepsilon_1$ and $d\xi_2\,\varepsilon_2$. By~(\ref{eqn:r3_h}), to first order, $h$ carries such a rectangle to the parallelogram with sides $u\, d\xi_1$ and $v\, d\xi_2$, where $u = h(\varepsilon_1)$ and $v = h(\varepsilon_2)$. The oriented area of that parallelogram is the bivector $(u\,d\xi_1)\wedge(v\,d\xi_2) = (u\wedge v)\,d\xi_1 d\xi_2$, the scalars coming out of the outer product because it is bilinear; its area is $|u\wedge v|\, d\xi_1 d\xi_2$. We now compute $|u\wedge v|^2$ in geometric algebra. The geometric products of $u$ and $v$ in both orders are
+\begin{equation*}
+uv = u\cdot v + u\wedge v, \qquad vu = v\cdot u + v\wedge u = u\cdot v - u\wedge v ,
+\end{equation*}
+since the inner product is symmetric and the outer product antisymmetric. Multiply them in two ways. First by associativity, with $vv = |v|^2$ and $uu = |u|^2$:
+\begin{equation*}
+(uv)(vu) = u\,(vv)\,u = |v|^2\, uu = |u|^2|v|^2 .
+\end{equation*}
+Then by expanding the two sums, writing $c = u\cdot v$ (a scalar, which commutes with everything) and $B = u\wedge v$ for short:
+\begin{align*}
+(uv)(vu) &= (c + B)(c - B) && \text{the two products} \\
+&= c^2 - cB + Bc - B^2 && \text{distribute} \\
+&= c^2 - B^2 = (u\cdot v)^2 - (u\wedge v)^2 && cB = Bc .
+\end{align*}
+The bivector $u\wedge v$ lies in the tangent plane, so it is $|u\wedge v|$ times the unit bivector $\mathsf T$ of that plane (or minus it), and $(u\wedge v)^2 = |u\wedge v|^2\,\mathsf T^2 = -|u\wedge v|^2$. Equating the two results:
+\begin{equation*}
+|u|^2|v|^2 = (u\cdot v)^2 + |u\wedge v|^2, \qquad\text{that is,}\qquad |u\wedge v|^2 = |u|^2|v|^2 - (u\cdot v)^2 ,
+\end{equation*}
+which is Lagrange's identity. By~(\ref{eqn:r3_metric}), $|u|^2 = G_{11}$, $|v|^2 = G_{22}$ and $u\cdot v = G_{12}$, so the right side is $G_{11}G_{22} - G_{12}^2 = \det G$. So the small rectangle $d\xi_1\, d\xi_2$ of the chart has, on the surface, the area
+\begin{equation}
+\label{eqn:r3_area}
+dA = \sqrt{\det G}\; d\xi_1\, d\xi_2 ,
+\end{equation}
+and adding over all the small rectangles of the chart gives the change of variables of a double integral: for a function $f$ on the part of the surface covered by the chart, written $\hat f(\xi) = f(x(\xi))$ in the chart,
+\begin{equation}
+\label{eqn:s3a_change}
+\int f\, dA = \int_P \hat f(\xi)\, \sqrt{\det G(\xi)}\; d\xi_1\, d\xi_2 .
+\end{equation}
+For a face, $u = e_1$ and $v = e_2$, and $|e_1\wedge e_2| = |e_1\times e_2| = 2A_f$, so $\sqrt{\det G_f} = 2A_f$. For the triangle of Example~\ref{ex:triangle}, $e_1 = (2, 0, 0)$ and $e_2 = (0, 1, 1)$, so $G_f = \left(\begin{smallmatrix} 4 & 0 \\ 0 & 2 \end{smallmatrix}\right)$, $\sqrt{\det G_f} = \sqrt 8 = 2\sqrt 2$, and $A_f = \sqrt 2$, the area of that triangle.
+
+\emph{(ii) The gradients.} A function $f$ on the surface is a function $\hat f(\xi)$ in the chart. Its rate of change along the surface vector $h(a)$ is the derivative of $\hat f(\xi + \epsilon a)$ at $\epsilon = 0$, because the curve $\epsilon \mapsto x(\xi + \epsilon a)$ leaves $x(\xi)$ with velocity $h(a)$; by the chain rule this is $a_1\partial_1\hat f + a_2\partial_2\hat f = a\cdot\hat\nabla\hat f$, with the flat gradient $\hat\nabla\hat f = (\partial_1\hat f, \partial_2\hat f)$. The gradient $\nabla f$ is the tangent vector with
+\begin{equation*}
+\nabla f\cdot h(a) = a\cdot\hat\nabla\hat f \qquad\text{for every flat } a .
+\end{equation*}
+Every tangent vector is the image of some flat vector, so we look for it as $\nabla f = h(c)$, and solve for $c$:
+\begin{align*}
+\nabla f\cdot h(a) &= h(c)\cdot h(a) && \nabla f = h(c) \\
+&= c^T G\, a && \text{by (\ref{eqn:r3_metric})} \\
+&= a^T G\, c && \text{a number is its own transpose, } G^T = G .
+\end{align*}
+So $a^T G c = a^T\hat\nabla\hat f$ for every $a$; with $a = \varepsilon_1$ and $a = \varepsilon_2$ this says that the two components of $Gc$ and of $\hat\nabla\hat f$ agree, $Gc = \hat\nabla\hat f$, and so $c = G^{-1}\hat\nabla\hat f$. For two functions $f, f'$, with $c' = G^{-1}\hat\nabla\hat f'$,
+\begin{align}
+\nabla f\cdot\nabla f' &= h(c)\cdot h(c') = c^T G\, c' && \text{by (\ref{eqn:r3_metric})} \notag \\
+&= \big(G^{-1}\hat\nabla\hat f\big)^T G\, \big(G^{-1}\hat\nabla\hat f'\big) && \text{substitute } c,\ c' \notag \\
+&= (\hat\nabla\hat f)^T\, (G^{-1})^T\, G\, G^{-1}\, \hat\nabla\hat f' && (AB)^T = B^TA^T \notag \\
+&= (\hat\nabla\hat f)^T\, G^{-1}\, \hat\nabla\hat f' && (G^{-1})^T = G^{-1},\ G G^{-1} = I . \label{eqn:r3_grad}
+\end{align}
+The inner product of two gradients needs only the flat derivatives and the inverse metric. Section~\ref{section:int_triangle} does this computation again for a face, where $h = B$.
+
+\emph{(iii) Sums over an orthonormal basis.} The energy~(\ref{eqn:dirichlet}),
+\begin{equation*}
+E(U) = \frac12 \int_\Omega |\nabla U|^2\, dA, \qquad |\nabla U|^2 = \sum_{m=1}^2 |\nabla_{e_m} U|^2,
+\end{equation*}
+sums over an orthonormal basis $e_1, e_2$ of the tangent plane. Write $e_m = h(c_m)$ and put the two flat vectors $c_1, c_2$ as the columns of a matrix $C$. Orthonormality says $e_m\cdot e_n = c_m^T G c_n = \delta_{mn}$, that is, $C^T G C = I$. Multiply on the left by $C^{-T} = (C^T)^{-1}$ and on the right by $C^{-1}$: $G = C^{-T}C^{-1}$. Invert, reversing the order of the factors: $G^{-1} = (C^{-1})^{-1}(C^{-T})^{-1} = C\, C^T$. The entry $(k, l)$ of $CC^T$ is row $k$ of $C$ times column $l$ of $C^T$, so
+\begin{equation*}
+G^{kl} = \sum_m (c_m)_k\, (c_m)_l .
+\end{equation*}
+Now let $X(e)$ and $Y(e)$ be two quantities that depend linearly on a direction $e$, such as two derivatives along $e$, and write $X_k = X(h(\varepsilon_k))$, $Y_l = Y(h(\varepsilon_l))$. Since $c_m = \sum_k (c_m)_k\varepsilon_k$ and $h$ and $X$ are linear,
+\begin{equation*}
+X(e_m) = X\Big(h\Big(\sum_k (c_m)_k\,\varepsilon_k\Big)\Big) = \sum_k (c_m)_k\, X\big(h(\varepsilon_k)\big) = \sum_k (c_m)_k\, X_k ,
+\end{equation*}
+and in the same way $Y(e_m) = \sum_l (c_m)_l\, Y_l$. Then
+\begin{align}
+\sum_m X(e_m)\, Y(e_m) &= \sum_m \Big(\sum_k (c_m)_k X_k\Big)\Big(\sum_l (c_m)_l Y_l\Big) && \text{substitute} \notag \\
+&= \sum_{k,l} \Big(\sum_m (c_m)_k (c_m)_l\Big) X_k Y_l && \text{swap sums} \notag \\
+&= \sum_{k,l} G^{kl}\, X_k\, Y_l && \text{entry of } CC^T . \label{eqn:r3_gkl}
+\end{align}
+An orthonormal basis of the surface is replaced, in the chart, by the inverse metric. With $X(e) = e\cdot\nabla f$ and $Y(e) = e\cdot\nabla f'$, $X_k = \partial_k\hat f$ and $Y_l = \partial_l\hat f'$, and~(\ref{eqn:r3_gkl}) is~(\ref{eqn:r3_grad}) again: $\sum_m (e_m\cdot\nabla f)(e_m\cdot\nabla f') = \nabla f\cdot\nabla f' = \sum_{k,l} G^{kl}\,\partial_k\hat f\,\partial_l\hat f'$.
+
+\subsection{The rotation gauge and the covariant derivative}
+\label{section:r3_rotation}
+
+\paragraph{Spinor coordinates in a chart.} A tangent field $U$ is described by its spinor coordinate with respect to an orthonormal frame field $t$, as in~(\ref{eqn:ga_spinor}):
+\begin{equation*}
+U = t\,\psi, \qquad \psi = u_1 + u_2\,\mathsf T, \qquad b = t\,\mathsf T = n\times t .
+\end{equation*}
+In the chart we read $\psi(\xi)$ as a complex number attached to each point of the flat plane, with $\mathsf T$ as the imaginary unit; all planes have the same algebra of such numbers, so nothing of space is needed to compute with them. These numbers are what the finite element method will store at the vertices. To differentiate $U$ we must compare the coordinates at two nearby points, and the coordinates change for two reasons: because the field turns, and because the frame turns. Only the first is geometric.
+
+\paragraph{The rotation gauge.} Part~\ref{part:ga} measured the turning of the frame against parallel transport with the connection form~(\ref{eqn:ga_omega})~[\,$\nabla_a t = \omega(a)\, t\,\mathsf T$\,], where $\omega(a) = b\cdot\nabla_a t$. In the chart we attach it to flat directions: the \emph{rotation gauge} of the chart is
+\begin{equation}
+\label{eqn:r3_Omega}
+\Omega(a) = \omega\big(h(a)\big)\, \mathsf T ,
+\end{equation}
+for each flat direction $a$, a bivector: the infinitesimal rotation of the frame, relative to parallel transport, per unit flat step along $a$. It is a bivector because rotations are generated by bivectors. Over the small flat step $\epsilon a$ the frame turns by the angle $\epsilon\,\omega(h(a))$, that is, by the unit complex number $e^{\mathsf T\epsilon\,\omega(h(a))} \approx 1 + \epsilon\,\omega(h(a))\,\mathsf T = 1 + \epsilon\,\Omega(a)$, by the small-angle form $e^{\mathsf T\theta} \approx 1 + \theta\,\mathsf T$ of~(\ref{eqn:s3a_exp_deriv}). In two dimensions every bivector of the plane is a multiple of $\mathsf T$, so $\Omega$ amounts to one number per direction. Since $\omega$ and $h$ are linear, with $a = a_1\varepsilon_1 + a_2\varepsilon_2$,
+\begin{equation*}
+\omega_k = \omega\big(h(\varepsilon_k)\big), \qquad \omega\big(h(a)\big) = \omega\big(a_1 h(\varepsilon_1) + a_2 h(\varepsilon_2)\big) = a_1\,\omega_1 + a_2\,\omega_2 :
+\end{equation*}
+two numbers per point. $\omega$ is a \emph{1-form}, a linear function of the direction.
+
+\paragraph{The covariant derivative.} We want the covariant derivative of $U = t\psi$ along the surface direction $h(a)$, written in the chart. Equation~(\ref{eqn:ga_covariant}) of Part~\ref{part:ga} is, for a surface direction $X$,
+\begin{equation*}
+\nabla_X (t \psi) = t\, \big( X \cdot \nabla \psi + \omega(X)\, \mathsf T\, \psi \big) .
+\end{equation*}
+Put $X = h(a)$. The term $h(a)\cdot\nabla\psi$ is the rate of change of the two real components of $\psi$ along $h(a)$, which by the chain rule of (ii) above is the flat rate $a\cdot\hat\nabla\psi$; and $\omega(h(a))\,\mathsf T = \Omega(a)$ by~(\ref{eqn:r3_Omega}). So
+\begin{align*}
+\nabla_{h(a)} (t \psi) &= t\, \big( h(a) \cdot \nabla \psi + \omega(h(a))\, \mathsf T\, \psi \big) && X = h(a) \\
+&= t\, \big( a \cdot \hat\nabla \psi + \Omega(a)\, \psi \big) && \text{chain rule, (\ref{eqn:r3_Omega}),}
+\end{align*}
+and the covariant derivative of $U$ along $h(a)$ is $t\, D_a\psi$ with
+\begin{equation}
+\label{eqn:r3_covariant}
+D_a\psi = a\cdot\hat\nabla\psi + \Omega(a)\,\psi, \qquad D_k\psi = \partial_k\psi + \omega_k\,\mathsf T\,\psi \quad (a = \varepsilon_k) .
+\end{equation}
+The first term is the change of the coordinates seen in the flat plane; the second is the correction for the turning of the frame. All the geometry of differentiation is in $\Omega$. Both terms are linear in $a$, so $D_a\psi = a_1 D_1\psi + a_2 D_2\psi$.
+
+\paragraph{The rotation gauge comes from the metric.} The connection form is not extra data. Cartan's first two structure equations of Remark~\ref{rem:structure}, $d\theta^1 = \omega\wedge\theta^2$ and $d\theta^2 = -\omega\wedge\theta^1$, determine $\omega$ from the coframe of $t$, and the coframe is determined by the metric and the chosen frame. So $\Omega$ is intrinsic, a function of $g$ and of the choice of frame. One case matters above all. Suppose the chart is \emph{isometric}, $G = I$, as for the layout of a face in the plane: $x(\xi) = x_0 + \xi_1 E_1 + \xi_2 E_2$ with two fixed orthonormal vectors $E_1, E_2$. Take as frame a constant direction of the chart, $t = \cos\gamma\, E_1 + \sin\gamma\, E_2$ with a fixed angle $\gamma$. Then $t$ is the same vector at every point, its derivative along any direction is zero, and
+\begin{equation*}
+\omega_k = b\cdot\nabla_{h(\varepsilon_k)} t = b\cdot 0 = 0, \qquad \Omega = 0, \qquad D_k\psi = \partial_k\psi + 0\cdot\mathsf T\psi = \partial_k\psi :
+\end{equation*}
+the covariant derivative is the plain derivative of the two components. A chart and frame with $\Omega = 0$ is called a \emph{flat gauge}.
+
+\paragraph{Parallel transport in a chart.} A field is parallel along a curve $\xi(s)$ of the chart when its covariant derivative along the curve vanishes, $D_{\xi'(s)}\psi = 0$. By~(\ref{eqn:r3_covariant}) with $a = \xi'(s)$, and since $\xi'\cdot\hat\nabla\psi = d\psi/ds$ by the chain rule,
+\begin{equation*}
+0 = D_{\xi'}\psi = \frac{d\psi}{ds} + \omega\big(h(\xi')\big)\,\mathsf T\,\psi, \qquad\text{that is,}\qquad \frac{d\psi}{ds} = -\,\omega\big(h(\xi')\big)\,\mathsf T\,\psi .
+\end{equation*}
+Let $\varphi(s) = \int_0^s \omega(h(\xi'(\sigma)))\,d\sigma$, so that $\varphi' = \omega(h(\xi'))$, and try $\psi(s) = e^{-\mathsf T\varphi(s)}\psi(0)$. By~(\ref{eqn:s3a_exp_deriv}) with $-\varphi$ in place of $\theta$,
+\begin{equation*}
+\frac{d\psi}{ds} = \Big(\frac{d}{ds}\, e^{-\mathsf T\varphi}\Big)\psi(0) = -\varphi'\,\mathsf T\, e^{-\mathsf T\varphi}\psi(0) = -\,\omega\big(h(\xi')\big)\,\mathsf T\,\psi(s) ,
+\end{equation*}
+which is the equation, and $\psi(s) = \psi(0)$ at $s = 0$. A linear differential equation has only one solution with a given initial value, so
+\begin{equation}
+\label{eqn:r3_transport}
+\psi(s) = e^{-\mathsf T\int_0^s \omega}\; \psi(0), \qquad \int_0^s \omega = \int_0^s \big(\omega_1\, \xi_1'(\sigma) + \omega_2\, \xi_2'(\sigma)\big)\, d\sigma .
+\end{equation}
+In coordinates, parallel transport is a rotation by minus the integral of the connection form along the path: one unit complex number per path. The frame turns forwards by $\int\omega$ relative to the parallel field, so the coordinates of the parallel field turn backwards by the same angle. The formula is this simple because rotations of a plane commute (fact (c)): the small rotations along the path can be multiplied in any order, and their angles simply add. The discrete method will replace each such integral, from a vertex into a face, by one angle $\rho_i^f$.
+
+\subsection{Gauge transformations and the covariance of the energy}
+\label{section:r3_covariance}
+
+\paragraph{The rotation gauge transformation.} The frame $t$ is an arbitrary choice. Turn it by an angle field $\theta(\xi)$: $t' = t\, e^{\mathsf T\theta}$. We compute the three things that change, in the chart.
+
+\emph{The coordinates.} The same vector is $U = t\psi = t'\psi'$. Substitute $t'$:
+\begin{equation*}
+t\,\psi = \big(t\, e^{\mathsf T\theta}\big)\,\psi' .
+\end{equation*}
+Multiply on the left by $t$, with $tt = 1$: $\psi = e^{\mathsf T\theta}\psi'$. Multiply on the left by $e^{-\mathsf T\theta}$, with $e^{-\mathsf T\theta}e^{\mathsf T\theta} = e^0 = 1$:
+\begin{equation*}
+\psi' = e^{-\mathsf T\theta}\,\psi .
+\end{equation*}
+
+\emph{The connection form.} By $e^{\mathsf T\theta} = \cos\theta + \mathsf T\sin\theta$ and $t\mathsf T = b$, the new frame vector is $t' = \cos\theta\; t + \sin\theta\; b$. Its derivative along $h(\varepsilon_k)$ follows from the product rule, the chain rule $\partial_k\cos\theta = -\sin\theta\,\partial_k\theta$, $\partial_k\sin\theta = \cos\theta\,\partial_k\theta$, and the turning of the old frame, $\nabla_{h(\varepsilon_k)} t = \omega_k\, b$ and $\nabla_{h(\varepsilon_k)} b = -\omega_k\, t$ (Section~\ref{section:ga_gauge}):
+\begin{align*}
+\nabla_{h(\varepsilon_k)} t' &= -\sin\theta\,(\partial_k\theta)\, t + \cos\theta\,\omega_k\, b && \text{product rule} \\
+&\quad + \cos\theta\,(\partial_k\theta)\, b - \sin\theta\,\omega_k\, t \\
+&= \big(\omega_k + \partial_k\theta\big)\,\big(-\sin\theta\; t + \cos\theta\; b\big) && \text{collect} \\
+&= \big(\omega_k + \partial_k\theta\big)\; t'\,\mathsf T && \text{see below.}
+\end{align*}
+The last line uses $t'\mathsf T = (\cos\theta\, t + \sin\theta\, b)\mathsf T = \cos\theta\; t\mathsf T + \sin\theta\; t\mathsf T\mathsf T = \cos\theta\; b - \sin\theta\; t$, by $t\mathsf T = b$ and $\mathsf T^2 = -1$. Comparing with the definition $\nabla_{h(\varepsilon_k)} t' = \omega'_k\, t'\mathsf T$, and with~(\ref{eqn:r3_Omega}) for a general flat $a$,
+\begin{equation*}
+\omega'_k = \omega_k + \partial_k\theta, \qquad \Omega'(a) = \Omega(a) + (a\cdot\hat\nabla\theta)\,\mathsf T .
+\end{equation*}
+
+\emph{The covariant derivative.} We want $D'_k\psi'$, the covariant derivative~(\ref{eqn:r3_covariant}) in the new frame, $D'_k\psi' = \partial_k\psi' + \omega'_k\,\mathsf T\,\psi'$. Substitute $\psi' = e^{-\mathsf T\theta}\psi$ and $\omega'_k = \omega_k + \partial_k\theta$, each inside parentheses, and do one operation per line:
+\begin{align*}
+D'_k\psi' &= \partial_k\big(e^{-\mathsf T\theta}\psi\big) + \big(\omega_k + \partial_k\theta\big)\,\mathsf T\, \big(e^{-\mathsf T\theta}\psi\big) && \text{substitute} \\
+&= \big(\partial_k e^{-\mathsf T\theta}\big)\psi + e^{-\mathsf T\theta}\,\partial_k\psi && \text{product rule} \\
+&\quad + \big(\omega_k + \partial_k\theta\big)\,\mathsf T\, e^{-\mathsf T\theta}\psi \\
+&= -(\partial_k\theta)\,\mathsf T e^{-\mathsf T\theta}\psi + e^{-\mathsf T\theta}\,\partial_k\psi && \text{derivative} \\
+&\quad + \big(\omega_k + \partial_k\theta\big)\,\mathsf T\, e^{-\mathsf T\theta}\psi \\
+&= -(\partial_k\theta)\,\mathsf T e^{-\mathsf T\theta}\psi + e^{-\mathsf T\theta}\,\partial_k\psi && \text{distribute} \\
+&\quad + \omega_k\,\mathsf T e^{-\mathsf T\theta}\psi + (\partial_k\theta)\,\mathsf T e^{-\mathsf T\theta}\psi \\
+&= e^{-\mathsf T\theta}\,\partial_k\psi + \omega_k\,\mathsf T e^{-\mathsf T\theta}\psi && \text{1st, 4th cancel} \\
+&= e^{-\mathsf T\theta}\,\partial_k\psi + e^{-\mathsf T\theta}\,\omega_k\,\mathsf T\psi && \text{fact (c)} \\
+&= e^{-\mathsf T\theta}\big(\partial_k\psi + \omega_k\,\mathsf T\psi\big) && e^{-\mathsf T\theta} \text{ out} \\
+&= e^{-\mathsf T\theta}\, D_k\psi && \text{by (\ref{eqn:r3_covariant}).}
+\end{align*}
+In the line marked ``derivative'' we used~(\ref{eqn:s3a_exp_deriv}), $\partial_k e^{-\mathsf T\theta} = -(\partial_k\theta)\,\mathsf T e^{-\mathsf T\theta}$, and in the line marked ``fact (c)'' that $\mathsf T e^{-\mathsf T\theta} = e^{-\mathsf T\theta}\mathsf T$. The extra turning appears twice, once from differentiating the rotated coordinate and once in the new connection form, with opposite signs. This is~(\ref{eqn:ga_gauge})~[\,$D'_a\psi' = e^{-\mathsf T\theta}D_a\psi$\,] in the chart: the covariant derivative transforms exactly as the coordinates do. The computation used nothing about $\psi$ except that it is a spinor valued function, so for any such function $F$,
+\begin{equation}
+\label{eqn:s3a_DF}
+D'_k\big(e^{-\mathsf T\theta}F\big) = e^{-\mathsf T\theta}\, D_k F .
+\end{equation}
+
+\paragraph{Covariance of the energy.} The finite element method needs two densities: the product of two fields and the product of their derivatives. For spinors, the inner product is the scalar part of the product with the reverse, $U\cdot V = \langle\psi\widetilde\chi\rangle$ by~(\ref{eqn:r2_inner}). For the derivatives, apply~(\ref{eqn:r3_gkl}) with $X(e) = \nabla_e U$ and $Y(e) = \nabla_e V$, whose products are taken as $X\cdot Y$; since $\nabla_{h(\varepsilon_k)} U = t\,D_k\psi$, the factors are $X_k = t\,D_k\psi$ and $Y_l = t\,D_l\chi$, and $X_k\cdot Y_l = \langle (D_k\psi)\,\widetilde{(D_l\chi)}\rangle$ by~(\ref{eqn:r2_inner}). So the energy density $\nabla U : \nabla V = \sum_m \nabla_{e_m}U\cdot\nabla_{e_m}V$ is, in the chart,
+\begin{equation}
+\label{eqn:r3_density}
+\nabla U : \nabla V = \sum_{k,l} G^{kl}\, \big\langle (D_k\psi)\, \widetilde{(D_l\chi)} \big\rangle .
+\end{equation}
+Now change the frame. The reverse of a product is the product of the reverses in the opposite order, $\widetilde{AB} = \widetilde B\widetilde A$, so by~(\ref{eqn:s3a_exp_rev})
+\begin{equation*}
+\widetilde{\chi'} = \widetilde{e^{-\mathsf T\theta}\chi} = \widetilde\chi\;\widetilde{e^{-\mathsf T\theta}} = \widetilde\chi\; e^{\mathsf T\theta} .
+\end{equation*}
+Then the first density, line by line:
+\begin{align*}
+\big\langle \psi'\widetilde{\chi'}\big\rangle &= \big\langle \big(e^{-\mathsf T\theta}\psi\big)\big(\widetilde\chi\, e^{\mathsf T\theta}\big)\big\rangle && \text{substitute} \\
+&= \big\langle e^{\mathsf T\theta}\, e^{-\mathsf T\theta}\,\psi\,\widetilde\chi\big\rangle && \langle AB\rangle = \langle BA\rangle,\ A = e^{-\mathsf T\theta}\psi\widetilde\chi,\ B = e^{\mathsf T\theta} \\
+&= \langle\psi\widetilde\chi\rangle && e^{\mathsf T\theta}e^{-\mathsf T\theta} = 1 .
+\end{align*}
+By~(\ref{eqn:s3a_DF}), $D'_k\psi' = e^{-\mathsf T\theta}D_k\psi$ and $D'_l\chi' = e^{-\mathsf T\theta}D_l\chi$, so the same three lines, with $D_k\psi$ in place of $\psi$ and $D_l\chi$ in place of $\chi$, give
+\begin{equation*}
+\big\langle (D'_k\psi')\,\widetilde{(D'_l\chi')}\big\rangle = \big\langle \big(e^{-\mathsf T\theta}D_k\psi\big)\big(\widetilde{D_l\chi}\; e^{\mathsf T\theta}\big)\big\rangle = \big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle .
+\end{equation*}
+The metric $G$ comes from $h$ alone and does not depend on the frame at all. So both densities are gauge invariant, and so is every integral built from them: the energy, the weak form and the solution. The arbitrary frame cannot affect the result.
+
+\paragraph{The displacement gauge transformation.} The other arbitrary choice is the chart. Moving the surface rigidly or folding it changes $h$ but not $G$, as we saw, and so changes nothing. Relabel the points of a chart, $\xi = \xi(\eta)$, with the Jacobian matrix $J = \partial\xi/\partial\eta$, whose entry $(k, p)$ is $\partial\xi_k/\partial\eta_p$. A flat step $a'$ in the $\eta$ chart is the step $Ja'$ in the $\xi$ chart, so the new displacement gauge is $h'(a') = h(Ja')$, $h' = hJ$, and the three ingredients change as follows.
+\begin{align*}
+G' &= h'^T h' = (hJ)^T(hJ) = J^T\,\big(h^T h\big)\, J = J^T G\, J , \\
+\det G' &= \det J^T\,\det G\,\det J = (\det J)^2\,\det G , \\
+\sqrt{\det G'}\; d\eta_1 d\eta_2 &= \sqrt{\det G}\;|\det J|\; d\eta_1 d\eta_2 , \\
+{G'}^{-1} &= J^{-1}\, G^{-1}\, J^{-T} .
+\end{align*}
+The third line is the area element~(\ref{eqn:r3_area}) of the new chart, and $|\det J|\, d\eta_1 d\eta_2 = d\xi_1 d\xi_2$ is the change of variables of a double integral, so $dA$ is the same. For the derivatives, the chain rule gives $\partial/\partial\eta_p = \sum_k (\partial\xi_k/\partial\eta_p)\,\partial_k$, that is, the column of flat derivatives changes as $\hat\nabla_\eta = J^T\hat\nabla_\xi$; and $\omega'_p = \omega(h'(\varepsilon_p)) = \omega(h(J\varepsilon_p)) = \sum_k J_{kp}\,\omega_k$ changes in the same way, so the column $D_\eta\psi$ of covariant derivatives is $J^T D_\xi\psi$. Then the derivative density becomes
+\begin{align*}
+(D_\eta\psi)^T\, {G'}^{-1}\, (D_\eta\chi) &= \big(J^T D_\xi\psi\big)^T\big(J^{-1} G^{-1} J^{-T}\big)\big(J^T D_\xi\chi\big) && \text{substitute} \\
+&= (D_\xi\psi)^T\, J\, J^{-1}\, G^{-1}\, J^{-T} J^T\, (D_\xi\chi) && (J^Tv)^T = v^TJ \\
+&= (D_\xi\psi)^T\, G^{-1}\, (D_\xi\chi) && JJ^{-1} = I ,
+\end{align*}
+where $(D\psi)^T G^{-1}(D\chi)$ is shorthand for $\sum_{k,l} G^{kl}\langle (D_k\psi)\,\widetilde{(D_l\chi)}\rangle$. So the densities, integrated with $dA$, give the same numbers in every chart.
+
+\paragraph{Transitions.} On the overlap of two charts $A$ and $B$, with frames $t_A$ and $t_B$, the two descriptions of a field agree after a rotation, the \emph{transition} between their frames. If $t_B = t_A\, e^{\mathsf T\theta_{AB}}$ at a point, then $t_A\psi_A = t_B\psi_B = t_A\, e^{\mathsf T\theta_{AB}}\psi_B$; multiply on the left by $t_A$ and then by $e^{-\mathsf T\theta_{AB}}$, as for the coordinates above:
+\begin{equation}
+\label{eqn:r3_transition}
+\psi_B = e^{-\mathsf T\theta_{AB}}\, \psi_A .
+\end{equation}
+This is all that is needed to cover a whole surface with charts, compute in each, and glue.
+
+\begin{rem}
+\label{rem:gauge}
+Dictionary with the gauge theory of gravity \cite{Doran2003}. Their displacement gauge is our $h$~(\ref{eqn:r3_h}), seen by measurements only through $g$~(\ref{eqn:r3_metric}); on a face $h = B$ and $g = G_f = B^TB$. Their rotation gauge is our $\Omega(a) = \omega(h(a))\,\mathsf T$~(\ref{eqn:r3_Omega}); their covariant derivative is~(\ref{eqn:r3_covariant}); their field strength is the $d\omega$ of Section~\ref{section:r3_curvature}. On a mesh, $h$ is constant in each face, $\Omega$ is zero in each face, and the curvature sits in the transitions at the vertices.
+\end{rem}
+
+\subsection{Curvature: the field strength of the rotation gauge}
+\label{section:r3_curvature}
+
+\paragraph{The flat-gauge condition.} The best chart for computing is a flat gauge, where $\Omega = 0$ and the covariant derivative is the plain derivative; the vector heat equation would then be two scalar heat equations. Can we always turn the frame so that $\Omega$ vanishes? By the transformation rule $\omega'_k = \omega_k + \partial_k\theta$, we need an angle field $\theta$ with
+\begin{equation*}
+0 = \omega_1 + \partial_1\theta, \qquad 0 = \omega_2 + \partial_2\theta, \qquad\text{that is,}\qquad \omega_1 = -\partial_1\theta, \quad \omega_2 = -\partial_2\theta .
+\end{equation*}
+Differentiate the second equation by $\xi_1$ and the first by $\xi_2$, and subtract:
+\begin{align*}
+\partial_1\omega_2 - \partial_2\omega_1 &= \partial_1\big(-\partial_2\theta\big) - \partial_2\big(-\partial_1\theta\big) && \text{substitute} \\
+&= -\partial_1\partial_2\theta + \partial_2\partial_1\theta && \text{distribute} \\
+&= 0 && \text{mixed derivatives are equal.}
+\end{align*}
+So a flat gauge can exist only where the \emph{curl} $\partial_1\omega_2 - \partial_2\omega_1$ vanishes. The curl is gauge invariant: in the new gauge,
+\begin{align*}
+\partial_1\omega'_2 - \partial_2\omega'_1 &= \partial_1\big(\omega_2 + \partial_2\theta\big) - \partial_2\big(\omega_1 + \partial_1\theta\big) && \text{substitute} \\
+&= \partial_1\omega_2 - \partial_2\omega_1 + \big(\partial_1\partial_2\theta - \partial_2\partial_1\theta\big) && \text{regroup} \\
+&= \partial_1\omega_2 - \partial_2\omega_1 && \text{mixed derivatives.}
+\end{align*}
+It is called the \emph{field strength} of the rotation gauge, or the exterior derivative of $\omega$, $d\omega = (\partial_1\omega_2 - \partial_2\omega_1)\, d\xi_1\wedge d\xi_2$. In the geometric algebra form of Doran and Lasenby the field strength of $\Omega$ is the bivector
+\begin{equation*}
+\mathsf R(a\wedge b) = a\cdot\hat\nabla\,\Omega(b) - b\cdot\hat\nabla\,\Omega(a) + \Omega(a)\times\Omega(b), \qquad A\times B = \tfrac12(AB - BA) .
+\end{equation*}
+For $a = \varepsilon_1$ and $b = \varepsilon_2$, with $\Omega(\varepsilon_k) = \omega_k\mathsf T$ and the constant $\mathsf T$ coming out of the derivatives,
+\begin{align*}
+\mathsf R(\varepsilon_1\wedge\varepsilon_2) &= \partial_1(\omega_2\mathsf T) - \partial_2(\omega_1\mathsf T) + \tfrac12\big(\omega_1\mathsf T\,\omega_2\mathsf T - \omega_2\mathsf T\,\omega_1\mathsf T\big) && \text{substitute} \\
+&= (\partial_1\omega_2 - \partial_2\omega_1)\,\mathsf T + \tfrac12\,\omega_1\omega_2\,\big(\mathsf T^2 - \mathsf T^2\big) && \text{scalars out} \\
+&= (\partial_1\omega_2 - \partial_2\omega_1)\,\mathsf T && \mathsf T^2 - \mathsf T^2 = 0 .
+\end{align*}
+The commutator term vanishes because rotations of a plane commute; this is the one fact that makes the two dimensional theory simple.
+
+\paragraph{What the field strength measures.} We want to see the curl as a circulation. Integrate $\omega$ counterclockwise around a small flat rectangle with corners $(\xi_1, \xi_2)$ and $(\xi_1 + \delta_1, \xi_2 + \delta_2)$, using~(\ref{eqn:r3_transport}): along a side parallel to $\varepsilon_1$ only $\omega_1$ contributes, and along a side parallel to $\varepsilon_2$ only $\omega_2$. Up to terms of third order in $\delta$:
+\begin{align*}
+\text{bottom, } +\xi_1 &:\quad \omega_1(\xi_1, \xi_2)\,\delta_1 , \\
+\text{right, } +\xi_2 &:\quad \omega_2(\xi_1 + \delta_1, \xi_2)\,\delta_2 , \\
+\text{top, } -\xi_1 &:\quad -\,\omega_1(\xi_1, \xi_2 + \delta_2)\,\delta_1 , \\
+\text{left, } -\xi_2 &:\quad -\,\omega_2(\xi_1, \xi_2)\,\delta_2 .
+\end{align*}
+(Each side would have a correction of second order, such as $\frac12\partial_1\omega_1\,\delta_1^2$ on the bottom; the corrections of opposite sides differ by terms of third order.) Add the four lines, pairing the two sides of each kind, and apply Taylor's formula to each difference:
+\begin{align*}
+\oint\omega &= \big[\omega_2(\xi_1 + \delta_1, \xi_2) - \omega_2(\xi_1, \xi_2)\big]\,\delta_2 && \text{pair} \\
+&\quad - \big[\omega_1(\xi_1, \xi_2 + \delta_2) - \omega_1(\xi_1, \xi_2)\big]\,\delta_1 \\
+&= \big(\partial_1\omega_2\,\delta_1\big)\,\delta_2 - \big(\partial_2\omega_1\,\delta_2\big)\,\delta_1 && \text{Taylor} \\
+&= (\partial_1\omega_2 - \partial_2\omega_1)\,\delta_1\delta_2 && \text{collect.}
+\end{align*}
+The field strength is the circulation of $\omega$ per unit flat area. Cut a region $P'$ of the chart into small rectangles and add their circulations: a side shared by two rectangles is walked twice, in opposite directions, and its two contributions cancel, so only the boundary of $P'$ remains. This is Green's theorem in the plane (the theorem of Stokes in two dimensions):
+\begin{equation}
+\label{eqn:r3_stokes}
+\oint_{\partial P'} \omega = \int_{P'} (\partial_1\omega_2 - \partial_2\omega_1)\, d\xi_1\, d\xi_2 .
+\end{equation}
+It also gives the converse of the flat-gauge condition. If the curl vanishes on a region without holes, the right side of~(\ref{eqn:r3_stokes}) vanishes for every loop in it, so the integral of $\omega$ from a fixed point $\xi_0$ to $\xi$ does not depend on the path; then $\theta(\xi) = -\int_{\xi_0}^{\xi}\omega$ is well defined, $\partial_k\theta = -\omega_k$, and the frame $t\,e^{\mathsf T\theta}$ is a flat gauge.
+
+\paragraph{Curvature.} With the orientation $b = t\mathsf T = n\times t$ used throughout, Remark~\ref{rem:structure} found $d\omega = -K\, dA$. We use charts with the same orientation, $h(\varepsilon_1)\wedge h(\varepsilon_2)$ a positive multiple of $\mathsf T$. Write both sides as multiples of $d\xi_1\wedge d\xi_2$, the left by the definition of $d\omega$ and the right by~(\ref{eqn:r3_area})~[\,$dA = \sqrt{\det G}\,d\xi_1 d\xi_2$\,]:
+\begin{equation*}
+(\partial_1\omega_2 - \partial_2\omega_1)\, d\xi_1\wedge d\xi_2 = -K\,\big(\sqrt{\det G}\; d\xi_1\wedge d\xi_2\big) .
+\end{equation*}
+Comparing the coefficients,
+\begin{equation}
+\label{eqn:r3_field_strength}
+\partial_1\omega_2 - \partial_2\omega_1 = -K\, \sqrt{\det G} .
+\end{equation}
+The field strength of the rotation gauge is minus the Gaussian curvature, measured per unit of flat area.
+
+\emph{Example: the unit sphere.} Take the chart $(\xi_1, \xi_2) = (\vartheta, \varphi)$ of colatitude and longitude, $x = (\sin\vartheta\cos\varphi, \sin\vartheta\sin\varphi, \cos\vartheta)$. Then
+\begin{equation*}
+\partial_1 x = (\cos\vartheta\cos\varphi,\, \cos\vartheta\sin\varphi,\, -\sin\vartheta), \quad \partial_2 x = (-\sin\vartheta\sin\varphi,\, \sin\vartheta\cos\varphi,\, 0) ,
+\end{equation*}
+so $G_{11} = \cos^2\vartheta(\cos^2\varphi + \sin^2\varphi) + \sin^2\vartheta = 1$, $G_{22} = \sin^2\vartheta(\sin^2\varphi + \cos^2\varphi) = \sin^2\vartheta$, $G_{12} = -\cos\vartheta\sin\vartheta\cos\varphi\sin\varphi + \cos\vartheta\sin\vartheta\sin\varphi\cos\varphi = 0$, and $G = \mathrm{diag}(1, \sin^2\vartheta)$, $\sqrt{\det G} = \sin\vartheta$ for $0 < \vartheta < \pi$. The frame of Remark~\ref{rem:structure} is $t = \partial_1 x$, with $b = (-\sin\varphi, \cos\varphi, 0)$, and there $\omega = \cos\vartheta\, d\varphi$, that is $\omega_1 = 0$ and $\omega_2 = \cos\vartheta$. Substituting into the left side of~(\ref{eqn:r3_field_strength}):
+\begin{equation*}
+\partial_1\omega_2 - \partial_2\omega_1 = \partial_\vartheta(\cos\vartheta) - \partial_\varphi(0) = -\sin\vartheta = -K\,\big(\sin\vartheta\big) \quad\Longrightarrow\quad K = 1 .
+\end{equation*}
+
+\paragraph{Holonomy.} Carry a vector once around a closed loop $\partial P'$ of the chart, counterclockwise. By~(\ref{eqn:r3_transport})~[\,$\psi(s) = e^{-\mathsf T\int_0^s\omega}\psi(0)$\,] its coordinate returns multiplied by $e^{-\mathsf T\oint\omega}$; the frame is the same at the start and at the end, so this compares the vector with itself. Substitute~(\ref{eqn:r3_stokes}) and then~(\ref{eqn:r3_field_strength}) into the exponent:
+\begin{align*}
+-\oint_{\partial P'}\omega &= -\int_{P'} \big(\partial_1\omega_2 - \partial_2\omega_1\big)\, d\xi_1 d\xi_2 && \text{by (\ref{eqn:r3_stokes})} \\
+&= -\int_{P'} \big(-K\sqrt{\det G}\big)\, d\xi_1 d\xi_2 && \text{by (\ref{eqn:r3_field_strength})} \\
+&= \int_{P'} K\, \big(\sqrt{\det G}\, d\xi_1 d\xi_2\big) = \int K\, dA && \text{by (\ref{eqn:r3_area}),}
+\end{align*}
+so
+\begin{equation}
+\label{eqn:r3_holonomy}
+\psi_{\text{end}} = e^{\mathsf T\int K\, dA}\; \psi_{\text{start}} .
+\end{equation}
+The vector comes back turned counterclockwise by the total curvature enclosed, as found in Section~\ref{section:ga_intrinsic}, and now from the metric alone: $\omega$ is computed from $g$, the field strength from $\omega$. This is the Theorema Egregium in gauge language.
+
+\emph{Example: a cap of the unit sphere.} Take $P' = [0, \vartheta_0]\times[0, 2\pi]$ in the chart above. Its boundary, walked counterclockwise, has four sides. The bottom ($\varphi = 0$) and the top ($\varphi = 2\pi$) are the same meridian on the sphere and carry $\omega_1 = 0$, so they give nothing. The right side ($\vartheta = \vartheta_0$, $\varphi$ from $0$ to $2\pi$) is the circle of colatitude $\vartheta_0$ and gives $\int_0^{2\pi}\cos\vartheta_0\, d\varphi = 2\pi\cos\vartheta_0$. The left side ($\vartheta = 0$, $\varphi$ from $2\pi$ to $0$) is the pole itself, where the frame $t = \partial_\vartheta x$ is singular, and gives $\int_{2\pi}^0 \cos 0\, d\varphi = -2\pi$. The right side of~(\ref{eqn:r3_stokes}) is $\int_0^{2\pi}\!\int_0^{\vartheta_0} (-\sin\vartheta)\, d\vartheta\, d\varphi = -2\pi(1 - \cos\vartheta_0)$, and indeed $2\pi\cos\vartheta_0 - 2\pi = -2\pi(1 - \cos\vartheta_0)$. A vector carried once around the circle alone returns, by~(\ref{eqn:r3_transport}), multiplied by
+\begin{equation*}
+e^{-\mathsf T\, 2\pi\cos\vartheta_0} = e^{-\mathsf T\, 2\pi\cos\vartheta_0}\, e^{\mathsf T\,2\pi} = e^{\mathsf T\,2\pi(1 - \cos\vartheta_0)} ,
+\end{equation*}
+using $e^{\mathsf T\,2\pi} = \cos 2\pi + \mathsf T\sin 2\pi = 1$: the rotation by $2\pi(1 - \cos\vartheta_0) = \int_{\text{cap}} K\, dA$, the area of the cap. The extra full turn is the one the frame makes around its singular point at the pole, and a full turn is no rotation.
+
+\paragraph{What this means for a mesh.} Three consequences prepare Stage 5. First, on a region that encloses curvature there is no flat gauge: $\Omega$ cannot be made zero everywhere, because its field strength is gauge invariant. Second, a face of a mesh is flat, $K = 0$ inside it, and it has a flat gauge: the layout with a constant frame. Third, the curvature of a mesh sits at its vertices, where the flat faces meet (Section~\ref{section:int_vertex}); since it cannot sit in the faces, it must be carried by the transitions~(\ref{eqn:r3_transition})~[\,$\psi_B = e^{-\mathsf T\theta_{AB}}\psi_A$\,] between the charts that meet there.
+
+\subsection{Stage 1: the PDE (strong form)}
+\label{section:r3_stage1}
+
+\paragraph{What we want.} The problem, the unknown, the domain and the source condition, written in a chart.
+
+The domain is a surface $\Omega$, closed (the sphere, the cactus) or with a boundary (the sheets), covered by charts. The unknown is a tangent field $U$; in each chart it is a field of spinor coordinates $\psi$, and on the overlaps the coordinates of two charts are related by~(\ref{eqn:r3_transition})~[\,$\psi_B = e^{-\mathsf T\theta_{AB}}\psi_A$\,]. The equation is one backward Euler step of the vector heat equation,~(\ref{eqn:backward_euler})~[\,$U + \Delta t\,\nabla^*\nabla U = U^0$\,]. In a chart, with $U = t\psi$, $U^0 = t\psi^0$ and $\nabla^*\nabla(t\psi) = t\, D^*D\psi$, it reads, after cancelling the common factor $t$ on the left,
+\begin{equation}
+\label{eqn:r3_strong}
+\psi + \Delta t\, D^*D\psi = \psi^0, \qquad D^*D\psi = -\frac{1}{\sqrt{\det G}} \sum_{k,l} D_k\Big(\sqrt{\det G}\; G^{kl}\, D_l\psi\Big) ,
+\end{equation}
+where $D_k$ acts on any spinor valued function $F$ as in~(\ref{eqn:r3_covariant}), $D_k F = \partial_k F + \omega_k\mathsf T F$. As in Part~\ref{part:matrix}, the operator is the one that Green's identity produces; Stage 4 derives this formula.
+
+\emph{The flat case.} In a flat gauge with $G = I$: $\sqrt{\det G} = 1$, $G^{kl} = \delta_{kl}$ and $D_k = \partial_k$. Substitute the three into~(\ref{eqn:r3_strong}):
+\begin{equation*}
+D^*D\psi = -\frac{1}{(1)} \sum_{k,l} \partial_k\Big((1)\,(\delta_{kl})\,\partial_l\psi\Big) = -\sum_k \partial_k\partial_k\psi = -\big(\partial_1^2 + \partial_2^2\big)\psi ,
+\end{equation*}
+the sum over $l$ keeping only $l = k$. Since $\psi = u_1 + u_2\mathsf T$ and the derivatives act on the two real components, on a plane the vector heat equation is two scalar heat equations, one for each component. On a curved surface no gauge is flat everywhere, and the terms in $\omega$ couple the two components: $\omega_k\mathsf T\psi = \omega_k(u_1\mathsf T - u_2)$ mixes $u_1$ into the $\mathsf T$ part and $u_2$ into the scalar part. This coupling is how curvature acts on the field.
+
+\emph{Covariance of the strong form.} Under a change of frame, $\psi' = e^{-\mathsf T\theta}\psi$, and $G$ does not change. Write $F_k = \sqrt{\det G}\sum_l G^{kl}D_l\psi$. Using~(\ref{eqn:s3a_DF})~[\,$D'_k(e^{-\mathsf T\theta}F) = e^{-\mathsf T\theta}D_kF$\,] twice, first with $F = \psi$ and then with $F = F_k$, and in between moving the real scalars $\sqrt{\det G}\,G^{kl}$ past $e^{-\mathsf T\theta}$ and summing over $l$:
+\begin{align*}
+D'^*D'\psi' &= -\frac{1}{\sqrt{\det G}} \sum_{k,l} D'_k\Big(\sqrt{\det G}\; G^{kl}\, \big(D'_l\psi'\big)\Big) && \text{by (\ref{eqn:r3_strong})} \\
+&= -\frac{1}{\sqrt{\det G}} \sum_{k,l} D'_k\Big(\sqrt{\det G}\; G^{kl}\, \big(e^{-\mathsf T\theta}D_l\psi\big)\Big) && F = \psi \\
+&= -\frac{1}{\sqrt{\det G}} \sum_{k} D'_k\big(e^{-\mathsf T\theta}F_k\big) && \text{reorder} \\
+&= -\frac{1}{\sqrt{\det G}} \sum_{k} e^{-\mathsf T\theta} D_kF_k = e^{-\mathsf T\theta}\, D^*D\psi && F = F_k .
+\end{align*}
+Every term of~(\ref{eqn:r3_strong}) is multiplied by $e^{-\mathsf T\theta}$ under a change of frame, so the equation holds in every gauge if it holds in one.
+
+\emph{The source condition} is~(\ref{eqn:dirichlet_problem})~[\,$U + \Delta t\,\nabla^*\nabla U = 0 \text{ off } s,\ U(s) = U_s$\,]: $\psi^0 = 0$, and the value $\psi(s) = \psi_s$ is prescribed at the source.
+
+\subsection{Stage 2: the function spaces}
+\label{section:r3_stage2}
+
+\paragraph{What we want.} To say where the solution lives, and why the problem has exactly one solution there. The finite element method will look for an approximate solution in a finite dimensional space, and it can only be good if that space sits inside the space of the true solution and the problem is well posed there. We state the facts plainly, without the proofs of the big theorems, and prove the small ones.
+
+\paragraph{Square integrable fields.} The space $L^2$ consists of the tangent fields of finite total squared length, $\int_\Omega |\psi|^2\, dA < \infty$, with the inner product and the norm
+\begin{equation*}
+(\psi, \chi)_0 = \int_\Omega \langle\psi\widetilde\chi\rangle\, dA, \qquad \|\psi\|_0 = (\psi, \psi)_0^{1/2} .
+\end{equation*}
+The integrand is gauge invariant (Section~\ref{section:r3_covariance}), so the inner product is the same in every chart, and the space is defined on the whole surface. It is positive: for $\psi = u_1 + u_2\mathsf T$, $\widetilde\psi = u_1 - u_2\mathsf T$ and
+\begin{equation*}
+\psi\widetilde\psi = u_1^2 - u_1u_2\mathsf T + u_2u_1\mathsf T - u_2^2\mathsf T^2 = u_1^2 + u_2^2 = |\psi|^2 .
+\end{equation*}
+
+\paragraph{Fields with square integrable covariant derivatives.} Write the derivative part of the energy as the form
+\begin{equation*}
+b(\psi, \chi) = \int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA = \int_\Omega \sum_m \big\langle (D_{e_m}\psi)\,\widetilde{(D_{e_m}\chi)}\big\rangle\, dA ,
+\end{equation*}
+the two expressions being equal by~(\ref{eqn:r3_gkl}). The second shows that $b(\psi, \psi) = \int\sum_m |D_{e_m}\psi|^2\, dA \ge 0$. The Sobolev space $H^1$ consists of the fields of $L^2$ with $b(\psi, \psi) < \infty$, with the inner product and the norm
+\begin{equation*}
+(\psi, \chi)_1 = (\psi, \chi)_0 + b(\psi, \chi), \qquad \|\psi\|_1 = (\psi, \psi)_1^{1/2}, \qquad \|\psi\|_1^2 = \|\psi\|_0^2 + b(\psi, \psi) .
+\end{equation*}
+Here the derivatives are taken in the integrated (``weak'') sense: a field that is smooth on each face of a mesh and has kinks along the edges belongs to $H^1$, as the tent function $1 - |x|$ does in one variable. $H^1$ is a \emph{Hilbert space}: an inner product space in which every sequence of fields that gets closer and closer to itself, in the norm $\|\cdot\|_1$, has a limit in the space. That completeness is what the theorems below need, and it holds because the derivatives are taken in the integrated sense; it is the reason for working in $H^1$ rather than with smooth fields.
+
+\paragraph{The forms of the problem.} Stages 3 and 4 will produce the \emph{bilinear form} and the \emph{linear form}
+\begin{equation}
+\label{eqn:r3_bilinear}
+\begin{aligned}
+a(\psi, \chi) &= \int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA \\
+&= (\psi, \chi)_0 + \Delta t\, b(\psi, \chi), \\
+l(\chi) &= \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA = (\psi^0, \chi)_0 ,
+\end{aligned}
+\end{equation}
+and the problem: find $\psi$ in $H^1$ with $a(\psi, \chi) = l(\chi)$ for every $\chi$ in $H^1$. We check three properties of $a$.
+
+\emph{Symmetric.} The scalar part does not change under reversion, $\langle A\rangle = \langle\widetilde A\rangle$, so with $\widetilde{AB} = \widetilde B\widetilde A$ and $\widetilde{\widetilde\psi} = \psi$,
+\begin{equation*}
+\langle\psi\widetilde\chi\rangle = \big\langle\widetilde{\psi\widetilde\chi}\big\rangle = \big\langle\widetilde{\widetilde\chi}\,\widetilde\psi\big\rangle = \langle\chi\widetilde\psi\rangle .
+\end{equation*}
+The same with $D_k\psi$ and $D_l\chi$ gives $\langle (D_k\psi)\widetilde{(D_l\chi)}\rangle = \langle (D_l\chi)\widetilde{(D_k\psi)}\rangle$; exchanging the names $k \leftrightarrow l$ of the summation indices and using $G^{lk} = G^{kl}$, $b(\psi, \chi) = b(\chi, \psi)$. So $a(\psi, \chi) = a(\chi, \psi)$.
+
+\emph{Bounded.} The Cauchy--Schwarz inequality holds for every symmetric bilinear form that is nonnegative on the diagonal, so for $(\cdot, \cdot)_0$ and for $b$. Then, one step per line:
+\begin{align*}
+|a(\psi, \chi)| &\le |(\psi, \chi)_0| + \Delta t\, |b(\psi, \chi)| && \text{(1)} \\
+&\le \|\psi\|_0\|\chi\|_0 + \Delta t\, b(\psi, \psi)^{1/2}\, b(\chi, \chi)^{1/2} && \text{(2)} \\
+&\le M\,\big(\|\psi\|_0\|\chi\|_0 + b(\psi, \psi)^{1/2}\, b(\chi, \chi)^{1/2}\big) && \text{(3)} \\
+&\le M\,\big(\|\psi\|_0^2 + b(\psi, \psi)\big)^{1/2}\big(\|\chi\|_0^2 + b(\chi, \chi)\big)^{1/2} && \text{(4)} \\
+&= M\, \|\psi\|_1\, \|\chi\|_1 , \qquad M = \max(1, \Delta t) ,
+\end{align*}
+by (1) the triangle inequality, (2) Cauchy--Schwarz for each form, (3) $1 \le M$ and $\Delta t \le M$, and (4) Cauchy--Schwarz in the plane, $pr + qs \le \sqrt{p^2 + q^2}\sqrt{r^2 + s^2}$, with $p = \|\psi\|_0$, $q = b(\psi, \psi)^{1/2}$, $r = \|\chi\|_0$, $s = b(\chi, \chi)^{1/2}$.
+
+\emph{Coercive.} With $\chi = \psi$ both terms are nonnegative:
+\begin{equation*}
+a(\psi, \psi) = \|\psi\|_0^2 + \Delta t\, b(\psi, \psi) \ge \min(1, \Delta t)\,\big(\|\psi\|_0^2 + b(\psi, \psi)\big) = \min(1, \Delta t)\, \|\psi\|_1^2 .
+\end{equation*}
+The three together say that $a$ is itself an inner product on $H^1$, equivalent to $(\cdot, \cdot)_1$: the \emph{energy inner product}, with the \emph{energy norm} $\|\psi\|_a = a(\psi, \psi)^{1/2}$. And $l$ is bounded in this norm whenever $\psi^0$ is in $L^2$:
+\begin{equation*}
+|l(\chi)| = |(\psi^0, \chi)_0| \le \|\psi^0\|_0\, \|\chi\|_0 \le \|\psi^0\|_0\, \|\chi\|_1 \le \|\psi^0\|_0\, \min(1, \Delta t)^{-1/2}\, \|\chi\|_a ,
+\end{equation*}
+by Cauchy--Schwarz, by $\|\chi\|_0^2 \le \|\chi\|_0^2 + b(\chi, \chi) = \|\chi\|_1^2$, and by coercivity.
+
+\paragraph{What the theorems say, and why they apply.} The \emph{Riesz representation theorem} says that, in a Hilbert space, every bounded linear form is the inner product with exactly one element. Applied to $l$ with the energy inner product, it gives exactly one $\psi$ in $H^1$ with $a(\psi, \chi) = l(\chi)$ for every $\chi$: the weak problem has a unique solution. (The Lax--Milgram theorem says the same for forms that are bounded and coercive but not symmetric; ours is symmetric, so Riesz suffices.)
+
+Now take a subspace $V_h$ of $H^1$, the finite element space of Stage 5; it is finite dimensional, hence closed. The \emph{Galerkin solution} is the $\psi_h$ in $V_h$ with $a(\psi_h, \chi_h) = l(\chi_h)$ for every $\chi_h$ in $V_h$; it exists and is unique by Riesz in $V_h$. Since $V_h \subset H^1$, the continuous equation holds in particular for $\chi = \chi_h$. Subtract:
+\begin{equation*}
+a(\psi, \chi_h) - a(\psi_h, \chi_h) = l(\chi_h) - l(\chi_h) = 0, \qquad\text{so}\qquad a(\psi - \psi_h, \chi_h) = 0
+\end{equation*}
+by linearity in the first argument: the error is orthogonal to $V_h$ in the energy inner product. For any $\chi_h$ in $V_h$ write $\psi - \chi_h = (\psi - \psi_h) + (\psi_h - \chi_h)$, where $\psi_h - \chi_h$ is in $V_h$. Then
+\begin{align*}
+\|\psi - \chi_h\|_a^2 &= a\big((\psi - \psi_h) + (\psi_h - \chi_h),\ (\psi - \psi_h) + (\psi_h - \chi_h)\big) && \text{subst.} \\
+&= \|\psi - \psi_h\|_a^2 + 2\, a(\psi - \psi_h, \psi_h - \chi_h) + \|\psi_h - \chi_h\|_a^2 && \text{expand} \\
+&= \|\psi - \psi_h\|_a^2 + \|\psi_h - \chi_h\|_a^2 && \text{orthogonality} \\
+&\ge \|\psi - \psi_h\|_a^2 ,
+\end{align*}
+the expansion using that $a$ is bilinear and symmetric, as in Stage 3,
+with equality for $\chi_h = \psi_h$. So
+\begin{equation*}
+\|\psi - \psi_h\|_a = \min_{\chi_h \in V_h} \|\psi - \chi_h\|_a ,
+\end{equation*}
+the best approximation in the energy norm. This is \emph{C\'ea's lemma} in its symmetric form. It reduces the accuracy of the method to a question of approximation: how well can fields of $V_h$ approximate the solution?
+
+\paragraph{Why the weak form needs less.} The strong form~(\ref{eqn:r3_strong}) contains second derivatives, and asks for $\psi$ in $H^2$, the space with square integrable second covariant derivatives. A field with kinks along the edges is not in $H^2$: its first derivatives jump, and the derivative of a jump is not a function. The weak form contains only first derivatives and asks only for $H^1$. This is what allows piecewise linear fields.
+
+\paragraph{Conforming spaces.} The theorems above need $V_h \subset H^1$, a \emph{conforming} space. For fields that are smooth on each face, this means one thing: continuity across every edge. A field that jumps along an edge has a derivative containing a ``wall'' concentrated on the edge, with infinite energy. In gauge language, continuity across the edge between two faces $f$ and $g$ means: the coordinate of the field in the chart of $f$, along the edge, carried into the chart of $g$ by the transition~(\ref{eqn:r3_transition}) between the two face charts, equals the coordinate of the field in the chart of $g$ along the same edge. Section~\ref{section:int_connection} checks where the space of this part meets this requirement exactly (on every intrinsically flat part of a mesh) and where it meets it only approximately (at curved vertices, with a mismatch proportional to the angle defect).
+
+\paragraph{The assumptions, plainly.} The surface is smooth and closed, or bounded with a boundary on which the test fields vanish; the fields are tangent; $\Delta t > 0$; $\psi^0$ is in $L^2$. One more point. In two dimensions a field of $H^1$ need not have a value at a point. Take, in a flat chart ($G = I$) with polar coordinates $(r, \vartheta)$, the radial function $f(r) = \log(-\log r)$ for $0 < r \le 1/e$; it is $0$ at $r = 1/e$ and grows without bound as $r \to 0$. Its derivative is, by the chain rule,
+\begin{equation*}
+f'(r) = \frac{1}{-\log r}\cdot\Big(-\frac1r\Big) = \frac{1}{r\log r} ,
+\end{equation*}
+and its energy, with $dA = r\, dr\, d\vartheta$ and the substitution $u = \log r$, $du = dr/r$, which takes $r \in (0, 1/e]$ to $u \in (-\infty, -1]$, is
+\begin{align*}
+\int_0^{2\pi}\!\!\int_0^{1/e} \big(f'(r)\big)^2\, r\, dr\, d\vartheta &= 2\pi\int_0^{1/e} \frac{1}{r^2\log^2 r}\, r\, dr && \text{integrate in } \vartheta \\
+&= 2\pi\int_0^{1/e} \frac{1}{\log^2 r}\,\frac{dr}{r} && \text{cancel one } r \\
+&= 2\pi\int_{-\infty}^{-1} \frac{du}{u^2} && u = \log r \\
+&= 2\pi\Big[-\frac1u\Big]_{-\infty}^{-1} = 2\pi\,(1 - 0) = 2\pi ,
+\end{align*}
+finite, and yet $f$ is unbounded. So the point condition $\psi(s) = \psi_s$ is not a constraint that the theory of $H^1$ can impose. It is a discrete device, used by Part~\ref{part:matrix} as well: after discretization a field does have values at the vertices, and fixing one of them is a well defined row replacement (Stage 8). The continuous counterpart is the source term of Section~\ref{section:pde}, and the directions, which are all we keep, agree to the accuracy of the method.
+
+\subsection{Stage 3: the variational form}
+\label{section:r3_stage3}
+
+\paragraph{What we want.} The energy whose minimizer solves the PDE. It is the energy~(\ref{eqn:weak_energy}) of Part~\ref{part:matrix}, shown again:
+\begin{equation*}
+J(U) = \frac12 \int_\Omega |U|^2\, dA + \frac{\Delta t}{2} \int_\Omega |\nabla U|^2\, dA - \int_\Omega U^0 \cdot U\, dA . \tag{\ref{eqn:weak_energy}}
+\end{equation*}
+Substitute $|U|^2 = \langle\psi\widetilde\psi\rangle$ and $U^0\cdot U = \langle\psi^0\widetilde\psi\rangle$, by~(\ref{eqn:r2_inner}), and $|\nabla U|^2 = \nabla U : \nabla U$ from~(\ref{eqn:r3_density}) with $\chi = \psi$:
+\begin{equation}
+\label{eqn:r3_energy}
+\begin{aligned}
+J(\psi) &= \frac12\int_\Omega \big(\langle\psi\widetilde\psi\rangle\big)\, dA + \frac{\Delta t}{2}\int_\Omega \Big(\sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\psi)}\big\rangle\Big)\, dA \\
+&\quad - \int_\Omega \big(\langle\psi^0\widetilde\psi\rangle\big)\, dA = \frac12\, a(\psi, \psi) - l(\psi) ,
+\end{aligned}
+\end{equation}
+the last form by~(\ref{eqn:r3_bilinear}). It is gauge invariant, because every density in it is (Section~\ref{section:r3_covariance}): the energy is a property of the field, not of the frames.
+
+\paragraph{The first variation, term by term.} Perturb $\psi$ by $\epsilon\chi$, with a real number $\epsilon$ and a test field $\chi$, and expand each of the three densities. The covariant derivative is linear, $D_k(\psi + \epsilon\chi) = D_k\psi + \epsilon\, D_k\chi$, because both $\partial_k$ and the multiplication by $\omega_k\mathsf T$ are; and the reverse is linear, $\widetilde{\psi + \epsilon\chi} = \widetilde\psi + \epsilon\widetilde\chi$.
+
+\emph{The mass density.}
+\begin{align*}
+\big\langle (\psi + \epsilon\chi)\,\widetilde{(\psi + \epsilon\chi)}\big\rangle &= \big\langle (\psi + \epsilon\chi)(\widetilde\psi + \epsilon\widetilde\chi)\big\rangle && \text{reverse is linear} \\
+&= \langle\psi\widetilde\psi\rangle + \epsilon\,\langle\psi\widetilde\chi\rangle + \epsilon\,\langle\chi\widetilde\psi\rangle + \epsilon^2\langle\chi\widetilde\chi\rangle && \text{distribute} \\
+&= \langle\psi\widetilde\psi\rangle + 2\epsilon\,\langle\psi\widetilde\chi\rangle + \epsilon^2\langle\chi\widetilde\chi\rangle && \langle\chi\widetilde\psi\rangle = \langle\psi\widetilde\chi\rangle .
+\end{align*}
+\emph{The derivative density.} Write $\Psi_k = D_k\psi$ and $X_k = D_k\chi$ for short. Then
+\begin{align*}
+\sum_{k,l} G^{kl}&\big\langle (\Psi_k + \epsilon X_k)\,\widetilde{(\Psi_l + \epsilon X_l)}\big\rangle \\
+&= \sum_{k,l} G^{kl}\Big(\langle\Psi_k\widetilde\Psi_l\rangle + \epsilon\,\langle\Psi_k\widetilde X_l\rangle + \epsilon\,\langle X_k\widetilde\Psi_l\rangle + \epsilon^2\langle X_k\widetilde X_l\rangle\Big) && \text{distribute} \\
+&= \sum_{k,l} G^{kl}\langle\Psi_k\widetilde\Psi_l\rangle + 2\epsilon\sum_{k,l} G^{kl}\langle\Psi_k\widetilde X_l\rangle + \epsilon^2\sum_{k,l} G^{kl}\langle X_k\widetilde X_l\rangle ,
+\end{align*}
+where the two middle sums are equal: $\langle X_k\widetilde\Psi_l\rangle = \langle\Psi_l\widetilde X_k\rangle$ by symmetry, and then exchanging the names $k \leftrightarrow l$ and using $G^{lk} = G^{kl}$ turns $\sum_{k,l} G^{kl}\langle\Psi_l\widetilde X_k\rangle$ into $\sum_{k,l} G^{kl}\langle\Psi_k\widetilde X_l\rangle$.
+
+\emph{The source density.} $\big\langle \psi^0\,\widetilde{(\psi + \epsilon\chi)}\big\rangle = \langle\psi^0\widetilde\psi\rangle + \epsilon\,\langle\psi^0\widetilde\chi\rangle$.
+
+\emph{Collect.} Put the three expansions into~(\ref{eqn:r3_energy}), with the factors $\frac12$, $\frac{\Delta t}{2}$ and $-1$, integrate, and group by powers of $\epsilon$:
+\begin{align*}
+J(\psi + \epsilon\chi) &= \underbrace{\frac12\int\langle\psi\widetilde\psi\rangle + \frac{\Delta t}{2}\int\sum_{k,l} G^{kl}\langle\Psi_k\widetilde\Psi_l\rangle - \int\langle\psi^0\widetilde\psi\rangle}_{J(\psi)} \\
+&\quad + \epsilon\,\Big(\int\langle\psi\widetilde\chi\rangle + \Delta t\int\sum_{k,l} G^{kl}\langle\Psi_k\widetilde X_l\rangle - \int\langle\psi^0\widetilde\chi\rangle\Big) \\
+&\quad + \frac{\epsilon^2}{2}\,\Big(\int\langle\chi\widetilde\chi\rangle + \Delta t\int\sum_{k,l} G^{kl}\langle X_k\widetilde X_l\rangle\Big) ,
+\end{align*}
+all integrals over $\Omega$ with $dA$. The factor $2$ of the middle terms cancelled the $\frac12$ in front. In the notation~(\ref{eqn:r3_bilinear}):
+\begin{equation}
+\label{eqn:s3a_variation}
+J(\psi + \epsilon\chi) = J(\psi) + \epsilon\,\big(a(\psi, \chi) - l(\chi)\big) + \frac{\epsilon^2}{2}\, a(\chi, \chi) .
+\end{equation}
+\paragraph{Minimizing is solving.} The coefficient of $\epsilon$ is the rate of change of $J$ in the direction $\chi$, $\frac{d}{d\epsilon}J(\psi + \epsilon\chi)\big|_{\epsilon = 0}$. At a minimizer it vanishes for every $\chi$, which is $a(\psi, \chi) = l(\chi)$ for every $\chi$: the weak problem of Stage 2. Conversely, if $a(\psi, \chi) = l(\chi)$ for every $\chi$, then~(\ref{eqn:s3a_variation}) reads $J(\psi + \epsilon\chi) = J(\psi) + \frac{\epsilon^2}{2}a(\chi, \chi)$, and $a(\chi, \chi) \ge \min(1, \Delta t)\|\chi\|_1^2 > 0$ for $\chi \ne 0$ by coercivity, so every other field has a larger energy: $\psi$ is the unique minimizer. Stage 4 shows, with Green's identity, that for a smooth $\psi$ the coefficient of $\epsilon$ equals $\int_\Omega \langle(\psi + \Delta t\, D^*D\psi - \psi^0)\,\widetilde\chi\rangle\, dA$ plus a boundary term, and that its vanishing for every $\chi$ is the strong form~(\ref{eqn:r3_strong}). So the three are one problem: minimize $J$, solve the weak form, solve the PDE.
+
+\subsection{Stage 4: the weak form (Galerkin)}
+\label{section:r3_stage4}
+
+\paragraph{What we want.} An equation with first derivatives only. As in Part~\ref{part:matrix}, multiply the strong form by a test field, integrate, and move one derivative onto the test field. The tool for the last step is Green's identity, which we now derive in the chart, with flat calculus only: this is the promise of the gauge picture.
+
+\emph{Step 1: test the strong form.} For a test field $\chi$, multiply~(\ref{eqn:r3_strong})~[\,$\psi + \Delta t\, D^*D\psi = \psi^0$\,] by $\widetilde\chi$ on the right, take the scalar part, which is linear, and integrate:
+\begin{equation}
+\label{eqn:s3a_tested}
+\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA = \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{equation}
+
+\emph{Step 2: the product rule for the scalar part.} We want the derivative of the density $\langle\psi\widetilde\chi\rangle$ in terms of covariant derivatives. The ordinary product rule, with the reverse and the scalar part commuting with $\partial_k$ (they act on the components, not on $\xi$), gives
+\begin{equation*}
+\partial_k \langle\psi\widetilde\chi\rangle = \big\langle (\partial_k\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(\partial_k\chi)}\big\rangle .
+\end{equation*}
+To turn $\partial_k$ into $D_k$ we must add the two connection terms, and we check that their sum is zero. The reverse of $\omega_k\mathsf T\chi$ is $\omega_k\widetilde\chi\,\widetilde{\mathsf T} = -\omega_k\,\widetilde\chi\,\mathsf T$, so
+\begin{align*}
+&\big\langle (\omega_k\mathsf T\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(\omega_k\mathsf T\chi)}\big\rangle \\
+&\qquad = \omega_k\,\big\langle\mathsf T\psi\widetilde\chi\big\rangle + \big\langle \psi\,\big(-\omega_k\,\widetilde\chi\,\mathsf T\big)\big\rangle && \text{reverse} \\
+&\qquad = \omega_k\,\big\langle\mathsf T\,(\psi\widetilde\chi)\big\rangle - \omega_k\,\big\langle(\psi\widetilde\chi)\,\mathsf T\big\rangle && \omega_k \text{ out} \\
+&\qquad = \omega_k\,\big\langle\mathsf T\,(\psi\widetilde\chi)\big\rangle - \omega_k\,\big\langle\mathsf T\,(\psi\widetilde\chi)\big\rangle = 0 && \langle AB\rangle = \langle BA\rangle .
+\end{align*}
+Adding this zero to the product rule and grouping each connection term with its derivative:
+\begin{equation}
+\label{eqn:r3_compatible}
+\partial_k \langle\psi\widetilde\chi\rangle = \big\langle (D_k\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(D_k\chi)}\big\rangle .
+\end{equation}
+This is the metric compatibility~(\ref{eqn:metric_compatible})~[\,$X(U\cdot V) = \nabla_XU\cdot V + U\cdot\nabla_XV$\,] of Part~\ref{part:matrix}, in gauge form: the rotation gauge is a rotation, and rotations keep inner products.
+
+\emph{Step 3: a flat vector field and its divergence.} In one variable, $\int f'g' = [f'g] - \int f''g$ comes from integrating the product rule of $f'g$. Here the analogue of $f'g$ is the flat vector field $W = (W_1, W_2)$ with
+\begin{equation*}
+W_k = \big\langle F_k\,\widetilde\chi\big\rangle, \qquad F_k = \sqrt{\det G}\;\sum_l G^{kl}\, D_l\psi .
+\end{equation*}
+Apply~(\ref{eqn:r3_compatible}) with $F_k$ in place of $\psi$:
+\begin{equation*}
+\partial_k W_k = \partial_k\big\langle F_k\,\widetilde\chi\big\rangle = \big\langle (D_kF_k)\,\widetilde\chi\big\rangle + \big\langle F_k\,\widetilde{(D_k\chi)}\big\rangle .
+\end{equation*}
+Sum over $k$, substitute $F_k$ in the second term, move the real scalars $\sqrt{\det G}$ and $G^{kl}$ out of the scalar part, and finally exchange the names $k \leftrightarrow l$ of the summation indices, using $G^{lk} = G^{kl}$:
+\begin{align*}
+&\partial_1 W_1 + \partial_2 W_2 \\
+&\quad = \sum_k \big\langle (D_k F_k)\,\widetilde\chi\big\rangle + \sum_k \Big\langle \Big(\sqrt{\det G}\,\sum_l G^{kl}D_l\psi\Big)\,\widetilde{(D_k\chi)}\Big\rangle && \text{subst.} \\
+&\quad = \Big\langle \Big(\sum_k D_k F_k\Big)\,\widetilde\chi\Big\rangle + \sqrt{\det G}\sum_{k,l} G^{kl}\big\langle (D_l\psi)\,\widetilde{(D_k\chi)}\big\rangle && \text{scalars out} \\
+&\quad = \Big\langle \Big(\sum_k D_k F_k\Big)\,\widetilde\chi\Big\rangle + \sqrt{\det G}\sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle && k \leftrightarrow l ,
+\end{align*}
+By the definition~(\ref{eqn:r3_strong}) of $D^*D$, multiplied by $-\sqrt{\det G}$,
+\begin{equation*}
+\sum_k D_kF_k = \sum_{k,l} D_k\Big(\sqrt{\det G}\; G^{kl}\, D_l\psi\Big) = -\sqrt{\det G}\; D^*D\psi .
+\end{equation*}
+Substitute it into the first term, and recognize the density~(\ref{eqn:r3_density}) in the second:
+\begin{equation}
+\label{eqn:s3a_divW}
+\partial_1 W_1 + \partial_2 W_2 = -\sqrt{\det G}\,\big\langle (D^*D\psi)\,\widetilde\chi\big\rangle + \sqrt{\det G}\sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle .
+\end{equation}
+
+\emph{Step 4: the divergence theorem in the flat chart.} The divergence theorem of the plane,~(\ref{eqn:t1_divergence}) with the flat metric, says
+\begin{equation*}
+\int_{P'} (\partial_1 W_1 + \partial_2 W_2)\, d\xi_1\, d\xi_2 = \oint_{\partial P'} W\cdot\hat\nu\, d\hat s ,
+\end{equation*}
+where $\hat\nu$ and $d\hat s$ are the outward normal and the length element of the flat boundary. Substitute~(\ref{eqn:s3a_divW}) on the left:
+\begin{equation*}
+\begin{aligned}
+\int_{P'} \Big(-\sqrt{\det G}\,\big\langle (D^*D\psi)\,\widetilde\chi\big\rangle &+ \sqrt{\det G}\sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\Big)\, d\xi_1 d\xi_2 \\
+&= \oint_{\partial P'} W\cdot\hat\nu\, d\hat s .
+\end{aligned}
+\end{equation*}
+Split the integral in two, move the term with $D^*D$ to the right, and use~(\ref{eqn:r3_area}), $\sqrt{\det G}\,d\xi_1 d\xi_2 = dA$:
+\begin{equation}
+\label{eqn:r3_green}
+\int \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA = \int \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA + \oint_{\partial P'} W\cdot\hat\nu\, d\hat s .
+\end{equation}
+This is Green's identity~(\ref{eqn:green}) of Part~\ref{part:matrix},
+\begin{equation*}
+\int_\Omega \nabla U : \nabla V\, dA = \int_\Omega (\nabla^* \nabla U) \cdot V\, dA + \oint_{\partial \Omega} (\nabla_\nu U) \cdot V\, ds ,
+\end{equation*}
+derived in a flat plane. It also derives the formula of $D^*D$ in~(\ref{eqn:r3_strong}): that is the operator for which the identity holds.
+
+\emph{The boundary term is the flux of the surface.} We check that $W\cdot\hat\nu\, d\hat s = \langle (D_\nu\psi)\,\widetilde\chi\rangle\, ds$, with $\nu$ the outward unit conormal of the surface and $ds$ its length element. Walk the boundary counterclockwise with flat unit tangent $\hat\tau = (\tau_1, \tau_2)$; the outward flat normal is $\hat\nu = (\tau_2, -\tau_1) = R\hat\tau$ with $R = \left(\begin{smallmatrix} 0 & 1 \\ -1 & 0\end{smallmatrix}\right)$. The flat step $\hat\tau\, d\hat s$ is the surface step $h(\hat\tau)\, d\hat s$, so $ds = |h(\hat\tau)|\, d\hat s = (\hat\tau^T G\hat\tau)^{1/2}\, d\hat s$. The flat vector $c = \lambda\, G^{-1}\hat\nu$, $\lambda > 0$, gives a surface vector $h(c)$ orthogonal to the boundary, since $g(c, \hat\tau) = \lambda\,\hat\nu^T G^{-1} G\,\hat\tau = \lambda\,\hat\nu\cdot\hat\tau = 0$, and pointing out, since $\hat\nu\cdot c = \lambda\,\hat\nu^TG^{-1}\hat\nu > 0$; it is a unit vector when $c^TGc = \lambda^2\,\hat\nu^TG^{-1}\hat\nu = 1$. So $\nu = h(c)$ with $\lambda = (\hat\nu^TG^{-1}\hat\nu)^{-1/2}$, and by the linearity of $D_a$ in $a$,
+\begin{equation*}
+D_\nu\psi = \sum_l c_l\, D_l\psi = \lambda\sum_{k,l} \hat\nu_k\, G^{kl}\, D_l\psi .
+\end{equation*}
+For a symmetric $2\times 2$ matrix $G = \left(\begin{smallmatrix} p & q \\ q & r\end{smallmatrix}\right)$, $G^{-1} = \frac{1}{\det G}\left(\begin{smallmatrix} r & -q \\ -q & p\end{smallmatrix}\right)$, and multiplying out, $R^T\left(\begin{smallmatrix} r & -q \\ -q & p\end{smallmatrix}\right)R = \left(\begin{smallmatrix} 0 & -1 \\ 1 & 0\end{smallmatrix}\right)\left(\begin{smallmatrix} q & r \\ -p & -q\end{smallmatrix}\right) = \left(\begin{smallmatrix} p & q \\ q & r\end{smallmatrix}\right) = G$. Hence $\hat\nu^TG^{-1}\hat\nu = \hat\tau^TR^TG^{-1}R\,\hat\tau = \hat\tau^TG\hat\tau/\det G$, and
+\begin{equation*}
+\lambda\, ds = \Big(\frac{\det G}{\hat\tau^TG\hat\tau}\Big)^{1/2}\, \big(\hat\tau^TG\hat\tau\big)^{1/2}\, d\hat s = \sqrt{\det G}\; d\hat s .
+\end{equation*}
+Put the pieces together:
+\begin{equation*}
+\big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds = \sum_k \hat\nu_k\,\Big\langle \Big(\sqrt{\det G}\sum_l G^{kl}D_l\psi\Big)\widetilde\chi\Big\rangle\, d\hat s = \sum_k \hat\nu_k\, W_k\, d\hat s = W\cdot\hat\nu\, d\hat s .
+\end{equation*}
+So the boundary integral of~(\ref{eqn:r3_green}) is $\oint\langle (D_\nu\psi)\widetilde\chi\rangle\, ds$, a gauge invariant quantity of the surface. To integrate over the whole surface, cut it into pieces each inside one chart and add the identities: on a cut between two pieces the integrand is the same and the two outward conormals are opposite, so the two boundary terms cancel, and only the true boundary $\partial\Omega$ of the surface remains.
+
+\emph{Step 5: substitute.} Solve~(\ref{eqn:r3_green}), summed over the pieces, for the term with $D^*D$:
+\begin{equation*}
+\int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA = \int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA - \oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds .
+\end{equation*}
+Substitute it, inside parentheses, into~(\ref{eqn:s3a_tested}):
+\begin{multline*}
+\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\,\Big(\int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA - \oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds\Big) \\
+= \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{multline*}
+Distribute $\Delta t$:
+\begin{multline*}
+\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA - \Delta t\oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds \\
+= \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{multline*}
+The boundary term vanishes: the surfaces of our experiments are closed ($\partial\Omega$ is empty), or the test fields vanish on the boundary where needed and at the source, where the value is prescribed. What remains is the \emph{weak form}: find $\psi$ with
+\begin{equation}
+\label{eqn:r3_weak}
+\boxed{\; \int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_{k,l} G^{kl}\big\langle (D_k\psi)\,\widetilde{(D_l\chi)}\big\rangle\, dA = \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA \;}
+\end{equation}
+that is, $a(\psi, \chi) = l(\chi)$ in the notation~(\ref{eqn:r3_bilinear}), for every test field $\chi$ of $H^1$ that vanishes at the source. It is the weak form~(\ref{eqn:ga_weak}) of Part~\ref{part:ga}, shown again,
+\begin{equation*}
+\int_\Omega \langle \psi\, \widetilde\chi \rangle\, dA + \Delta t \int_\Omega \sum_m \langle (D_{e_m} \psi)\, \widetilde{(D_{e_m} \chi)} \rangle\, dA = \int_\Omega \langle \psi^0\, \widetilde\chi \rangle\, dA , \tag{\ref{eqn:ga_weak}}
+\end{equation*}
+with the sum over an orthonormal basis of the surface replaced by the inverse metric of the chart, by~(\ref{eqn:r3_gkl}) with $X(e) = D_e\psi$, $Y(e) = D_e\chi$ and the product $\langle X\widetilde Y\rangle$: $\sum_m \langle (D_{e_m}\psi)\widetilde{(D_{e_m}\chi)}\rangle = \sum_{k,l} G^{kl}\langle (D_k\psi)\widetilde{(D_l\chi)}\rangle$. Galerkin's idea, used in Stage 6, is to ask~(\ref{eqn:r3_weak}) only for the test fields of a finite dimensional space.
+
+\emph{Step 6: back to the PDE.} The coefficient of $\epsilon$ in~(\ref{eqn:s3a_variation}) is the left side minus the right side of the weak form. For a smooth $\psi$, the lines of Step 5 run backwards and give
+\begin{equation*}
+a(\psi, \chi) - l(\chi) = \int_\Omega \big\langle r\,\widetilde\chi\big\rangle\, dA, \qquad r = \psi + \Delta t\, D^*D\psi - \psi^0 ,
+\end{equation*}
+for every $\chi$ that vanishes on $\partial\Omega$. If this is zero for every such $\chi$, choose $\chi = \eta\, r$ with a smooth function $\eta \ge 0$ that vanishes on the boundary and near the source. Then $\langle r\,\widetilde\chi\rangle = \eta\,\langle r\widetilde r\rangle = \eta\,|r|^2$, by the positivity computed in Stage 2, and
+\begin{equation*}
+0 = \int_\Omega \eta\, |r|^2\, dA .
+\end{equation*}
+The integrand is continuous and nonnegative, so it is zero everywhere, and $r = 0$ wherever $\eta > 0$. Since $\eta$ can be positive at any point away from the boundary and the source, the strong form~(\ref{eqn:r3_strong}) holds there. For smooth fields, minimizing $J$, solving the weak form and solving the PDE are the same problem.
+
+\paragraph{What we got, and what Stage 5 must supply.} The weak form~(\ref{eqn:r3_weak}) contains exactly three geometric ingredients: the metric, through $G^{kl}$ and $\sqrt{\det G}$; the rotation gauge, through $D_k$; and, since a surface needs several charts, the transitions~(\ref{eqn:r3_transition}) between them. Nothing else of the surface enters. Stage 5 supplies the three on a mesh: on each face, a constant metric from three lengths and a flat gauge, $\Omega = 0$ (Section~\ref{section:int_triangle}); at each vertex, a flat chart to hold the unknown (Section~\ref{section:int_vertex}); and between each vertex chart and each face chart, a transition rotation, which carries the curvature (Section~\ref{section:int_connection}).
+

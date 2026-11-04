@@ -1,0 +1,949 @@
+%%% ======================================================================
+\part{The Same Derivation in Geometric Algebra, and What Is Intrinsic}
+\label{part:ga}
+
+Part~\ref{part:matrix} worked with matrices: frames as $3 \times 2$ arrays, transports as $2 \times 2$ rotations, coordinates as pairs of numbers. Each of those objects is a geometric object in disguise: a plane, a rotation, a direction in a plane. This part derives the finite element method again, from the beginning, with the objects themselves, in the geometric algebra $\Ge_3$ of space \cite{Doran2003, HestenesSobczyk1984}. Nothing is taken over from Part~\ref{part:matrix} except the problem and the mesh. Each result is compared with its matrix counterpart only at the end of its derivation.
+
+\paragraph{The recipe.} We follow the same eight stages as the other two parts:
+\begin{enumerate}
+\item \emph{The PDE (strong form):} the unknown, the domain, the equation and its side condition, written with geometric algebra.
+\item \emph{The function spaces:} where the solution lives, with which inner product, and why.
+\item \emph{The variational form:} an energy whose minimizer solves the equation.
+\item \emph{The weak form (Galerkin):} multiply by a test field, integrate, and integrate by parts with the divergence theorem of geometric calculus.
+\item \emph{The discretization:} the mesh, the tangent planes of its faces and vertices, the rotors that connect them, and the spinor hat functions.
+\item \emph{The discrete solution and the test functions:} the unknown as a combination of hat functions, tested against each of them.
+\item \emph{The element integrals:} one complex number per pair of vertices of each face, computed with the reciprocal frame.
+\item \emph{Assembly and the linear system:} a complex Hermitian system, which turns out to be the real system of Part~\ref{part:matrix} in disguise.
+\end{enumerate}
+
+\paragraph{Curved surfaces.} On a curved surface the unknowns are vectors that live in different planes, and the mesh is made of flat pieces that only approximate the surface. Differential geometry says what the equation means there. We use it where a stage needs it: the covariant derivative and the second fundamental form in Stage~1, to say what the equation means and which of its parts are \emph{intrinsic}, that is, depend only on lengths and angles measured within the surface; parallel transport and holonomy in Stage~5, to say why the basis functions must carry a connection.
+
+Each formula that the program \code{ga\_fem.cpp} evaluates is shown next to the lines of code that evaluate it, at the stage it implements.
+
+%%% ----------------------------------------------------------------------
+\section{The Tools: the Geometric Algebra of Space}
+\label{section:r2_tools}
+
+We recall the rules of $\Ge_3$ that are used below, and derive each one from the previous ones, so that every later step can point to a rule.
+
+\paragraph{The product of two vectors.} The geometric product of two vectors $a, b$ is a scalar plus a bivector,
+\begin{equation*}
+a b = a\cdot b + a\wedge b .
+\end{equation*}
+The inner product is symmetric, $b\cdot a = a\cdot b$, and the outer product is antisymmetric, $b\wedge a = -\,a\wedge b$. So the product in the other order is
+\begin{equation*}
+b a = b\cdot a + b\wedge a = a\cdot b - a\wedge b .
+\end{equation*}
+Three rules follow at once.
+\begin{itemize}
+\item \emph{A vector squared.} With $b = a$: $a\wedge a = -\,a\wedge a$, so $a\wedge a = 0$, and $aa = a\cdot a = |a|^2$.
+\item \emph{Orthogonal vectors anticommute.} If $a\cdot b = 0$, then $ab = 0 + a\wedge b$ and $ba = 0 - a\wedge b$, so $ab = -\,ba$.
+\item \emph{Parallel vectors commute.} If $b = \lambda a$, then $a\wedge b = \lambda\, a\wedge a = 0$, so $ab = a\cdot b = ba$.
+\end{itemize}
+
+\paragraph{The pseudoscalar.} Let $e_1, e_2, e_3$ be the orthonormal basis of space and $I = e_1e_2e_3$. Its square, moving one factor at a time and using that distinct basis vectors anticommute:
+\begin{align*}
+I^2 &= e_1e_2e_3\,e_1e_2e_3 \\
+&= e_1e_2\,(e_3e_1)\,e_2e_3 = -\,e_1e_2\,e_1e_3\,e_2e_3 && e_3e_1 = -e_1e_3 \\
+&= -\,e_1\,(e_2e_1)\,e_3e_2e_3 = +\,e_1e_1\,e_2e_3e_2e_3 && e_2e_1 = -e_1e_2 \\
+&= e_2\,(e_3e_2)\,e_3 = -\,e_2e_2\,e_3e_3 && e_1e_1 = 1,\ e_3e_2 = -e_2e_3 \\
+&= -1 && e_2e_2 = e_3e_3 = 1 .
+\end{align*}
+$I$ commutes with every vector. For $e_1$: $I e_1 = e_1e_2e_3e_1$, and moving the last $e_1$ to the front passes $e_3$ and $e_2$, two sign changes, so $Ie_1 = e_1e_1e_2e_3 = e_1 I$. The same two swaps work for $e_2$ and $e_3$, and by linearity $Ia = aI$ for every vector $a$, hence for every product of vectors. Finally, $I$ turns a vector into the bivector of the orthogonal plane:
+\begin{equation*}
+a\wedge b = I\,(a\times b) .
+\end{equation*}
+On the basis: $I e_3 = e_1e_2e_3e_3 = e_1e_2 = e_1\wedge e_2$ and $e_1\times e_2 = e_3$; in the same way $Ie_1 = e_2e_3$ and $Ie_2 = e_3e_1$; both sides are bilinear, so the identity holds for all $a, b$. In particular every bivector of space is $B = Ib$ for one vector $b$, its \emph{dual vector}.
+
+\paragraph{A vector times a bivector.} Let $a$ be a vector and $B = Ib$ a bivector. Then
+\begin{align*}
+a\,(I b) &= I\,(a b) && I \text{ commutes with } a \\
+&= I\,(a\cdot b) + I\,(a\wedge b) && ab = a\cdot b + a\wedge b \\
+&= I\,(a\cdot b) + I\,I\,(a\times b) && a\wedge b = I(a\times b) \\
+&= I\,(a\cdot b) - a\times b && I^2 = -1 \\
+&= \underbrace{I\,(a\cdot b)}_{\text{grade } 3} + \underbrace{b\times a}_{\text{grade } 1} && a\times b = -\,b\times a .
+\end{align*}
+The grade-3 part (a multiple of $I$, a \emph{pseudoscalar}) is the outer product, and the grade-1 part (a vector) is the inner product:
+\begin{equation*}
+a\wedge(Ib) = I\,(a\cdot b), \qquad a\cdot(Ib) = b\times a .
+\end{equation*}
+We call this the \emph{splitting rule}. The product in the other order is
+\begin{align*}
+(Ib)\,a &= I\,(b a) = I\,(a\cdot b) - I\,(a\wedge b) && ba = a\cdot b - a\wedge b \\
+&= I\,(a\cdot b) - I\,I\,(a\times b) = I\,(a\cdot b) + a\times b && I^2 = -1 \\
+&= a\wedge(Ib) - a\cdot(Ib) && a\times b = -\,b\times a .
+\end{align*}
+Subtracting the two products, $aB - Ba = 2\, a\cdot B$, so $a\cdot B = \frac12(aB - Ba)$, and we write $B\cdot a = -\,a\cdot B$.
+
+\paragraph{Squares and inverses of bivectors.} For $B = Ib$,
+\begin{equation*}
+B^2 = I\,b\,I\,b = I\,I\,b\,b = -\,|b|^2 ,
+\end{equation*}
+moving the second $I$ past $b$ and then using $I^2 = -1$ and $bb = |b|^2$. So a unit bivector squares to $-1$, and $B\,(-B/|B|^2) = -B^2/|B|^2 = |B|^2/|B|^2 = 1$, that is, $B^{-1} = -B/|B|^2$.
+
+\paragraph{The reverse.} The reverse $\widetilde X$ of a product of vectors writes the factors in the opposite order, $\widetilde{ab} = ba$, and it is extended linearly; for any two elements, $\widetilde{XY} = \widetilde Y\,\widetilde X$. Scalars and vectors are their own reverses. A bivector changes sign: for orthogonal $a, b$, $\widetilde{ab} = ba = -\,ab$, and every bivector is a sum of such products.
+
+\paragraph{Rotors.} A \emph{rotor} is an even element $R$ (a scalar plus a bivector) with $R\widetilde R = 1$. It rotates by the sandwich $X \mapsto R X \widetilde R$. The rotor that turns by the angle $\theta$ in the plane of the unit bivector $B$, in the sense of $B$, is $R = e^{-B\theta/2} = \cos\frac\theta2 - B\sin\frac\theta2$. Rotors are used from Stage~5 on.
+
+\paragraph{The scalar part.} The scalar part $\langle X\rangle$ of an element $X$ is its grade-$0$ component. Two rules move factors inside it.
+\begin{itemize}
+\item \emph{Reversion does not change it}, $\langle \widetilde X\rangle = \langle X\rangle$: reversion leaves scalars alone and only changes signs of bivector and trivector parts.
+\item \emph{It is cyclic}, $\langle XY\rangle = \langle YX\rangle$ for any two elements. Write $X$ and $Y$ in the basis of products $e_A$ of distinct basis vectors ($1$, $e_1$, $e_1e_2$, \dots). The product $e_Ae_B$ is, up to sign, the product of the basis vectors that appear in exactly one of $A$ and $B$, so it has a scalar part only when $A = B$, and then $e_Ae_B = e_Be_A$. So $\langle e_Ae_B\rangle = \langle e_Be_A\rangle$ for every pair, and by linearity $\langle XY\rangle = \langle YX\rangle$. For two vectors this is $\langle ab\rangle = a\cdot b = \langle ba\rangle$.
+\end{itemize}
+The scalar part will be our inner product, and the cyclic rule is what lets us move factors around inside it.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 1: The PDE (Strong Form) in Geometric Algebra}
+\label{section:r2_stage1}
+
+\paragraph{What we want.} We want to write one backward Euler step of the vector heat equation on a curved surface, with a source condition, using only geometric algebra. The unknown is a field of tangent vectors. So we need, in order: the tangent planes; the derivative of a tangent field that stays tangent (the covariant derivative); a way of storing a tangent vector as a number (the spinor coordinate); and the equation itself.
+
+\subsection{The tangent plane as a bivector}
+\label{section:ga_plane}
+
+\paragraph{The tangent bivector.} In Part~\ref{part:matrix} a tangent plane was described by its unit normal $n$. What the method uses is the plane and its orientation, the sense in which ``counterclockwise'' turns in it. Geometric algebra has an object that is exactly an oriented plane: a unit bivector. The bivector of the plane orthogonal to $n$ is $I n$, by the duality $a\wedge b = I(a\times b)$ of Section~\ref{section:r2_tools}. So at each point of the surface we replace the normal by
+\begin{equation}
+\label{eqn:ga_T}
+\mathsf T = I n ,
+\end{equation}
+the \emph{tangent bivector}: the tangent plane itself, as an oriented plane element of unit area.
+
+\paragraph{The same plane, written with a frame.} Take an orthonormal, positively oriented frame $(t, b)$ of the tangent plane, $b = n\times t$, as in Part~\ref{part:matrix}. Then
+\begin{align*}
+t\, b &= t\cdot b + t\wedge b && \text{product of two vectors} \\
+&= t\wedge b && t\cdot b = 0 \\
+&= I\,(t\times b) && a\wedge b = I(a\times b) \\
+&= I\, n = \mathsf T && t\times b = n .
+\end{align*}
+The step $t\times b = n$ holds because $(t, b, n)$ is a right-handed orthonormal triple, ordered like $(e_1, e_2, e_3)$. So $\mathsf T$ is the product of the two frame vectors, and it is the same for every positive frame of the plane: the frame vectors change when the frame is rotated, their product does not.
+
+\paragraph{Its square.} Using $\mathsf T = tb$ and the anticommutation of the orthogonal vectors $t$ and $b$:
+\begin{align*}
+\mathsf T^2 &= (t b)(t b) = t\,(b t)\, b && \text{associativity} \\
+&= t\,(-\,t b)\, b && bt = -tb \\
+&= -\,(t t)(b b) && \text{regroup} \\
+&= -1 && tt = bb = 1 .
+\end{align*}
+The tangent bivector squares to $-1$, like the imaginary unit. Its inverse is therefore $\mathsf T^{-1} = -\mathsf T$, because $\mathsf T(-\mathsf T) = -\mathsf T^2 = 1$. Its reverse is $\widetilde{\mathsf T} = \widetilde{tb} = bt = -\,tb = -\mathsf T$.
+
+\paragraph{Tangency.} The splitting rule of Section~\ref{section:r2_tools}, with $b$ replaced by $n$ [\,$a\wedge(Ib) = I(a\cdot b),\ a\cdot(Ib) = b\times a$\,], gives for any vector $a$ of space
+\begin{equation*}
+a\wedge \mathsf T = a\wedge (I n) = I\,(a\cdot n), \qquad a\cdot \mathsf T = a\cdot(In) = n \times a .
+\end{equation*}
+So $a\wedge\mathsf T = 0$ exactly when $a\cdot n = 0$: a vector is tangent exactly when its outer product with $\mathsf T$ vanishes.
+
+\paragraph{The projection, step by step.} We want to split a vector $a$ of space into a tangent part and a normal part using $\mathsf T$ only. Insert $1 = \mathsf T\mathsf T^{-1}$ and split the product $a\mathsf T$ of a vector and a bivector into its two grades:
+\begin{align*}
+a &= a\,\mathsf T\,\mathsf T^{-1} && \mathsf T\mathsf T^{-1} = 1 \\
+&= (a\,\mathsf T)\,\mathsf T^{-1} && \text{associativity} \\
+&= (a\cdot\mathsf T + a\wedge\mathsf T)\,\mathsf T^{-1} && \text{splitting rule} \\
+&= (a\cdot\mathsf T)\,\mathsf T^{-1} + (a\wedge\mathsf T)\,\mathsf T^{-1} && \text{distribute.}
+\end{align*}
+We compute each term. The second one, with $a\wedge\mathsf T = I(a\cdot n)$ and $\mathsf T^{-1} = -\mathsf T = -In$:
+\begin{align*}
+(a\wedge\mathsf T)\,\mathsf T^{-1} &= \big(I\,(a\cdot n)\big)\,\big(-I n\big) && \text{substitute both} \\
+&= -\,I\,I\,(a\cdot n)\, n && a\cdot n \text{ is a scalar} \\
+&= (a\cdot n)\, n && I^2 = -1 ,
+\end{align*}
+the normal component of $a$. The first one, with $a\cdot\mathsf T = n\times a$ and $\mathsf T^{-1} = -In$:
+\begin{align*}
+(a\cdot\mathsf T)\,\mathsf T^{-1} &= -\,(a\cdot\mathsf T)\,\mathsf T = -\,(n\times a)\,(I n) && \text{substitute both} \\
+&= -\,I\,\big((n\times a)\, n\big) && I \text{ commutes} \\
+&= -\,I\,\big((n\times a)\cdot n + (n\times a)\wedge n\big) && \text{product of two vectors} \\
+&= -\,I\,(n\times a)\wedge n && (n\times a)\cdot n = 0 \\
+&= -\,I\,I\,\big((n\times a)\times n\big) && c\wedge d = I(c\times d) \\
+&= (n\times a)\times n && I^2 = -1 \\
+&= (n\cdot n)\, a - (a\cdot n)\, n && \text{triple product rule (below)} \\
+&= a - (a\cdot n)\, n && n\cdot n = 1 .
+\end{align*}
+The triple product rule is $(u\times v)\times w = (u\cdot w)\,v - (v\cdot w)\,u$, here with $u = w = n$ and $v = a$. This is $a$ with its normal component removed: the tangent part. So
+\begin{equation}
+\label{eqn:ga_projection}
+P(a) = (a \cdot \mathsf T)\, \mathsf T^{-1} = -(a \cdot \mathsf T)\, \mathsf T, \qquad a - P(a) = (a \wedge \mathsf T)\, \mathsf T^{-1} = (a \cdot n)\, n ,
+\end{equation}
+and the two parts add up to $a$, as the first computation said they must. The tangent part $a - (a\cdot n)\,n = (I_3 - nn^T)\,a$ is the matrix $T T^T = I_3 - n n^T$ of~(\ref{eqn:frame})~[\,$T = [\,t\;\;b\,],\ T^TT = I_2,\ TT^T = I_3 - nn^T$\,] applied to $a$, now written without a choice of frame.
+
+\paragraph{A check in coordinates.} Take $n = e_3$, so $\mathsf T = I e_3 = e_1e_2$, and $a = a_1 e_1 + a_2 e_2 + a_3 e_3$. Then $a\cdot\mathsf T = n\times a = e_3\times(a_1e_1 + a_2e_2 + a_3e_3) = a_1 e_2 - a_2 e_1$, and
+\begin{align*}
+-(a\cdot\mathsf T)\,\mathsf T &= -\,(a_1 e_2 - a_2 e_1)\, e_1 e_2 && \text{substitute} \\
+&= -\,a_1\, e_2 e_1 e_2 + a_2\, e_1 e_1 e_2 && \text{distribute} \\
+&= -\,a_1\,(-\,e_1 e_2 e_2) + a_2\, e_2 && e_2e_1 = -e_1e_2,\ e_1e_1 = 1 \\
+&= a_1 e_1 + a_2 e_2 && e_2e_2 = 1 ,
+\end{align*}
+the tangent part of $a$, with its $e_3$ component removed.
+
+\subsection{The tangent plane is the complex plane}
+
+We now look at what $\mathsf T$ does to a tangent vector when we multiply by it. This is the step that makes the rest of the part work.
+
+\paragraph{Right multiplication is a quarter turn.} Let $a$ be a tangent vector, so $a\cdot n = 0$. Multiply it on the right by $\mathsf T = In$:
+\begin{align*}
+a\,\mathsf T &= a\, I\, n && \text{definition~(\ref{eqn:ga_T}) of } \mathsf T \\
+&= I\, (a\, n) && I \text{ commutes with } a \\
+&= I\,(a\cdot n) + I\,(a\wedge n) && \text{product of two vectors} \\
+&= I\,(a \wedge n) && a \cdot n = 0\text{: } a \text{ is tangent} \\
+&= I\, I\,(a\times n) && a\wedge n = I(a\times n) \\
+&= -\,a\times n && I^2 = -1 \\
+&= n\times a && \text{antisymmetry of } \times .
+\end{align*}
+The fourth line is where tangency is used. For a vector that is not tangent, the pseudoscalar $I\,(a\cdot n)$ survives and $a\mathsf T$ is not a vector at all; for a tangent vector it vanishes, and what remains is
+\begin{equation}
+\label{eqn:ga_quarter_turn}
+a\, \mathsf T = n \times a .
+\end{equation}
+Read the right side geometrically. The vector $n\times a$ is orthogonal to $n$, so it is tangent; it is orthogonal to $a$; its length is $|n|\,|a|\sin 90^\circ = |a|$, because $n \perp a$; and $(a,\ n\times a,\ n)$ is right-handed, so seen from the tip of $n$ the turn from $a$ to $n\times a$ is counterclockwise. So right multiplication by $\mathsf T$ turns a tangent vector by a quarter turn, counterclockwise about $n$, within the tangent plane. (Check with $n = e_3$, $\mathsf T = e_1 e_2$, $a = e_1$: $a\mathsf T = e_1 e_1 e_2 = e_2$, and $e_3\times e_1 = e_2$.)
+
+Multiplying on the left turns the other way:
+\begin{align*}
+\mathsf T\, a &= I\, n\, a = I\,(n\cdot a + n\wedge a) && \text{product of two vectors} \\
+&= I\,(n\wedge a) = I\,I\,(n\times a) && n\cdot a = 0,\ \text{duality} \\
+&= -\,n\times a = -\,a\,\mathsf T && I^2 = -1,\ (\ref{eqn:ga_quarter_turn}) .
+\end{align*}
+A tangent vector and $\mathsf T$ anticommute. We always multiply on the right.
+
+\paragraph{Complex numbers of the plane.} Consider the even elements $\alpha + \beta\,\mathsf T$ with real $\alpha, \beta$. Their product, distributing and using $\mathsf T^2 = -1$ once:
+\begin{align*}
+(\alpha + \beta\mathsf T)(\gamma + \delta\mathsf T) &= \alpha\gamma + \alpha\delta\,\mathsf T + \beta\gamma\,\mathsf T + \beta\delta\,\mathsf T^2 && \text{distribute} \\
+&= (\alpha\gamma - \beta\delta) + (\alpha\delta + \beta\gamma)\,\mathsf T && \mathsf T^2 = -1 .
+\end{align*}
+This is the rule for $(\alpha + \beta\mathrm i)(\gamma + \delta\mathrm i)$. The result is symmetric in the two factors, so these elements commute with each other. The reverse is $(\alpha + \beta\mathsf T)^\sim = \alpha + \beta\,\widetilde{\mathsf T} = \alpha - \beta\mathsf T$, because $\widetilde{\mathsf T} = -\mathsf T$: \emph{reversion is complex conjugation}.
+
+\paragraph{The exponential.} The power series $e^{\mathsf T\theta} = \sum_{m\ge 0} (\mathsf T\theta)^m/m!$ separates into even and odd powers. For even $m = 2j$, $\mathsf T^{2j} = (\mathsf T^2)^j = (-1)^j$; for odd $m = 2j + 1$, $\mathsf T^{2j+1} = (\mathsf T^2)^j\,\mathsf T = (-1)^j\,\mathsf T$. So
+\begin{equation*}
+e^{\mathsf T\theta} = \sum_{j\ge 0} \frac{(-1)^j\theta^{2j}}{(2j)!} + \mathsf T\sum_{j\ge 0} \frac{(-1)^j\theta^{2j+1}}{(2j+1)!} = \cos\theta + \mathsf T\sin\theta .
+\end{equation*}
+Its reverse is $\cos\theta - \mathsf T\sin\theta = e^{-\mathsf T\theta}$, and
+\begin{align*}
+e^{\mathsf T\theta}\,e^{-\mathsf T\theta} &= (\cos\theta + \mathsf T\sin\theta)(\cos\theta - \mathsf T\sin\theta) \\
+&= \cos^2\theta - \cos\theta\sin\theta\,\mathsf T + \sin\theta\cos\theta\,\mathsf T - \sin^2\theta\,\mathsf T^2 && \text{distribute} \\
+&= \cos^2\theta + \sin^2\theta = 1 && \mathsf T^2 = -1 .
+\end{align*}
+Multiplying a tangent vector $a$ on the right by $e^{\mathsf T\theta}$:
+\begin{align}
+a\, e^{\mathsf T \theta} &= a\,(\cos\theta + \mathsf T\sin\theta) = a \cos\theta + (a\,\mathsf T) \sin\theta \notag\\
+&= a \cos\theta + (n \times a) \sin\theta , \label{eqn:ga_rotation_plane}
+\end{align}
+by~(\ref{eqn:ga_quarter_turn})~[\,$a\,\mathsf T = n\times a$\,]. This is $a$ rotated by $\theta$ about $n$: $\cos\theta$ times $a$ plus $\sin\theta$ times the quarter-turned $a$ (Figure~\ref{fig:quarter_turn}). This is why Part~\ref{part:matrix} could read the coordinates $u_i$ as complex numbers: there the imaginary unit was a notational device; here it is the tangent plane itself.
+
+\paragraph{Spinor coordinates.} Fix the first frame vector $t$. A tangent vector $U$ with coordinates $(u_1, u_2)$, that is $U = u_1 t + u_2 b = Tu$, is
+\begin{equation}
+\label{eqn:ga_spinor}
+U = t\, \psi, \qquad \psi = u_1 + u_2\, \mathsf T .
+\end{equation}
+Indeed:
+\begin{align*}
+t\psi &= t\,(u_1 + u_2\,\mathsf T) = u_1\, t + u_2\,(t\,\mathsf T) && \text{distribute} \\
+&= u_1\, t + u_2\,(n\times t) && (\ref{eqn:ga_quarter_turn}) \text{ with } a = t \\
+&= u_1\, t + u_2\, b && b = n\times t .
+\end{align*}
+We call $\psi$ the \emph{spinor coordinate} of $U$ in the frame $t$. Its length is that of $U$. Since $U$ is a vector, $\widetilde U = U$ and $U^2 = U\widetilde U = |U|^2$, so
+\begin{align*}
+|U|^2 = U\,\widetilde U &= (t\psi)\,(t\psi)^\sim = t\,\psi\,\widetilde\psi\, t && \widetilde{XY} = \widetilde Y\widetilde X,\ \widetilde t = t \\
+\psi\widetilde\psi &= (u_1 + u_2\mathsf T)(u_1 - u_2\mathsf T) \\
+&= u_1^2 - u_1u_2\mathsf T + u_2u_1\mathsf T - u_2^2\,\mathsf T^2 && \text{distribute} \\
+&= u_1^2 + u_2^2 && \mathsf T^2 = -1 \\
+|U|^2 &= t\,(u_1^2 + u_2^2)\, t = (u_1^2 + u_2^2)\, t t && \text{scalars commute} \\
+&= u_1^2 + u_2^2 && tt = 1 .
+\end{align*}
+So $|\psi|^2 = \psi\widetilde\psi = |U|^2$, and the same computation shows $|t\phi| = |\phi|$ for every complex number $\phi$ of the plane. The argument of $\psi$ is the angle from $t$ to $U$. The pair $(u_1, u_2)$ that the code stores is $\psi$ in the basis $(1, \mathsf T)$. The frame is now a single unit vector $t$; the second vector $b = t\mathsf T$ is determined by the plane.
+
+\paragraph{Changing the frame vector.} If the frame is turned by $\theta$, $t' = t\, e^{\mathsf T\theta}$, the coordinate becomes $\psi' = e^{-\mathsf T\theta}\psi$, because then the vector is unchanged:
+\begin{equation*}
+t'\psi' = \big(t\, e^{\mathsf T\theta}\big)\big(e^{-\mathsf T\theta}\psi\big) = t\,\big(e^{\mathsf T\theta}e^{-\mathsf T\theta}\big)\,\psi = t\psi .
+\end{equation*}
+Section~\ref{section:ga_gauge} builds on this.
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_quarter_turn}}
+\caption{The tangent bivector $\mathsf T = I n$ as an oriented disk in the tangent plane. Right multiplication by $\mathsf T$ turns a tangent vector $a$ by a quarter turn in the sense of $\mathsf T$, twice gives $-a$, and $e^{\mathsf T \theta} = \cos\theta + \mathsf T \sin\theta$ turns it by $\theta$: the even elements of the plane are the complex numbers, with $\mathsf T$ as imaginary unit.}
+\label{fig:quarter_turn}
+\end{figure}
+
+\paragraph{The algebra in code.} The header \code{GAConnection.h} implements only the grades the method needs. Here is its first part, with the rules of Section~\ref{section:r2_tools} and of this subsection:
+\lstinputlisting[firstline=19, lastline=60, firstnumber=19]{../src/GAConnection.h}
+\begin{itemize}
+\item Lines~19--20: vectors are Eigen vectors, and the complex numbers $\alpha + \beta\,\mathsf T$ of a plane are \code{std::complex}.
+\item Lines~23--27: a bivector $B = I b$ is stored by its dual vector $b$. Since $I e_1 = e_2 e_3$, $I e_2 = e_3 e_1$ and $I e_3 = e_1 e_2$, the components $b_x, b_y, b_z$ are the coefficients of $e_2e_3$, $e_3e_1$, $e_1e_2$. The norm of $B$ is that of $b$.
+\item Line~30: the outer product $a\wedge c = I\,(a\times c)$ is stored as the cross product.
+\item Line~34: the inner product of a vector with a bivector, $a\cdot(Ib) = b\times a$, the vector part of the splitting rule.
+\item Line~37: $B^{-1} = -B/|B|^2$. For $B = Ib$, $B^2 = I^2 b^2 = -|b|^2$, so $B\,(-B/|b|^2) = 1$.
+\item Lines~40--50: a rotor $R = w + Ib$, used in Stage~5. The sandwich $R a \widetilde R$ is evaluated with the classical formula for a unit quaternion $(w, u)$, $a' = a + 2w\,(u\times a) + 2\,u\times(u\times a)$; lines~47--48 compute it with $t = 2\,u\times a$. The quaternion has $u = -b$ (line~46) because the quaternion units correspond to $-Ie_1, -Ie_2, -Ie_3$. For the rotor $e^{-Ik\theta/2} = \cos\frac\theta2 - Ik\sin\frac\theta2$ of the rotation by $\theta$ about the unit axis $k$, this gives $u = k\sin\frac\theta2$, the familiar quaternion of that rotation.
+\item Line~53: the geometric product of two vectors, $c\,a = c\cdot a + I\,(c\times a)$, stored as a rotor; it is a rotor only after normalization (Section~\ref{section:ga_rotor}).
+\item Line~56: $\mathsf T = In$ is stored by its dual vector, which is $n$ itself. The data does not change; its meaning does, and with it the operations allowed on it.
+\item Line~60: the quarter turn~(\ref{eqn:ga_quarter_turn})~[\,$a\,\mathsf T = n\times a$\,], computed as the inner product $a\cdot\mathsf T = n\times a$. For a tangent $a$ this is the whole product $a\mathsf T$, since the outer part $I(a\cdot n)$ vanishes; for a vector that is not tangent the function silently drops that part, so it must be called only with tangent vectors.
+\end{itemize}
+
+\subsection{The vector derivative and the covariant derivative}
+\label{section:r2_covariant}
+
+\paragraph{What we want.} The heat equation differentiates the unknown field. On a curved surface the derivative of a tangent field, taken in space, is in general not tangent. We need the derivative that stays in the tangent plane, and we want to know what is thrown away in getting it.
+
+\paragraph{The directional derivative.} Let $F$ be a field on the surface, with values that may be scalars, vectors or any elements of $\Ge_3$. For a tangent vector $a$ at a point $x$, take a curve $\gamma(s)$ on the surface with $\gamma(0) = x$ and $\gamma'(0) = a$, and define
+\begin{equation*}
+a\cdot\nabla F = \frac{d}{ds}\, F(\gamma(s))\Big|_{s = 0} ,
+\end{equation*}
+the rate of change of each component of $F$ in space as we move along $a$. (Part~\ref{part:matrix} wrote it $D_X U$; here the letter $D$ is reserved for spinors.) It is linear in $a$, and it obeys the product rule, because it differentiates components: $a\cdot\nabla(FG) = (a\cdot\nabla F)\,G + F\,(a\cdot\nabla G)$, keeping the order of the factors.
+
+\paragraph{The vector derivative.} The vector derivative collects the directional derivatives along an orthonormal basis $e_1, e_2$ of the tangent plane into one object, with the geometric product:
+\begin{equation}
+\label{eqn:r2_vector_derivative}
+\nabla F = \sum_{k=1}^2 e_k\, (e_k\cdot\nabla F) .
+\end{equation}
+It does not depend on the basis. Write $L(a) = a\cdot\nabla F$, linear in $a$, and $L_k = L(e_k)$. Rotate the basis to $e_1' = c\, e_1 + s\, e_2$, $e_2' = -s\, e_1 + c\, e_2$, with $c = \cos\alpha$, $s = \sin\alpha$. By linearity $L(e_1') = cL_1 + sL_2$ and $L(e_2') = -sL_1 + cL_2$. Then
+\begin{align*}
+e_1' L(e_1') &= (c e_1 + s e_2)(c L_1 + s L_2) = c^2 e_1L_1 + cs\, e_1L_2 + sc\, e_2L_1 + s^2 e_2L_2 , \\
+e_2' L(e_2') &= (-s e_1 + c e_2)(-s L_1 + c L_2) = s^2 e_1L_1 - sc\, e_1L_2 - cs\, e_2L_1 + c^2 e_2L_2 .
+\end{align*}
+Adding, the cross terms cancel and $e_1'L(e_1') + e_2'L(e_2') = (c^2 + s^2)(e_1L_1 + e_2L_2) = e_1L_1 + e_2L_2$.
+
+For a scalar function $f$ the scalar $e_k\cdot\nabla f$ commutes with $e_k$, so $\nabla f = \sum_k (e_k\cdot\nabla f)\, e_k$, the gradient, a tangent vector. The notation is consistent: for a tangent $a = \sum_k (a\cdot e_k)\, e_k$,
+\begin{equation*}
+a\cdot(\nabla f) = \sum_k (e_k\cdot\nabla f)\,(a\cdot e_k) = \Big(\sum_k (a\cdot e_k)\, e_k\Big)\cdot\nabla f = a\cdot\nabla f ,
+\end{equation*}
+by linearity of the directional derivative in its direction. For a vector field $W$, write $w_k = e_k\cdot\nabla W$, a vector; each product $e_kw_k$ splits into a scalar and a bivector,
+\begin{equation*}
+\nabla W = \sum_k e_k\, w_k = \sum_k e_k\cdot w_k + \sum_k e_k\wedge w_k ,
+\end{equation*}
+and the scalar part $\langle\nabla W\rangle = \sum_k e_k\cdot(e_k\cdot\nabla W)$ is the \emph{divergence}. In Stage~4 it is what the divergence theorem integrates. On a flat face with edge vectors that are not orthonormal, the vector derivative needs the reciprocal frame, which we build in Stage~7.
+
+\paragraph{The Gauss formula.} Let $a$ be a tangent direction and $b$ a tangent field. The derivative $a\cdot\nabla b$ is a vector of space. The projection~(\ref{eqn:ga_projection}) [\,$P(a) = -(a\cdot\mathsf T)\,\mathsf T,\ a - P(a) = (a\cdot n)\,n$\,], with $a$ replaced by $a\cdot\nabla b$, splits it into its tangent and normal parts:
+\begin{align*}
+a\cdot\nabla b &= P(a\cdot\nabla b) + \big(a\cdot\nabla b - P(a\cdot\nabla b)\big) \\
+&= P(a\cdot\nabla b) + \big((a\cdot\nabla b)\cdot n\big)\, n .
+\end{align*}
+We name the two parts:
+\begin{equation}
+\label{eqn:ga_gauss}
+a \cdot \nabla b = \underbrace{P(a \cdot \nabla b)}_{\nabla_a b} + \underbrace{\big((a \cdot \nabla b) \cdot n\big)\, n}_{\mathrm{II}(a, b)\, n} .
+\end{equation}
+This is the \emph{Gauss formula}. Its tangent part is the \emph{covariant derivative}; with $P$ from~(\ref{eqn:ga_projection}),
+\begin{equation*}
+\nabla_a b = P(a\cdot\nabla b) = -\big((a\cdot\nabla b)\cdot\mathsf T\big)\,\mathsf T ,
+\end{equation*}
+which is~(\ref{eqn:covariant})~[\,$\nabla_X U = (I - nn^T)\, D_X U$\,] of Part~\ref{part:matrix}, written with the plane instead of the normal. The coefficient of the normal part is the \emph{second fundamental form}
+\begin{equation*}
+\mathrm{II}(a, b) = (a \cdot \nabla b) \cdot n = -\,b \cdot (a \cdot \nabla n) .
+\end{equation*}
+The second expression comes from the identity $b\cdot n = 0$, which holds at every point because $b$ is tangent. Differentiate it along $a$ with the product rule:
+\begin{equation*}
+0 = a\cdot\nabla(b\cdot n) = (a\cdot\nabla b)\cdot n + b\cdot(a\cdot\nabla n) \quad\Longrightarrow\quad (a\cdot\nabla b)\cdot n = -\,b\cdot(a\cdot\nabla n) .
+\end{equation*}
+In words: $\mathrm{II}(a, b)$ measures how fast the normal tilts in the direction $b$ as we move along $a$. It is the bending of the surface, and it is zero on a plane, where $n$ is constant. It sees nothing of how $b$ turns within the surface.
+
+\paragraph{The cylinder.} Take the cylinder of radius $r$ about the $z$ axis, the points $(r\cos\varphi, r\sin\varphi, z)$, with the outward normal $n = (\cos\varphi, \sin\varphi, 0)$, and the horizontal unit field $b = e_\varphi = (-\sin\varphi, \cos\varphi, 0)$, which goes around the cylinder.
+\begin{itemize}
+\item Move around the cylinder at unit speed: $\gamma(s) = (r\cos\frac sr, r\sin\frac sr, z_0)$, so $a = \gamma'(0) = e_\varphi$. Along the curve $b(\gamma(s)) = (-\sin\frac sr, \cos\frac sr, 0)$, and
+\begin{equation*}
+a\cdot\nabla b = \frac{d}{ds}\Big(-\sin\frac sr,\ \cos\frac sr,\ 0\Big) = -\frac1r\Big(\cos\frac sr,\ \sin\frac sr,\ 0\Big) = -\frac1r\, n .
+\end{equation*}
+The derivative is entirely normal. Its tangent part is $\nabla_a b = P(-\frac1r n) = -\frac1r\big(n - (n\cdot n)\,n\big) = 0$, and $\mathrm{II}(a, b) = (-\frac1r n)\cdot n = -\frac1r$. The second expression agrees: $n(\gamma(s)) = (\cos\frac sr, \sin\frac sr, 0)$ gives $a\cdot\nabla n = \frac1r\,e_\varphi$, and $-\,b\cdot(a\cdot\nabla n) = -\frac1r\, e_\varphi\cdot e_\varphi = -\frac1r$. The size $1/r$ is the curvature of the circle we walk along; the sign says that the surface bends away from the side to which $n$ points.
+\item Move along the axis, $a = e_z$: $b$ does not change, $a\cdot\nabla b = 0$, so $\nabla_a b = 0$ and $\mathrm{II}(e_z, b) = 0$. In that direction the cylinder does not bend.
+\end{itemize}
+In both directions $\nabla_a b = 0$. An inhabitant of the surface agrees: unroll the cylinder into a flat sheet, and the circles around it become parallel straight lines, and $e_\varphi$ becomes a constant field. All the change that we see in space is bending, recorded by $\mathrm{II}$. On a sphere of radius $r$, with $n = x/r$, along any curve $n(\gamma(s)) = \gamma(s)/r$, so $a\cdot\nabla n = a/r$ and $\mathrm{II}(a, a) = -\,a\cdot(a/r) = -1/r$ for every unit tangent $a$: the sphere bends equally in every direction.
+
+\paragraph{Metric compatibility.} For tangent fields $U, V$, the covariant derivative explains every change of their inner product:
+\begin{align*}
+a\cdot\nabla(U\cdot V) &= (a\cdot\nabla U)\cdot V + U\cdot(a\cdot\nabla V) && \text{product rule} \\
+&= \big(\nabla_a U + \mathrm{II}(a, U)\,n\big)\cdot V \\
+&\quad + U\cdot\big(\nabla_a V + \mathrm{II}(a, V)\,n\big) && \text{Gauss~(\ref{eqn:ga_gauss}) twice} \\
+&= \nabla_a U\cdot V + \mathrm{II}(a, U)\,(n\cdot V) \\
+&\quad + U\cdot\nabla_a V + \mathrm{II}(a, V)\,(U\cdot n) && \text{distribute} \\
+&= \nabla_a U\cdot V + U\cdot\nabla_a V && n\cdot V = U\cdot n = 0 .
+\end{align*}
+This is the metric compatibility~(\ref{eqn:metric_compatible})~[\,$X(U\cdot V) = \nabla_X U\cdot V + U\cdot\nabla_X V$\,] of Part~\ref{part:matrix}. It will give the product rule for spinors and Green's identity in Stage~4.
+
+\paragraph{Why the covariant derivative is intrinsic.} Imagine a two-dimensional being living on the surface. It can measure lengths of curves drawn on the surface and angles between them, and nothing else. Quantities computed from lengths and angles alone are \emph{intrinsic}; quantities that also depend on how the surface sits in space, like $n$, $\mathsf T$ as an element of $\Ge_3$, and $\mathrm{II}$, are \emph{extrinsic}. The fundamental theorem of Riemannian geometry \cite{doCarmo1976} says that there is exactly one way of differentiating tangent fields that is metric compatible, as just shown, and torsion free, $\nabla_a b - \nabla_b a = [a, b]$ (the infinitesimal parallelogram built from two directions closes up), and that this connection is given by a formula (the Koszul formula) that involves only inner products of fields and their derivatives, that is, only lengths and angles. The projection $\nabla_a b = P(a \cdot \nabla b)$ has both properties, so it is that connection, and it is intrinsic, although we computed it with the extrinsic plane $\mathsf T$. Hence the equation we are about to write is intrinsic. The discrete method computes it with extrinsic tools, and Section~\ref{section:ga_intrinsic} examines what that costs.
+
+\subsection{Spinor coordinates and the connection form}
+\label{section:ga_gauge}
+
+\paragraph{What we want.} The code never stores vectors of space; it stores coordinates. So we need the covariant derivative of a field written through its spinor coordinate, $U = t\psi$, in terms of the derivatives of $\psi$. Part~\ref{part:matrix} did this with matrices in~(\ref{eqn:covariant_frame})~[\,$T^T\nabla_X U = X\cdot\nabla u + \omega(X)\,u,\ \omega(X) = T^TD_XT$\,]; here the $2\times 2$ matrix $\omega(X)$ becomes a single number times $\mathsf T$.
+
+\paragraph{The frame field and its turning.} Choose a frame field, a unit tangent vector $t(x)$ at each point, with $b = t\mathsf T$ the second frame vector. As we move along a tangent direction $a$, its covariant derivative $\nabla_a t$ says how the frame turns within the surface. Two facts about it:
+\begin{itemize}
+\item it is tangent, by definition of $\nabla_a$;
+\item it is orthogonal to $t$. Metric compatibility with $U = V = t$, and $t\cdot t = 1$ constant, give
+\begin{equation*}
+0 = a\cdot\nabla(t\cdot t) = \nabla_a t\cdot t + t\cdot\nabla_a t = 2\, t\cdot\nabla_a t .
+\end{equation*}
+\end{itemize}
+Expand the tangent vector $\nabla_a t$ in the orthonormal basis $(t, b)$ of the plane:
+\begin{align*}
+\nabla_a t &= (t\cdot\nabla_a t)\, t + (b\cdot\nabla_a t)\, b && \text{orthonormal expansion} \\
+&= 0 + \omega(a)\, b && \text{second fact; } \omega(a) := b\cdot\nabla_a t \\
+&= \omega(a)\, t\,\mathsf T && b = t\mathsf T .
+\end{align*}
+So
+\begin{equation}
+\label{eqn:ga_omega}
+\nabla_a t = \omega(a)\, t\, \mathsf T ,
+\end{equation}
+where the number $\omega(a) = b\cdot\nabla_a t$, linear in $a$, is the rate at which the frame turns, measured against parallel transport. It is the \emph{connection form} of the frame. In~(\ref{eqn:covariant_frame})~[\,$\omega(X) = T^TD_XT$\,] it appeared as the entry $b\cdot D_X t$ of the $2\times 2$ matrix $\omega(X) = \begin{pmatrix}0 & -\theta\\ \theta & 0\end{pmatrix}$, with $\theta = \omega(X)$.
+
+\paragraph{The second frame vector.} Expand $\nabla_a b$ in the same basis, $\nabla_a b = (t\cdot\nabla_a b)\,t + (b\cdot\nabla_a b)\,b$, and find the two coefficients by metric compatibility:
+\begin{align*}
+t\cdot b = 0 &\ \Longrightarrow\ 0 = \nabla_a t\cdot b + t\cdot\nabla_a b = \omega(a) + t\cdot\nabla_a b \ \Longrightarrow\ t\cdot\nabla_a b = -\,\omega(a) , \\
+b\cdot b = 1 &\ \Longrightarrow\ 0 = 2\, b\cdot\nabla_a b \ \Longrightarrow\ b\cdot\nabla_a b = 0 .
+\end{align*}
+So $\nabla_a b = -\,\omega(a)\, t$. In geometric algebra this is $\omega(a)\, b\,\mathsf T$, because $b\mathsf T = (t\mathsf T)\mathsf T = t\,\mathsf T^2 = -t$. Both frame vectors obey the same rule, $\nabla_a e = \omega(a)\, e\,\mathsf T$: the frame turns rigidly.
+
+\paragraph{The covariant derivative of a field.} Write $U = t\psi = u_1 t + u_2 b$ with coordinate functions $u_1, u_2$. First the product rule for one term, $u_1 t$: the directional derivative in space gives $a\cdot\nabla(u_1 t) = (a\cdot\nabla u_1)\, t + u_1\,(a\cdot\nabla t)$; the projection $P$ is linear and leaves the tangent vector $t$ unchanged, so
+\begin{equation*}
+\nabla_a(u_1 t) = P\big((a\cdot\nabla u_1)\, t + u_1\,(a\cdot\nabla t)\big) = (a\cdot\nabla u_1)\, t + u_1\,\nabla_a t ,
+\end{equation*}
+and the same holds for $u_2 b$. Now factor by factor:
+\begin{align*}
+\nabla_a U &= \nabla_a(u_1 t) + \nabla_a(u_2 b) && P \text{ is linear} \\
+&= (a\cdot\nabla u_1)\, t + u_1\,\nabla_a t + (a\cdot\nabla u_2)\, b + u_2\,\nabla_a b && \text{product rule} \\
+&= (a\cdot\nabla u_1)\, t + u_1\,\big(\omega(a)\, b\big) + (a\cdot\nabla u_2)\, b + u_2\,\big(-\omega(a)\, t\big) && \nabla_a t,\ \nabla_a b \\
+&= \big(a\cdot\nabla u_1 - \omega(a)\, u_2\big)\, t + \big(a\cdot\nabla u_2 + \omega(a)\, u_1\big)\, b && \text{collect } t, b .
+\end{align*}
+Now write the result as $t$ times a complex number, using $\alpha\, t + \beta\, b = \alpha\, t + \beta\, t\mathsf T = t\,(\alpha + \beta\,\mathsf T)$:
+\begin{equation*}
+\nabla_a U = t\,\Big(\big(a\cdot\nabla u_1 - \omega(a)\, u_2\big) + \big(a\cdot\nabla u_2 + \omega(a)\, u_1\big)\,\mathsf T\Big) .
+\end{equation*}
+The complex number in the large parentheses, regrouped:
+\begin{align*}
+&\big(a\cdot\nabla u_1 - \omega(a)\, u_2\big) + \big(a\cdot\nabla u_2 + \omega(a)\, u_1\big)\,\mathsf T \\
+&\quad= \big(a\cdot\nabla u_1 + (a\cdot\nabla u_2)\,\mathsf T\big) + \omega(a)\,\big(u_1\,\mathsf T - u_2\big) && \text{regroup} \\
+&\quad= a\cdot\nabla\psi + \omega(a)\,\big(u_1\,\mathsf T + u_2\,\mathsf T^2\big) && -1 = \mathsf T^2 \\
+&\quad= a\cdot\nabla\psi + \omega(a)\,\mathsf T\,\big(u_1 + u_2\,\mathsf T\big) && \text{factor } \mathsf T \\
+&\quad= a\cdot\nabla\psi + \omega(a)\,\mathsf T\,\psi && \psi = u_1 + u_2\mathsf T .
+\end{align*}
+Here $a\cdot\nabla\psi = (a\cdot\nabla u_1) + (a\cdot\nabla u_2)\,\mathsf T$ means: differentiate the two real coefficients and keep $\mathsf T$ as the imaginary unit. This convention is used for every derivative of a spinor below. So
+\begin{equation}
+\label{eqn:ga_covariant}
+\nabla_a (t \psi) = t\, \big( a \cdot \nabla \psi + \omega(a)\, \mathsf T\, \psi \big) = t\, D_a \psi, \qquad D_a = a \cdot \nabla + \omega(a)\, \mathsf T .
+\end{equation}
+On spinor coordinates, the Levi-Civita connection is the ordinary derivative of the coordinates plus a multiplication by $\omega\,\mathsf T$, an infinitesimal rotation that corrects for the turning of the frame. It is~(\ref{eqn:covariant_frame}) with the matrix $\begin{pmatrix}0 & -\theta\\ \theta & 0\end{pmatrix}$ replaced by the number $\theta\,\mathsf T$. The curvature of this connection is $d\omega$, which with the orientation $b = t\mathsf T = n \times t$ used here is minus the Gaussian curvature times the area form, $d\omega = -K\, dA$ \cite{Knoppel2013} (Remark~\ref{rem:structure}).
+
+\paragraph{Frame independence.} The frame $t$ is arbitrary: the code takes the first edge of each vertex, projected, and any other choice would be as good. Nothing geometric may depend on it. We show that when the frame changes, $D\psi$ changes in exactly the same way as $\psi$, so $t\,D\psi$, the actual derivative vector, does not change. Rotate the frame by a field of angles $\theta(x)$, $t \to t' = t\, e^{\mathsf T \theta}$ (Figure~\ref{fig:gauge}). Three things change.
+
+\emph{The coordinates.} The same vector is $U = t\psi = t' \psi'$. Substitute $t' = t\,e^{\mathsf T\theta}$ and solve for $\psi'$:
+\begin{align*}
+t\,\psi &= \big(t\, e^{\mathsf T\theta}\big)\,\psi' && \text{substitute } t' \\
+t\,t\,\psi &= t\,t\, e^{\mathsf T\theta}\,\psi' && \text{multiply on the left by } t \\
+\psi &= e^{\mathsf T\theta}\,\psi' && tt = 1 \\
+e^{-\mathsf T\theta}\,\psi &= e^{-\mathsf T\theta}e^{\mathsf T\theta}\,\psi' = \psi' && \text{multiply by } e^{-\mathsf T\theta} .
+\end{align*}
+So $\psi' = e^{-\mathsf T \theta} \psi$: the frame turns forward by $\theta$, so the coordinate, measured from the frame, turns back by $\theta$.
+
+\emph{The connection form.} The new frame vector, multiplied out with $e^{\mathsf T\theta} = \cos\theta + \mathsf T\sin\theta$ and $t\mathsf T = b$, is
+\begin{equation*}
+t' = t\,(\cos\theta + \mathsf T\sin\theta) = \cos\theta\; t + \sin\theta\; b .
+\end{equation*}
+Differentiate each term with the product rule. The derivative of $\cos\theta$ along $a$ is $-\sin\theta\,(a\cdot\nabla\theta)$, that of $\sin\theta$ is $\cos\theta\,(a\cdot\nabla\theta)$, and $\nabla_a t = \omega\, b$, $\nabla_a b = -\omega\, t$ (we write $\omega$ for $\omega(a)$ and $\theta_a$ for $a\cdot\nabla\theta$):
+\begin{align*}
+\nabla_a(\cos\theta\; t) &= -\sin\theta\;\theta_a\; t + \cos\theta\;\omega\, b , \\
+\nabla_a(\sin\theta\; b) &= \cos\theta\;\theta_a\; b - \sin\theta\;\omega\, t .
+\end{align*}
+Adding, and grouping the terms with $\theta_a$ and the terms with $\omega$:
+\begin{align*}
+\nabla_a t' &= \theta_a\,\big(-\sin\theta\; t + \cos\theta\; b\big) + \omega\,\big(-\sin\theta\; t + \cos\theta\; b\big) && \text{group} \\
+&= (\omega + \theta_a)\,\big(-\sin\theta\; t + \cos\theta\; b\big) && \text{factor.}
+\end{align*}
+The vector in parentheses is the quarter turn of $t'$:
+\begin{align*}
+t'\,\mathsf T &= (\cos\theta\; t + \sin\theta\; b)\,\mathsf T = \cos\theta\; t\mathsf T + \sin\theta\; b\mathsf T && \text{distribute} \\
+&= \cos\theta\; b + \sin\theta\,(-t) && t\mathsf T = b,\ b\mathsf T = -t \\
+&= -\sin\theta\; t + \cos\theta\; b .
+\end{align*}
+So $\nabla_a t' = (\omega(a) + a\cdot\nabla\theta)\; t'\mathsf T$. Comparing with the definition~(\ref{eqn:ga_omega}) in the new frame, $\nabla_a t' = \omega'(a)\, t'\mathsf T$, the new connection form is
+\begin{equation*}
+\omega' = \omega + d\theta, \qquad \text{that is,}\quad \omega'(a) = \omega(a) + a\cdot\nabla\theta :
+\end{equation*}
+the turning rate of the new frame is that of the old one plus the rate at which we added extra turning.
+
+\emph{The covariant derivative.} We need the derivative of the factor $e^{-\mathsf T\theta}$ along $a$. Differentiating its two real coefficients,
+\begin{align*}
+a\cdot\nabla\, e^{-\mathsf T\theta} &= a\cdot\nabla(\cos\theta - \mathsf T\sin\theta) = -\theta_a\,(\sin\theta + \mathsf T\cos\theta) , \\
+\mathsf T\, e^{-\mathsf T\theta} &= \mathsf T\cos\theta - \mathsf T^2\sin\theta = \sin\theta + \mathsf T\cos\theta && \mathsf T^2 = -1 ,
+\end{align*}
+so $a\cdot\nabla\, e^{-\mathsf T\theta} = -\,\theta_a\,\mathsf T\, e^{-\mathsf T\theta}$. Now write $D'_a\psi'$ by~(\ref{eqn:ga_covariant}) in the new frame, $D'_a\psi' = a\cdot\nabla\psi' + \omega'(a)\,\mathsf T\,\psi'$, and substitute $\psi' = e^{-\mathsf T\theta}\psi$ and $\omega' = \omega + \theta_a$:
+\begin{align*}
+D'_a \psi' &= a\cdot\nabla\big(e^{-\mathsf T\theta}\psi\big) + \big(\omega + \theta_a\big)\, \mathsf T\, \big(e^{-\mathsf T\theta}\psi\big) && \text{substitute} \\
+&= \big(a\cdot\nabla e^{-\mathsf T\theta}\big)\,\psi + e^{-\mathsf T\theta}\, (a\cdot\nabla\psi) \\
+&\quad + \omega\,\mathsf T e^{-\mathsf T\theta}\psi + \theta_a\,\mathsf T e^{-\mathsf T\theta}\psi && \text{product rule; distribute} \\
+&= \big(-\theta_a\,\mathsf T e^{-\mathsf T\theta}\big)\,\psi + e^{-\mathsf T\theta}\, (a\cdot\nabla\psi) \\
+&\quad + \omega\,\mathsf T e^{-\mathsf T\theta}\psi + \theta_a\,\mathsf T e^{-\mathsf T\theta}\psi && \text{derivative of } e^{-\mathsf T\theta} \\
+&= e^{-\mathsf T\theta}\, (a\cdot\nabla\psi) + \omega\,\mathsf T e^{-\mathsf T\theta}\psi && \text{the } \theta_a \text{ terms cancel} \\
+&= e^{-\mathsf T\theta}\, (a\cdot\nabla\psi) + e^{-\mathsf T\theta}\,\omega\,\mathsf T \psi && \mathsf T,\ e^{-\mathsf T\theta} \text{ commute} \\
+&= e^{-\mathsf T\theta}\,\big(a\cdot\nabla\psi + \omega(a)\,\mathsf T\psi\big) && \text{factor.}
+\end{align*}
+The extra turning appears twice, once from differentiating the rotated coordinate and once in the new connection form, with opposite signs. The last parenthesis is $D_a\psi$, so
+\begin{equation}
+\label{eqn:ga_gauge}
+D'_a \psi' = e^{-\mathsf T \theta}\, D_a \psi .
+\end{equation}
+The covariant derivative transforms exactly like the coordinates themselves. So $\nabla_a U$ is the same tangent vector in both frames:
+\begin{equation*}
+t' D'_a\psi' = \big(t\,e^{\mathsf T\theta}\big)\big(e^{-\mathsf T\theta}D_a\psi\big) = t\,\big(e^{\mathsf T\theta}e^{-\mathsf T\theta}\big)\,D_a\psi = t\,D_a\psi ,
+\end{equation*}
+$|D'_a\psi'| = |e^{-\mathsf T\theta}|\,|D_a\psi| = |D_a\psi|$, and the energy, the connection Laplacian and the solution of the heat equation are frame independent too.
+
+\paragraph{Frames with holes.} On a closed surface other than a torus there is no continuous unit frame field at all: by the hairy ball theorem every continuous tangent field on a sphere vanishes somewhere. This is not a problem, because of~(\ref{eqn:ga_gauge})~[\,$D'_a\psi' = e^{-\mathsf T\theta}D_a\psi$\,]. Cover the surface with patches, each with its own frame field; where two patches overlap, their coordinates differ by a rotation $e^{-\mathsf T\theta}$, and so do their covariant derivatives, so every quantity built from lengths and inner products of $\psi$ and $D\psi$ agrees on the overlap. The discrete method needs even less: one frame vector per vertex and one per face, with no field and no continuity.
+
+\paragraph{In the discrete setting.} The same cancellation appears twice in the code. Changing the frame of a face rotates all its connection angles $\rho_i^f$ by the same amount, and only differences $\rho_j^f - \rho_i^f$ enter the stiffness (Stage~5). Changing the frame $t_i$ of a vertex rotates the computed coordinate $\psi_i$ by the opposite angle and changes nothing else: the arrow $t_i \hat\psi_i$ drawn by the code (line~1136, Section~\ref{section:r2_back}) is independent of the choice of $t_i$ in \code{computeVertexTangentSpace}.
+
+\begin{rem}[Cartan's structure equations]
+\label{rem:structure}
+Write $\theta^1, \theta^2$ for the \emph{coframe} of the frame $(t, b)$, the 1-forms $\theta^1(X) = t\cdot X$ and $\theta^2(X) = b \cdot X$, so that $X = \theta^1(X)\, t + \theta^2(X)\, b$ and $dA = \theta^1 \wedge \theta^2$. Then
+\begin{equation*}
+d\theta^1 = \omega \wedge \theta^2, \qquad d\theta^2 = -\,\omega\wedge\theta^1, \qquad d\omega = -K\, \theta^1 \wedge \theta^2 .
+\end{equation*}
+The first two determine $\omega$ from the coframe, hence from the metric alone; the third says that the curvature is the exterior derivative of the connection form. On the unit sphere, with colatitude $\vartheta$, longitude $\varphi$, the point $x = (\sin\vartheta\cos\varphi, \sin\vartheta\sin\varphi, \cos\vartheta)$, $n = x$ and $t = \partial_\vartheta x = (\cos\vartheta\cos\varphi, \cos\vartheta\sin\varphi, -\sin\vartheta)$, the second vector $b = n\times t = (-\sin\varphi, \cos\varphi, 0)$ points along increasing $\varphi$. The displacement is $dx = t\, d\vartheta + \sin\vartheta\, b\, d\varphi$, so $\theta^1 = d\vartheta$ and $\theta^2 = \sin\vartheta\, d\varphi$. Write $\omega = f\, d\vartheta + g\, d\varphi$ and use the equations one at a time:
+\begin{itemize}
+\item $d\theta^1 = d(d\vartheta) = 0$ must equal $\omega\wedge\theta^2 = f\sin\vartheta\; d\vartheta\wedge d\varphi$ (the term $g\,d\varphi\wedge d\varphi$ vanishes), so $f = 0$;
+\item $d\theta^2 = \cos\vartheta\; d\vartheta\wedge d\varphi$ must equal $-\,\omega\wedge\theta^1 = -\,g\; d\varphi\wedge d\vartheta = g\; d\vartheta\wedge d\varphi$, so $g = \cos\vartheta$;
+\item $d\omega = d(\cos\vartheta\; d\varphi) = -\sin\vartheta\; d\vartheta\wedge d\varphi$ must equal $-K\,\theta^1\wedge\theta^2 = -K\sin\vartheta\; d\vartheta\wedge d\varphi$, so $K = 1$.
+\end{itemize}
+The definition~(\ref{eqn:ga_omega}) gives the same $\omega$ directly: along $\partial_\varphi$, $\partial_\varphi t = (-\cos\vartheta\sin\varphi, \cos\vartheta\cos\varphi, 0) = \cos\vartheta\; b$, so $\omega(\partial_\varphi) = b\cdot\partial_\varphi t = \cos\vartheta$; along $\partial_\vartheta$, $\partial_\vartheta t = -x$ is normal, so $\omega(\partial_\vartheta) = 0$.
+\end{rem}
+\begin{figure}[t]
+\centering
+\adjustbox{max width=\linewidth}{\input{figures/fig_gauge}}
+\caption{A change of frame is a change of gauge. The same tangent vector $U$ has the spinor coordinate $\psi$ in the frame $t$ and $\psi' = e^{-\mathsf T\theta}\psi$ in the frame $t' = t\, e^{\mathsf T\theta}$; nothing geometric depends on the choice.}
+\label{fig:gauge}
+\end{figure}
+
+\subsection{The vector heat equation and its backward Euler step}
+
+\paragraph{The connection Laplacian on spinors.} Part~\ref{part:matrix} defined the connection Laplacian of a tangent field with an orthonormal frame field $e_1, e_2$,
+\begin{equation*}
+\nabla^*\nabla U = -\sum_{k=1}^2 \big(\nabla_{e_k}\nabla_{e_k} U - \nabla_{\nabla_{e_k} e_k} U\big) .
+\end{equation*}
+We write each of its terms for $U = t\psi$ with~(\ref{eqn:ga_covariant})~[\,$\nabla_a(t\psi) = t\,D_a\psi$\,]:
+\begin{itemize}
+\item with $a = e_k$: $\nabla_{e_k} U = t\, D_{e_k}\psi$;
+\item with $a = e_k$, and $\psi$ replaced by the spinor field $\phi = D_{e_k}\psi$: $\nabla_{e_k}\nabla_{e_k} U = \nabla_{e_k}\big(t\,\phi\big) = t\, D_{e_k}\phi = t\, D_{e_k}D_{e_k}\psi$;
+\item with $a = \nabla_{e_k}e_k$, a tangent vector: $\nabla_{\nabla_{e_k}e_k}U = t\,D_{\nabla_{e_k}e_k}\psi$.
+\end{itemize}
+Substituting the three into the definition:
+\begin{align*}
+\nabla^*\nabla(t\psi) &= -\sum_k \big( (t\, D_{e_k}D_{e_k}\psi) - (t\, D_{\nabla_{e_k}e_k}\psi) \big) && \text{substitute} \\
+&= t\,\Big(-\sum_k \big(D_{e_k}D_{e_k}\psi - D_{\nabla_{e_k}e_k}\psi\big)\Big) && \text{factor } t \text{ on the left.}
+\end{align*}
+So
+\begin{equation}
+\label{eqn:r2_DstarD}
+\nabla^*\nabla (t\psi) = t\, D^*D\psi, \qquad D^*D\psi = -\sum_{k=1}^2 \big(D_{e_k}D_{e_k}\psi - D_{\nabla_{e_k}e_k}\psi\big) .
+\end{equation}
+
+\paragraph{What $D^*D$ does.} In a plane with a constant frame, $\omega = 0$, so $D_a = a\cdot\nabla$; the basis is constant, so $\nabla_{e_k}e_k = 0$ and $D_0\psi = 0$. Then $D_{e_k}D_{e_k}\psi = \partial_k\partial_k\psi$, and
+\begin{equation*}
+D^*D\psi = -\Big(\frac{\partial^2\psi}{\partial x_1^2} + \frac{\partial^2\psi}{\partial x_2^2}\Big) = -\,\Delta u_1 - (\Delta u_2)\,\mathsf T :
+\end{equation*}
+two uncoupled scalar Laplacians, one per coordinate. On a curved surface the frame turns. Expand one second derivative, writing $\omega_k = \omega(e_k)$:
+\begin{align*}
+D_{e_k}D_{e_k}\psi &= e_k\cdot\nabla\big(e_k\cdot\nabla\psi + \omega_k\mathsf T\psi\big) \\
+&\quad + \omega_k\mathsf T\big(e_k\cdot\nabla\psi + \omega_k\mathsf T\psi\big) && D_{e_k} \text{ twice} \\
+&= e_k\cdot\nabla(e_k\cdot\nabla\psi) + (e_k\cdot\nabla\omega_k)\,\mathsf T\psi \\
+&\quad + \omega_k\mathsf T\,(e_k\cdot\nabla\psi) && \text{product rule} \\
+&\quad + \omega_k\mathsf T\,(e_k\cdot\nabla\psi) + \omega_k^2\,\mathsf T^2\psi && \text{distribute} \\
+&= e_k\cdot\nabla(e_k\cdot\nabla\psi) + (e_k\cdot\nabla\omega_k)\,\mathsf T\psi \\
+&\quad + 2\,\omega_k\mathsf T\,(e_k\cdot\nabla\psi) - \omega_k^2\,\psi && \mathsf T^2 = -1 .
+\end{align*}
+The terms with $\mathsf T$ couple the two coordinates: $\mathsf T\psi = -u_2 + u_1\mathsf T$ moves $u_2$ into the real part and $u_1$ into the $\mathsf T$ part.
+
+\paragraph{Lengths, the energy and the heat equation.} By $|t\phi| = |\phi|$ (shown after~(\ref{eqn:ga_spinor})), $|U| = |t\psi| = |\psi|$ and $|\nabla_a U| = |t\, D_a\psi| = |D_a \psi|$. The Dirichlet energy~(\ref{eqn:dirichlet})~[\,$E(U) = \frac12\int_\Omega\sum_k|\nabla_{e_k}U|^2\,dA$\,] becomes $\frac12\int_\Omega\sum_k |D_{e_k}\psi|^2\, dA$. The vector heat equation~(\ref{eqn:heat})~[\,$\partial U/\partial t = -\nabla^*\nabla U$\,] with $U = t\psi$, and a frame $t$ that does not depend on time (the time is also written $t$; the meaning is always clear from the context):
+\begin{align*}
+\frac{\partial (t\psi)}{\partial t} &= -\nabla^*\nabla(t\psi) && \text{substitute } U = t\psi \\
+t\,\frac{\partial\psi}{\partial t} &= -\,t\,D^*D\psi && t \text{ constant in time},\ (\ref{eqn:r2_DstarD}) \\
+\frac{\partial\psi}{\partial t} &= -\,D^*D\psi && \text{multiply on the left by } t,\ tt = 1 .
+\end{align*}
+So the Dirichlet energy and the heat equation in spinor form are
+\begin{equation}
+\label{eqn:ga_energy}
+E = \frac12 \int_\Omega \sum_k |D_{e_k} \psi|^2\, dA, \qquad \frac{\partial \psi}{\partial t} = -D^* D\, \psi ,
+\end{equation}
+where $e_1, e_2$ is an orthonormal basis of the tangent plane and $\Omega$ is the surface. Stage~4 shows that $D^*D$ is the adjoint of $D$ composed with $D$, as the notation says, and that $D^*D\psi$ is the direction in which $E$ decreases fastest.
+
+\paragraph{One backward Euler step.} The backward Euler step of Part~\ref{part:matrix},~(\ref{eqn:backward_euler}) again:
+\begin{equation*}
+\tag{\ref{eqn:backward_euler}}
+\frac{U - U^0}{\Delta t} = -\nabla^* \nabla U \qquad \Longleftrightarrow \qquad U + \Delta t\, \nabla^* \nabla U = U^0 .
+\end{equation*}
+Substitute $U = t\psi$ and $U^0 = t\psi^0$ in the second form, and use~(\ref{eqn:r2_DstarD}), which says $\nabla^*\nabla(t\psi) = t\,D^*D\psi$:
+\begin{align*}
+(t\psi) + \Delta t\, \nabla^*\nabla(t\psi) &= (t\psi^0) && \text{substitute} \\
+t\psi + \Delta t\, \big(t\, D^*D\psi\big) &= t\psi^0 && (\ref{eqn:r2_DstarD}) \\
+t\,\big(\psi + \Delta t\, D^*D\psi\big) &= t\psi^0 && \text{factor } t \\
+t\,t\,\big(\psi + \Delta t\, D^*D\psi\big) &= t\,t\,\psi^0 && \text{multiply on the left by } t ,
+\end{align*}
+and $tt = 1$ gives
+\begin{equation}
+\label{eqn:r2_be}
+\boxed{\;\psi + \Delta t\, D^*D\psi = \psi^0 \;}
+\end{equation}
+This is the strong form of our problem: a second-order linear equation for the complex-valued unknown $\psi$ on the surface. The code uses it with the source condition of~(\ref{eqn:dirichlet_problem})~[\,$U + \Delta t\,\nabla^*\nabla U = 0 \text{ off } s,\ U(s) = U_s$\,], which by the same substitution is
+\begin{equation}
+\label{eqn:r2_source}
+\psi + \Delta t\, D^*D\psi = 0 \quad\text{away from } s, \qquad \psi(s) = \psi_s ,
+\end{equation}
+with the source $\psi_s = e^{2\pi\mathsf T/3} = \cos\frac{2\pi}3 + \mathsf T\sin\frac{2\pi}3 = -\frac12 + \frac{\sqrt3}2\,\mathsf T$ in the frame of the source vertex (\code{std::polar(1.0, 2.0 * M\_PI / 3.0)} in \code{ga\_fem.cpp}), and the time step $\Delta t = \bar h^2$, the square of the mean edge length.
+
+\paragraph{What we have.} On a smooth closed surface $\Omega$, given $\Delta t > 0$ and $\psi^0$ (or the source value $\psi_s$), find the spinor field $\psi$ that satisfies~(\ref{eqn:r2_be}). Every ingredient is geometric algebra: the plane $\mathsf T$, the projection $P$, the derivative $D = a\cdot\nabla + \omega\mathsf T$ of~(\ref{eqn:ga_covariant}), and the frame vector $t$, a gauge choice that cannot affect the result. The equation has second derivatives; the next stages remove one of them.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 2: The Function Spaces}
+\label{section:r2_stage2}
+
+\paragraph{What we want.} Before transforming the equation we must say in which set of fields we look for its solution, and with which notion of distance. The weak form of Stage~4 will ask for less smoothness than the strong form~(\ref{eqn:r2_be}), and the theorem that guarantees a unique solution needs the set to be a \emph{Hilbert space}: a vector space with an inner product in which every sequence of fields that get closer and closer together converges to a field of the space. We assume: $\Omega$ is a smooth closed surface (bounded, without boundary; Stage~4 says what changes with a boundary), $\Delta t > 0$, and the fields are tangent fields $U = t\psi$, described by spinor coordinates as in Section~\ref{section:ga_gauge}. We do not prove the big theorems; we say what they state and why they apply.
+
+\paragraph{The inner product of two spinors.} Take two tangent vectors at a point, $U = t\psi$ and $V = t\chi$, with $\psi = u_1 + u_2 \mathsf T$ and $\chi = v_1 + v_2 \mathsf T$. The reverse of $\chi$ is $\widetilde \chi = v_1 - v_2 \mathsf T$. Multiply out:
+\begin{align*}
+\psi\widetilde\chi &= (u_1 + u_2\mathsf T)(v_1 - v_2\mathsf T) \\
+&= u_1 v_1 - u_1 v_2\,\mathsf T + u_2 v_1\,\mathsf T - u_2 v_2\,\mathsf T^2 && \text{distribute} \\
+&= u_1 v_1 + u_2 v_2 + (u_2 v_1 - u_1 v_2)\,\mathsf T && \mathsf T^2 = -1;\ \text{collect } \mathsf T .
+\end{align*}
+Its scalar part is $u_1v_1 + u_2v_2$. The inner product of the vectors themselves is the same number:
+\begin{align*}
+U\cdot V &= (u_1 t + u_2 b)\cdot(v_1 t + v_2 b) \\
+&= u_1v_1\, t\cdot t + u_1v_2\, t\cdot b + u_2v_1\, b\cdot t + u_2v_2\, b\cdot b && \text{distribute} \\
+&= u_1v_1 + u_2v_2 && t\cdot t = b\cdot b = 1,\ t\cdot b = 0 .
+\end{align*}
+So
+\begin{equation}
+\label{eqn:r2_inner}
+\langle \psi \widetilde\chi \rangle = u_1 v_1 + u_2 v_2 = U \cdot V .
+\end{equation}
+This is the real part of $\psi \bar\chi$, the familiar Hermitian inner product, with the reverse playing the role of complex conjugation. The bivector part is the oriented area spanned by $V$ and $U$: $V\wedge U = (v_1t + v_2b)\wedge(u_1t + u_2b) = (v_1u_2 - v_2u_1)\, t\wedge b = (u_2v_1 - u_1v_2)\,\mathsf T$. Three properties are used below.
+\begin{itemize}
+\item \emph{Symmetric}, $\langle\psi\widetilde\chi\rangle = \langle\chi\widetilde\psi\rangle$: by $\widetilde{XY} = \widetilde Y\widetilde X$ and $\widetilde{\widetilde\chi} = \chi$, $(\psi\widetilde\chi)^\sim = \chi\widetilde\psi$, and the scalar part does not change under reversion, so $\langle\psi\widetilde\chi\rangle = \langle(\psi\widetilde\chi)^\sim\rangle = \langle\chi\widetilde\psi\rangle$.
+\item \emph{Positive}, $\langle\psi\widetilde\psi\rangle = u_1^2 + u_2^2 = |\psi|^2$, zero only for $\psi = 0$.
+\item \emph{Frame independent.} Under $\psi \to e^{-\mathsf T\theta}\psi$ and $\chi\to e^{-\mathsf T\theta}\chi$, the reverse of the second is $(e^{-\mathsf T\theta}\chi)^\sim = \widetilde\chi\, e^{\mathsf T\theta}$, and
+\begin{equation*}
+\big(e^{-\mathsf T\theta}\psi\big)\big(\widetilde\chi\, e^{\mathsf T\theta}\big) = e^{-\mathsf T\theta}e^{\mathsf T\theta}\,\psi\widetilde\chi = \psi\widetilde\chi ,
+\end{equation*}
+since complex numbers of one plane commute.
+\end{itemize}
+
+\paragraph{Square-integrable fields.} The space $L^2$ is the set of spinor fields with finite $\int_\Omega |\psi|^2\, dA$, with the inner product and the norm
+\begin{equation*}
+(\psi, \chi)_0 = \int_\Omega \langle\psi\widetilde\chi\rangle\, dA, \qquad \|\psi\|_0^2 = \int_\Omega |\psi|^2\, dA .
+\end{equation*}
+Its fields need not be continuous; they need only have a finite total squared length.
+
+\paragraph{The Sobolev space $H^1$.} The space $H^1$ is the set of spinor fields that are in $L^2$ and whose covariant derivatives $D_{e_k}\psi$ are in $L^2$ too, with
+\begin{equation}
+\label{eqn:r2_H1}
+(\psi, \chi)_1 = \int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA, \qquad \|\psi\|_1^2 = (\psi, \psi)_1 .
+\end{equation}
+We write $|\psi|_1^2 = \int_\Omega\sum_k|D_{e_k}\psi|^2\, dA$ for the derivative part, so that $\|\psi\|_1^2 = \|\psi\|_0^2 + |\psi|_1^2$. Both integrands are frame independent, by~(\ref{eqn:ga_gauge})~[\,$D'_a\psi' = e^{-\mathsf T\theta}D_a\psi$\,] and the frame independence of the scalar part, so $H^1$ is really a space of tangent fields. The derivative is meant in the \emph{weak} sense: $D_{e_k}\psi$ need not exist at every point, only as a square-integrable field for which the integration by parts of Stage~4 holds. A field that is smooth on each triangle of a mesh and continuous across the edges is in $H^1$: its derivative jumps across the edges, but a jump on a curve of zero area does not affect an integral. A field that itself jumps across an edge is not in $H^1$, because the derivative of a jump is concentrated on the edge, like the derivative of a step function, and is not square integrable. This is the property that the basis functions of Stage~5 must have.
+
+\paragraph{Why a Hilbert space.} The smooth fields with the norm $\|\cdot\|_1$ are not complete: a sequence of smooth fields can converge, in this norm, to a field with a kink, which is not smooth. The space $H^1$ is what we get by adding all such limits, and it is complete; with the inner product~(\ref{eqn:r2_H1}) it is a Hilbert space. Completeness is what the existence theorem below needs: it finds the solution as a limit. The smooth fields are \emph{dense} in $H^1$: every field of $H^1$ is a limit of smooth ones. Stage~4 uses this to pass from smooth test fields to all of $H^1$.
+
+\paragraph{The strong form needs more.} The strong form~(\ref{eqn:r2_be})~[\,$\psi + \Delta t\,D^*D\psi = \psi^0$\,] contains $D^*D\psi$, second derivatives, so it makes sense for fields in $H^2$, the fields whose second covariant derivatives are square integrable as well. The fields we can compute with on a mesh, continuous and piecewise linear, are in $H^1$ but not in $H^2$: their first derivatives jump across edges, and the second derivative of the one-variable tent $1 - |x|$ is concentrated at the kink. The weak form will need only $H^1$.
+
+\paragraph{The bilinear form and the linear form.} The weak form of Stage~4 will read $a(\psi, \chi) = l(\chi)$, with
+\begin{equation}
+\label{eqn:r2_forms}
+\begin{aligned}
+a(\psi, \chi) &= \int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA, \\
+l(\chi) &= \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{aligned}
+\end{equation}
+These are what $H^1$ is for. Write
+\begin{equation*}
+A_0 = (\psi, \chi)_0, \qquad A_1 = \int_\Omega\sum_k\big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA ,
+\end{equation*}
+so that $a(\psi, \chi) = A_0 + \Delta t\, A_1$. The bilinear form is
+\begin{itemize}
+\item \emph{symmetric}, $a(\psi, \chi) = a(\chi, \psi)$, by the symmetry of $\langle\psi\widetilde\chi\rangle$, applied to both integrands;
+\item \emph{bounded}. The Cauchy--Schwarz inequality for each of the two inner products gives $|A_0| \le \|\psi\|_0\|\chi\|_0$ and $|A_1| \le |\psi|_1|\chi|_1$. Then
+\begin{align*}
+|a(\psi, \chi)| &\le |A_0| + \Delta t\,|A_1| \le \max(1, \Delta t)\,\big(|A_0| + |A_1|\big) \\
+&\le \max(1, \Delta t)\,\big(\|\psi\|_0\|\chi\|_0 + |\psi|_1|\chi|_1\big) \\
+&\le \max(1, \Delta t)\,\big(\|\psi\|_0^2 + |\psi|_1^2\big)^{1/2}\big(\|\chi\|_0^2 + |\chi|_1^2\big)^{1/2} \\
+&= \max(1, \Delta t)\,\|\psi\|_1\,\|\chi\|_1 ,
+\end{align*}
+where the third line is Cauchy--Schwarz in the plane, $x_1y_1 + x_2y_2 \le |x|\,|y|$, for the pairs $x = (\|\psi\|_0, |\psi|_1)$ and $y = (\|\chi\|_0, |\chi|_1)$;
+\item \emph{coercive}: $a(\psi, \psi) = \|\psi\|_0^2 + \Delta t\,|\psi|_1^2 \ge \min(1, \Delta t)\,\big(\|\psi\|_0^2 + |\psi|_1^2\big) = \min(1, \Delta t)\, \|\psi\|_1^2$.
+\end{itemize}
+And $l$ is bounded when $\psi^0 \in L^2$: $|l(\chi)| \le \|\psi^0\|_0\, \|\chi\|_0 \le \|\psi^0\|_0\, \|\chi\|_1$, the first step by Cauchy--Schwarz, the second because $\|\chi\|_0^2 \le \|\chi\|_0^2 + |\chi|_1^2$. Together: $a$ is itself an inner product on $H^1$, whose norm $\|\psi\|_a = a(\psi, \psi)^{1/2}$, the \emph{energy norm}, satisfies $\min(1, \Delta t)\,\|\psi\|_1^2 \le \|\psi\|_a^2 \le \max(1, \Delta t)\,\|\psi\|_1^2$, so $H^1$ is a Hilbert space with it as well.
+
+\paragraph{What the theorems give.} The \emph{Riesz representation theorem} says that in a Hilbert space every bounded linear functional is the inner product with exactly one element. Applied to $l$ and the inner product $a$: there is exactly one $\psi \in H^1$ with $a(\psi, \chi) = l(\chi)$ for every $\chi \in H^1$, the \emph{weak solution}. (The \emph{Lax--Milgram theorem} gives the same conclusion for forms that are bounded and coercive but not symmetric.) For the discrete problem, if the finite-dimensional space $V_h$ of Stage~5 lies inside $H^1$, a \emph{conforming} space, the same theorem applied in $V_h$ gives exactly one discrete solution $\psi_h$, and \emph{C\'ea's lemma} says that it is the best approximation of $\psi$ from $V_h$ in the energy norm; Stage~6 derives it. Conformity, for tangent fields on a mesh, means: the discrete field has no jump across the edges. Since the two faces of an edge lie in different planes, ``no jump'' must be read after transporting the values of one face into the plane of the other; Stage~5 shows how close our basis comes to it.
+
+\paragraph{A caveat about the source.} In two dimensions a field of $H^1$ need not have a value at a point. The function $f = \log\log(1/r)$, with $r$ the distance to a point, is unbounded as $r \to 0$, but it is in $H^1$ near that point. Its radial derivative is
+\begin{equation*}
+f'(r) = \frac{1}{\log(1/r)}\cdot\frac{d}{dr}\log\frac1r = \frac{1}{\log(1/r)}\cdot\Big(-\frac1r\Big) = -\frac{1}{r\log(1/r)} ,
+\end{equation*}
+and, on a disk of radius $R < 1$, with $dA = 2\pi r\, dr$ and the substitution $v = \log(1/r)$, $dv = -dr/r$,
+\begin{equation*}
+\begin{aligned}
+\int |\nabla f|^2\, dA &= 2\pi\int_0^R \frac{r\, dr}{r^2\log^2(1/r)} = 2\pi\int_0^R\frac{dr}{r\,\log^2(1/r)} \\
+&= 2\pi\int_{\log(1/R)}^\infty \frac{dv}{v^2} = \frac{2\pi}{\log(1/R)} ,
+\end{aligned}
+\end{equation*}
+which is finite. So the condition $\psi(s) = \psi_s$ of~(\ref{eqn:r2_source}) at a single point is not a condition that the continuous theory accepts, and neither is a source concentrated at a point in $\psi^0$. Both make sense for the discrete problem, where they are what the code does, and the continuous theory applies to a source spread over a small disk, which is what the discrete source approximates on a given mesh.
+
+\paragraph{What we have.} The unknown lives in $H^1$, the tangent fields with square-integrable covariant derivative; the forms $a$ and $l$ of~(\ref{eqn:r2_forms}) satisfy the hypotheses of the Riesz theorem, so the weak problem has exactly one solution; and the discrete space must be continuous across edges to be conforming. The next stage gives $a$ and $l$ a meaning as an energy.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 3: The Variational Form}
+\label{section:r2_stage3}
+
+\paragraph{What we want.} We want an energy whose minimizer is the solution. It explains why the problem has exactly one solution and what that solution is (a compromise between two wishes), and it gives the weak form directly, by differentiation.
+
+\paragraph{The energy.} Consider
+\begin{equation}
+\label{eqn:r2_J}
+J(\psi) = \frac12 \int_\Omega |\psi|^2\, dA + \frac{\Delta t}{2} \int_\Omega \sum_k |D_{e_k}\psi|^2\, dA - \int_\Omega \langle\psi^0\widetilde\psi\rangle\, dA = \frac12\, a(\psi, \psi) - l(\psi) ,
+\end{equation}
+the spinor form of~(\ref{eqn:weak_energy})~[\,$J(U) = \frac12\int|U|^2 + \frac{\Delta t}2\int|\nabla U|^2 - \int U^0\cdot U$\,] of Part~\ref{part:matrix}; the two agree term by term by~(\ref{eqn:r2_inner}) and $|D_{e_k}\psi| = |\nabla_{e_k}U|$. The last equality in~(\ref{eqn:r2_J}) is~(\ref{eqn:r2_forms}) with $\chi = \psi$. The first and last terms of $J$ together measure the distance to $\psi^0$. Expand $|\psi - \psi^0|^2$:
+\begin{align*}
+|\psi - \psi^0|^2 &= \big\langle (\psi - \psi^0)(\widetilde\psi - \widetilde{\psi^0})\big\rangle \\
+&= \langle\psi\widetilde\psi\rangle - \langle\psi\widetilde{\psi^0}\rangle - \langle\psi^0\widetilde\psi\rangle + \langle\psi^0\widetilde{\psi^0}\rangle && \text{distribute} \\
+&= |\psi|^2 - 2\,\langle\psi^0\widetilde\psi\rangle + |\psi^0|^2 && \text{symmetry.}
+\end{align*}
+Halving and integrating, $\frac12\int|\psi|^2 - \int\langle\psi^0\widetilde\psi\rangle = \frac12\int|\psi - \psi^0|^2 - \frac12\int|\psi^0|^2$. So $J$ asks $\psi$ to stay close to $\psi^0$ (the constant $\frac12\int|\psi^0|^2$ does not depend on $\psi$); its middle term is $\Delta t$ times the Dirichlet energy~(\ref{eqn:ga_energy})~[\,$E = \frac12\int\sum_k|D_{e_k}\psi|^2$\,], so $J$ also asks $\psi$ to be as parallel as possible; $\Delta t$ sets the balance.
+
+\paragraph{Its derivative in a direction.} Let $\chi$ be any field of $H^1$ and $\epsilon$ a real number. We expand $J(\psi + \epsilon\chi)$ term by term.
+
+\emph{The squared length.} The reverse is linear, $(\psi + \epsilon\chi)^\sim = \widetilde\psi + \epsilon\widetilde\chi$, so
+\begin{align*}
+|\psi + \epsilon\chi|^2 &= \big\langle (\psi + \epsilon\chi)\,(\widetilde\psi + \epsilon\widetilde\chi)\big\rangle \\
+&= \langle\psi\widetilde\psi\rangle + \epsilon\,\langle\psi\widetilde\chi\rangle + \epsilon\,\langle\chi\widetilde\psi\rangle + \epsilon^2\,\langle\chi\widetilde\chi\rangle && \text{distribute} \\
+&= |\psi|^2 + 2\epsilon\,\langle\psi\widetilde\chi\rangle + \epsilon^2|\chi|^2 && \langle\chi\widetilde\psi\rangle = \langle\psi\widetilde\chi\rangle .
+\end{align*}
+
+\emph{The derivative term.} $D_{e_k}$ is linear, because both of its parts are: $e_k\cdot\nabla(\psi + \epsilon\chi) = e_k\cdot\nabla\psi + \epsilon\, e_k\cdot\nabla\chi$, and $\omega_k\mathsf T(\psi + \epsilon\chi) = \omega_k\mathsf T\psi + \epsilon\,\omega_k\mathsf T\chi$. So $D_{e_k}(\psi + \epsilon\chi) = D_{e_k}\psi + \epsilon\, D_{e_k}\chi$, and the same expansion, with $D_{e_k}\psi$ and $D_{e_k}\chi$ in the places of $\psi$ and $\chi$, gives
+\begin{equation*}
+|D_{e_k}(\psi + \epsilon\chi)|^2 = |D_{e_k}\psi|^2 + 2\epsilon\,\big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle + \epsilon^2|D_{e_k}\chi|^2 .
+\end{equation*}
+
+\emph{The source term.} $\langle\psi^0(\psi + \epsilon\chi)^\sim\rangle = \langle\psi^0\widetilde\psi\rangle + \epsilon\,\langle\psi^0\widetilde\chi\rangle$.
+
+\emph{Collecting.} Put the three expansions into~(\ref{eqn:r2_J}) and group the powers of $\epsilon$:
+\begin{align*}
+J(\psi + \epsilon\chi) &= \frac12\int\big(|\psi|^2 + 2\epsilon\langle\psi\widetilde\chi\rangle + \epsilon^2|\chi|^2\big) \\
+&\quad + \frac{\Delta t}2\int\sum_k\big(|D_{e_k}\psi|^2 + 2\epsilon\langle (D_{e_k}\psi)\widetilde{(D_{e_k}\chi)}\rangle + \epsilon^2|D_{e_k}\chi|^2\big) \\
+&\quad - \int\big(\langle\psi^0\widetilde\psi\rangle + \epsilon\langle\psi^0\widetilde\chi\rangle\big) \\
+&= J(\psi) + \epsilon\,\Big(\int\langle\psi\widetilde\chi\rangle + \Delta t\int\sum_k\langle (D_{e_k}\psi)\widetilde{(D_{e_k}\chi)}\rangle - \int\langle\psi^0\widetilde\chi\rangle\Big) \\
+&\quad + \frac{\epsilon^2}2\,\Big(\int|\chi|^2 + \Delta t\int\sum_k|D_{e_k}\chi|^2\Big) .
+\end{align*}
+With the forms~(\ref{eqn:r2_forms}), the parentheses are $a(\psi, \chi) - l(\chi)$ and $a(\chi, \chi)$:
+\begin{equation*}
+J(\psi + \epsilon\chi) = J(\psi) + \epsilon\,\big( a(\psi, \chi) - l(\chi) \big) + \frac{\epsilon^2}{2}\, a(\chi, \chi) .
+\end{equation*}
+
+\paragraph{Stationarity.} The derivative of $J$ in the direction $\chi$ is the derivative of this polynomial in $\epsilon$ at $\epsilon = 0$:
+\begin{equation*}
+\frac{d}{d\epsilon}J(\psi + \epsilon\chi)\Big|_{\epsilon = 0} = \big(a(\psi, \chi) - l(\chi) + \epsilon\, a(\chi, \chi)\big)\Big|_{\epsilon = 0} = a(\psi, \chi) - l(\chi) .
+\end{equation*}
+So $\psi$ is a stationary point of $J$, a point where the derivative vanishes in every direction, exactly when
+\begin{equation*}
+a(\psi, \chi) = l(\chi) \qquad\text{for every } \chi \in H^1 ,
+\end{equation*}
+which is the weak form announced in Stage~2. If $\psi$ is stationary, the expansion becomes $J(\psi + \epsilon\chi) - J(\psi) = \frac{\epsilon^2}2\, a(\chi, \chi)$, which is positive for $\epsilon \ne 0$ and $\chi \ne 0$, by coercivity. Every other field $\psi + \epsilon\chi$ has a larger energy: the stationary point is the unique minimizer of $J$.
+
+\paragraph{Minimizing $J$ and the PDE.} Stage~4 derives the same equation $a(\psi, \chi) = l(\chi)$ from the strong form, by integration by parts, and shows that for a field smooth enough to have second derivatives the two are equivalent. So, for smooth fields: $\psi$ solves~(\ref{eqn:r2_be}) $\iff$ $\psi$ is stationary for $J$ $\iff$ $\psi$ minimizes $J$. In the code, $\psi^0 = 0$ and the source value is fixed: the discrete solution is the field of the discrete space that minimizes $\frac12 a(\psi, \psi)$ among those with the value $\psi_s$ at the source vertex.
+
+%%% ----------------------------------------------------------------------
+\section{Stage 4: The Weak Form (Galerkin)}
+\label{section:r2_stage4}
+
+\paragraph{What we want.} We want to derive the weak form from the strong form~(\ref{eqn:r2_be}), by the mechanical steps that work for any PDE: multiply by a test field, integrate, and move one derivative from the unknown to the test field. The last step needs an integration by parts on a curved surface. We derive it from the one theorem of geometric calculus that contains all integration by parts, and from it Green's identity for the covariant derivative of spinors.
+
+\subsection{The divergence theorem of geometric calculus}
+
+\paragraph{The fundamental theorem.} Let $\Omega$ be a region of the surface with boundary curve $\partial\Omega$, with outward unit conormal $\nu$ (the unit tangent vector of the surface, perpendicular to the boundary and pointing out of the region), and let $F$ be a smooth field with values in $\Ge_3$. The \emph{fundamental theorem of geometric calculus} \cite{HestenesSobczyk1984, Doran2003}, written for a surface, is
+\begin{equation}
+\label{eqn:r2_ftgc}
+\int_\Omega \mathsf T\, \nabla F\, dA = \oint_{\partial\Omega} \mathsf T\nu\; F\, ds .
+\end{equation}
+On the left, $\mathsf T\, dA$ is the oriented area element, and the vector derivative~(\ref{eqn:r2_vector_derivative})~[\,$\nabla F = \sum_k e_k(e_k\cdot\nabla F)$\,] acts on $F$ only, not on $\mathsf T$. On the right, $\mathsf T\nu\, ds$ is the oriented line element of the boundary: since $\nu$ is tangent, $\mathsf T\nu = -\nu\mathsf T = -\,n\times\nu$ by~(\ref{eqn:ga_quarter_turn}), a unit vector along the boundary. The theorem holds on curved surfaces as written, with $\mathsf T$ varying from point to point.
+
+\paragraph{A check in the plane.} In a flat region $\mathsf T$ is constant. Multiply~(\ref{eqn:r2_ftgc}) on the left by $\mathsf T^{-1}$, which moves inside both integrals because it is constant:
+\begin{equation*}
+\int_\Omega \nabla F\, dA = \oint_{\partial\Omega} \nu F\, ds .
+\end{equation*}
+We check this one with the divergence theorem~(\ref{eqn:t1_divergence})~[\,$\int_\Omega\operatorname{div}W\,dA = \oint_{\partial\Omega}W\cdot\nu\,ds$\,] of Part~\ref{part:matrix}. With the axes $e_1, e_2$, $\nabla F = e_1\,\partial_1 F + e_2\,\partial_2 F$ and $\nu = \nu_1 e_1 + \nu_2 e_2$. Let $f$ be any component of $F$. For $W = (f, 0)$, $\operatorname{div}W = \partial_1 f$ and $W\cdot\nu = f\nu_1$; for $W = (0, f)$, $\operatorname{div}W = \partial_2 f$ and $W\cdot\nu = f\nu_2$. So
+\begin{equation*}
+\int_\Omega \partial_1 f\, dA = \oint_{\partial\Omega} f\,\nu_1\, ds, \qquad \int_\Omega \partial_2 f\, dA = \oint_{\partial\Omega} f\,\nu_2\, ds ,
+\end{equation*}
+for every component, hence for $F$ itself. Multiply the first by $e_1$ and the second by $e_2$ on the left (constants, so they move inside the integrals) and add:
+\begin{align*}
+\int_\Omega \nabla F\, dA &= e_1\int_\Omega \partial_1 F\, dA + e_2\int_\Omega \partial_2 F\, dA \\
+&= e_1\oint_{\partial\Omega} \nu_1 F\, ds + e_2\oint_{\partial\Omega} \nu_2 F\, ds \\
+&= \oint_{\partial\Omega} (\nu_1e_1 + \nu_2e_2)\, F\, ds = \oint_{\partial\Omega}\nu F\, ds .
+\end{align*}
+On a curved surface $\mathsf T$ cannot be moved out of the integrals, and the theorem must keep it inside. For $F = 1$ the left side of~(\ref{eqn:r2_ftgc}) is zero, since $\nabla 1 = 0$, and so is the right side: $\mathsf T\nu$ is plus or minus the unit tangent $\gamma'$ of the closed curve $\partial\Omega$, and $\oint\gamma'(s)\, ds = \gamma(\text{end}) - \gamma(\text{start}) = 0$. The flat version $\oint\nu\, ds$ would not be zero on a curved surface. On the upper unit hemisphere the boundary is the equator, $n = (\cos\varphi, \sin\varphi, 0)$, and the conormal is $\nu = -e_z$ everywhere, so $\oint\nu\, ds = -2\pi e_z$. With $\mathsf T$ inside, $\mathsf T\nu = -\,n\times\nu = n\times e_z = (\sin\varphi, -\cos\varphi, 0)$, and $\int_0^{2\pi}(\sin\varphi, -\cos\varphi, 0)\, d\varphi = 0$.
+
+\paragraph{The divergence theorem on a surface.} We apply~(\ref{eqn:r2_ftgc}) to $F = W\mathsf T$, for a tangent field $W$, and keep the scalar parts. By the product rule, $e_k\cdot\nabla(W\mathsf T) = (e_k\cdot\nabla W)\,\mathsf T + W\,(e_k\cdot\nabla\mathsf T)$. Put this into~(\ref{eqn:r2_vector_derivative}) and multiply by $\mathsf T$ on the left:
+\begin{align*}
+\mathsf T\,\nabla(W\mathsf T) &= \sum_k \mathsf T\, e_k\,\big((e_k\cdot\nabla W)\,\mathsf T + W\,(e_k\cdot\nabla\mathsf T)\big) && (\ref{eqn:r2_vector_derivative}) \\
+&= \mathsf T\Big(\sum_k e_k\,(e_k\cdot\nabla W)\Big)\mathsf T + \sum_k \mathsf T\, e_k\, W\,(e_k\cdot\nabla\mathsf T) && \text{distribute} \\
+&= \mathsf T\,(\nabla W)\,\mathsf T + \sum_k \mathsf T\, e_k\, W\,(e_k\cdot\nabla\mathsf T) && (\ref{eqn:r2_vector_derivative}) .
+\end{align*}
+We take the scalar part of each term, and of the right side.
+\begin{itemize}
+\item \emph{The first term.} For any element $X$, by the cyclic rule with the two factors $\mathsf T$ and $X\mathsf T$,
+\begin{equation*}
+\langle\mathsf T\,(X\mathsf T)\rangle = \langle (X\mathsf T)\,\mathsf T\rangle = \langle X\,\mathsf T^2\rangle = -\langle X\rangle .
+\end{equation*}
+With $X = \nabla W = \sum_k e_k w_k$, $w_k = e_k\cdot\nabla W$, the scalar part of each product $e_kw_k = e_k\cdot w_k + e_k\wedge w_k$ is $e_k\cdot w_k$. By the Gauss formula~(\ref{eqn:ga_gauss}), $w_k = \nabla_{e_k}W + \mathrm{II}(e_k, W)\, n$, and $e_k\cdot n = 0$, so
+\begin{equation*}
+\langle\mathsf T\,(\nabla W)\,\mathsf T\rangle = -\sum_k e_k\cdot\big(\nabla_{e_k}W + \mathrm{II}(e_k, W)\,n\big) = -\sum_k e_k\cdot\nabla_{e_k}W = -\operatorname{div}W ,
+\end{equation*}
+the divergence of Part~\ref{part:matrix}.
+\item \emph{The second term.} Here the derivative falls on $\mathsf T = In$. Since $I$ is constant, $e_k\cdot\nabla\mathsf T = I\,m$ with $m = e_k\cdot\nabla n$, and $m$ is tangent: differentiating $n\cdot n = 1$ gives $2\, n\cdot m = 0$. Then
+\begin{align*}
+\mathsf T\, e_k\, W\,(e_k\cdot\nabla\mathsf T) &= (I n)\, e_k\, W\, (I m) && \text{substitute} \\
+&= I\,I\; n\, e_k\, W\, m = -\, n\,(e_k W m) && I \text{ commutes};\ I^2 = -1 .
+\end{align*}
+The product of three tangent vectors is a tangent vector: $e_kWm = e_k(W\cdot m) + e_k(W\wedge m)$, and $e_k(W\wedge m) = e_k\cdot(W\wedge m) + e_k\wedge W\wedge m$, where $e_k\cdot(W\wedge m) = (e_k\cdot W)\, m - (e_k\cdot m)\, W$ is tangent, and the trivector $e_k\wedge W\wedge m$ vanishes because three vectors of one plane span no volume. So $v = e_kWm$ is tangent, and $n v = n\cdot v + n\wedge v = 0 + n\wedge v$ is a pure bivector, with no scalar part. This term contributes nothing: the bending of the surface drops out of the scalar part.
+\item \emph{The right side.} With the cyclic rule, now with the factors $\mathsf T$ and $\nu W\mathsf T$:
+\begin{equation*}
+\langle\mathsf T\,(\nu W\mathsf T)\rangle = \langle\nu W\,\mathsf T^2\rangle = -\langle\nu W\rangle = -\,W\cdot\nu .
+\end{equation*}
+\end{itemize}
+The scalar part of~(\ref{eqn:r2_ftgc}) with $F = W\mathsf T$ is therefore
+\begin{equation*}
+\int_\Omega \big(-\operatorname{div}W + 0\big)\, dA = \oint_{\partial\Omega} \big(-\,W\cdot\nu\big)\, ds ,
+\end{equation*}
+and multiplying by $-1$,
+\begin{equation}
+\label{eqn:r2_div}
+\int_\Omega \operatorname{div} W\, dA = \oint_{\partial\Omega} W\cdot\nu\, ds, \qquad \operatorname{div}W = \sum_k e_k\cdot\nabla_{e_k}W ,
+\end{equation}
+the divergence theorem on a curved surface, derived from the fundamental theorem.
+
+\subsection{Green's identity for the covariant derivative of spinors}
+
+\paragraph{The product rule for spinors.} Let $\psi = u_1 + u_2\mathsf T$ and $\chi = v_1 + v_2\mathsf T$ be two spinor fields in the same frame. The scalar part $\langle\psi\widetilde\chi\rangle = u_1v_1 + u_2v_2$, by~(\ref{eqn:r2_inner}), is a function, and the ordinary product rule gives
+\begin{align*}
+a\cdot\nabla\langle\psi\widetilde\chi\rangle &= a\cdot\nabla(u_1v_1 + u_2v_2) \\
+&= \big((a\cdot\nabla u_1)\,v_1 + (a\cdot\nabla u_2)\,v_2\big) + \big(u_1\,(a\cdot\nabla v_1) + u_2\,(a\cdot\nabla v_2)\big) \\
+&= \big\langle (a\cdot\nabla\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(a\cdot\nabla\chi)}\big\rangle ,
+\end{align*}
+where the last line reads each parenthesis as~(\ref{eqn:r2_inner}) again, with $a\cdot\nabla\psi = (a\cdot\nabla u_1) + (a\cdot\nabla u_2)\,\mathsf T$ in the place of $\psi$, and with $a\cdot\nabla\chi$ in the place of $\chi$. We want covariant derivatives instead. The connection terms that $D_a$ adds to each side add up to zero. The reverse of $\omega(a)\mathsf T\chi$ is $\omega(a)\,\widetilde\chi\,\widetilde{\mathsf T} = -\,\omega(a)\,\widetilde\chi\,\mathsf T$, so
+\begin{align*}
+&\big\langle \omega(a)\mathsf T\psi\,\widetilde\chi\big\rangle + \big\langle\psi\,\widetilde{(\omega(a)\mathsf T\chi)}\big\rangle \\
+&\quad= \omega(a)\,\langle\mathsf T\psi\widetilde\chi\rangle - \omega(a)\,\langle\psi\widetilde\chi\,\mathsf T\rangle && \widetilde{XY} = \widetilde Y\widetilde X,\ \widetilde{\mathsf T} = -\mathsf T \\
+&\quad= \omega(a)\,\langle\mathsf T\psi\widetilde\chi\rangle - \omega(a)\,\langle\mathsf T\,\psi\widetilde\chi\rangle && \mathsf T \text{ commutes with } \psi\widetilde\chi \\
+&\quad= 0 .
+\end{align*}
+(The complex number $\psi\widetilde\chi$ commutes with $\mathsf T$, as all complex numbers of one plane do.) Adding this zero to the right side, and grouping each derivative with its connection term, with $D_a = a\cdot\nabla + \omega(a)\mathsf T$ of~(\ref{eqn:ga_covariant}):
+\begin{align*}
+a\cdot\nabla\langle\psi\widetilde\chi\rangle &= \big\langle (a\cdot\nabla\psi)\,\widetilde\chi\big\rangle + \big\langle \omega(a)\mathsf T\psi\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(a\cdot\nabla\chi)}\big\rangle + \big\langle\psi\,\widetilde{(\omega(a)\mathsf T\chi)}\big\rangle \\
+&= \big\langle (a\cdot\nabla\psi + \omega(a)\mathsf T\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,(a\cdot\nabla\chi + \omega(a)\mathsf T\chi)^\sim\big\rangle ,
+\end{align*}
+that is,
+\begin{equation}
+\label{eqn:r2_product}
+a\cdot\nabla\langle\psi\widetilde\chi\rangle = \big\langle (D_a\psi)\,\widetilde\chi\big\rangle + \big\langle \psi\,\widetilde{(D_a\chi)}\big\rangle .
+\end{equation}
+This is metric compatibility in spinor form: the connection is an infinitesimal rotation, and rotations do not change inner products.
+
+\paragraph{The field to which we apply the divergence theorem.} In one variable, $\int f'g' = [f'g] - \int f''g$ comes from integrating the product rule $(f'g)' = f''g + f'g'$. Here the analogue of $f'g$ is the tangent field
+\begin{equation*}
+W = \sum_k \big\langle (D_{e_k}\psi)\,\widetilde\chi\big\rangle\, e_k .
+\end{equation*}
+For every tangent $X = \sum_k (e_k\cdot X)\, e_k$,
+\begin{equation*}
+W\cdot X = \sum_k \big\langle (D_{e_k}\psi)\,\widetilde\chi\big\rangle\,(e_k\cdot X) = \Big\langle \Big(D_{\sum_k (e_k\cdot X)\, e_k}\psi\Big)\,\widetilde\chi\Big\rangle = \big\langle (D_X\psi)\,\widetilde\chi\big\rangle ,
+\end{equation*}
+by linearity of $D_X$ in $X$. Its divergence, with an orthonormal frame field $e_1, e_2$, is $\operatorname{div}W = \sum_j e_j\cdot\nabla_{e_j}W$, and we compute it in three steps.
+
+\emph{Step 1.} Metric compatibility for $W\cdot e_j$, with $U = W$ and $V = e_j$, gives
+\begin{equation*}
+e_j\cdot\nabla(W\cdot e_j) = (\nabla_{e_j}W)\cdot e_j + W\cdot\nabla_{e_j}e_j .
+\end{equation*}
+Solve for the first term on the right, and replace $W\cdot e_j$ and $W\cdot\nabla_{e_j}e_j$ by $\langle (D_X\psi)\widetilde\chi\rangle$ with $X = e_j$ and $X = \nabla_{e_j}e_j$:
+\begin{equation*}
+(\nabla_{e_j}W)\cdot e_j = e_j\cdot\nabla\big\langle (D_{e_j}\psi)\,\widetilde\chi\big\rangle - \big\langle (D_{\nabla_{e_j}e_j}\psi)\,\widetilde\chi\big\rangle .
+\end{equation*}
+
+\emph{Step 2.} The spinor product rule~(\ref{eqn:r2_product}) with $a = e_j$ and with $D_{e_j}\psi$ in the place of $\psi$:
+\begin{equation*}
+e_j\cdot\nabla\big\langle (D_{e_j}\psi)\,\widetilde\chi\big\rangle = \big\langle \big(D_{e_j}(D_{e_j}\psi)\big)\,\widetilde\chi\big\rangle + \big\langle (D_{e_j}\psi)\,\widetilde{(D_{e_j}\chi)}\big\rangle .
+\end{equation*}
+Substituting it into Step~1:
+\begin{equation*}
+(\nabla_{e_j}W)\cdot e_j = \Big(\big\langle (D_{e_j}D_{e_j}\psi)\,\widetilde\chi\big\rangle + \big\langle (D_{e_j}\psi)\,\widetilde{(D_{e_j}\chi)}\big\rangle\Big) - \big\langle (D_{\nabla_{e_j}e_j}\psi)\,\widetilde\chi\big\rangle .
+\end{equation*}
+
+\emph{Step 3.} Sum over $j$, combine the two terms with $\widetilde\chi$ (the scalar part is linear), and recognize~(\ref{eqn:r2_DstarD})~[\,$D^*D\psi = -\sum_k(D_{e_k}D_{e_k}\psi - D_{\nabla_{e_k}e_k}\psi)$\,]:
+\begin{align*}
+\operatorname{div}W &= \sum_j\big\langle (D_{e_j}D_{e_j}\psi - D_{\nabla_{e_j}e_j}\psi)\,\widetilde\chi\big\rangle \\
+&\quad + \sum_j\big\langle (D_{e_j}\psi)\,\widetilde{(D_{e_j}\chi)}\big\rangle && \text{combine} \\
+&= \Big\langle \Big(\sum_j (D_{e_j}D_{e_j}\psi - D_{\nabla_{e_j}e_j}\psi)\Big)\,\widetilde\chi\Big\rangle \\
+&\quad + \sum_j\big\langle (D_{e_j}\psi)\,\widetilde{(D_{e_j}\chi)}\big\rangle && \text{sum inside} \\
+&= -\big\langle (D^*D\psi)\,\widetilde\chi\big\rangle + \sum_j\big\langle (D_{e_j}\psi)\,\widetilde{(D_{e_j}\chi)}\big\rangle && (\ref{eqn:r2_DstarD}) .
+\end{align*}
+
+\paragraph{Integrating.} Integrate both sides over $\Omega$. The divergence theorem~(\ref{eqn:r2_div}) again,
+\begin{equation*}
+\tag{\ref{eqn:r2_div}}
+\int_\Omega \operatorname{div} W\, dA = \oint_{\partial\Omega} W\cdot\nu\, ds ,
+\end{equation*}
+turns the left side into a boundary integral, and on the boundary $W\cdot\nu = \langle (D_\nu\psi)\,\widetilde\chi\rangle$ (the formula for $W\cdot X$ with $X = \nu$):
+\begin{equation*}
+\oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds = -\int_\Omega\big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA + \int_\Omega\sum_k\big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA .
+\end{equation*}
+Moving the integral with $D^*D$ to the left side:
+\begin{equation}
+\label{eqn:r2_green}
+\int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA = \int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA + \oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds .
+\end{equation}
+This is \emph{Green's identity} for spinors. It needs $\psi$ with second derivatives ($\psi \in H^2$) and $\chi \in H^1$. With $U = t\psi$ and $V = t\chi$, by~(\ref{eqn:r2_inner}) and~(\ref{eqn:r2_DstarD}), it is Green's identity~(\ref{eqn:green})~[\,$\int\nabla U:\nabla V = \int(\nabla^*\nabla U)\cdot V + \oint(\nabla_\nu U)\cdot V$\,] of Part~\ref{part:matrix}, now obtained from the fundamental theorem of geometric calculus.
+
+\paragraph{$D^*D$ is positive, and the heat flow decreases $E$.} On a closed surface there is no boundary term. With $\chi = \psi$,~(\ref{eqn:r2_green}) says
+\begin{equation*}
+\int_\Omega\big\langle (D^*D\psi)\,\widetilde\psi\big\rangle\, dA = \int_\Omega\sum_k\big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\psi)}\big\rangle\, dA = \int_\Omega\sum_k|D_{e_k}\psi|^2\, dA \ge 0 :
+\end{equation*}
+$D^*D$ is positive, and it is the adjoint of $D$ composed with $D$, like $A^TA$ for a matrix $A$. The derivative of the energy $E$ of~(\ref{eqn:ga_energy}) in a direction $\chi$ is, by the expansion of the derivative term in Stage~3 (halved, without $\Delta t$), $\int\sum_k\langle (D_{e_k}\psi)\widetilde{(D_{e_k}\chi)}\rangle\, dA$, and by~(\ref{eqn:r2_green}) it equals $\int\langle (D^*D\psi)\widetilde\chi\rangle\, dA$. Along the heat flow, $\chi = \partial_t\psi = -D^*D\psi$, so $dE/dt = -\int|D^*D\psi|^2\, dA \le 0$: the heat equation moves $\psi$ in the direction in which $E$ decreases fastest.
+
+\subsection{The weak form}
+
+\paragraph{Step 1: test the equation.} A spinor field $r \in L^2$ is zero exactly when $\int_\Omega\langle r\widetilde\chi\rangle\, dA = 0$ for every $\chi$: if $r = 0$ the integral is zero; conversely, the choice $\chi = r$ gives $\int|r|^2\, dA = 0$, so $r = 0$ (at every point where $r$ is continuous, and almost everywhere in general). Apply this to the residual of the strong form,~(\ref{eqn:r2_be}) again:
+\begin{equation*}
+\tag{\ref{eqn:r2_be}}
+\psi + \Delta t\, D^*D\psi = \psi^0 .
+\end{equation*}
+Multiply it on the right by the reverse $\widetilde\chi$ of a test spinor $\chi$, distribute, take the scalar part (it is linear), and integrate (also linear):
+\begin{align*}
+\big(\psi + \Delta t\, D^*D\psi\big)\,\widetilde\chi &= \psi^0\widetilde\chi && \text{multiply by } \widetilde\chi \\
+\psi\widetilde\chi + \Delta t\,(D^*D\psi)\,\widetilde\chi &= \psi^0\widetilde\chi && \text{distribute} \\
+\langle\psi\widetilde\chi\rangle + \Delta t\,\big\langle (D^*D\psi)\,\widetilde\chi\big\rangle &= \langle\psi^0\widetilde\chi\rangle && \text{scalar part}
+\end{align*}
+\begin{equation*}
+\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA = \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA \qquad\text{for every } \chi .
+\end{equation*}
+Nothing has been lost: by the first sentence, this for every $\chi$ is the same as~(\ref{eqn:r2_be}).
+
+\paragraph{Step 2: integrate by parts.} Green's identity~(\ref{eqn:r2_green}) again, solved for the term with $D^*D$ by subtracting the boundary integral from both sides:
+\begin{equation*}
+\int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA = \int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA - \oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds .
+\end{equation*}
+Substitute it, inside the parentheses, into the second term of the tested equation:
+\begin{align*}
+&\int_\Omega \langle\psi\widetilde\chi\rangle\, dA \\
+&\quad + \Delta t\,\Big(\int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA - \oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds\Big) = \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA ,
+\end{align*}
+and, distributing $\Delta t$,
+\begin{align*}
+&\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\int_\Omega \sum_k \big\langle (D_{e_k}\psi)\,\widetilde{(D_{e_k}\chi)}\big\rangle\, dA \\
+&\quad - \Delta t\oint_{\partial\Omega} \big\langle (D_\nu\psi)\,\widetilde\chi\big\rangle\, ds = \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA .
+\end{align*}
+One derivative has moved from $\psi$ to $\chi$.
+
+\paragraph{Step 3: the boundary term.} The surfaces of this text are closed, so $\partial\Omega$ is empty and the boundary integral is absent. (On a surface with boundary it vanishes in two common situations: where $\psi$ is prescribed, because there the test fields are chosen to vanish, and where the natural condition $D_\nu\psi = 0$ holds. In the second case the boundary condition is built into the weak form without being imposed, which is why it is called natural.) The remaining equation contains only first derivatives, so it makes sense for every $\psi$ and $\chi$ in $H^1$; both sides are bounded in $\chi$ (Stage~2), so, holding for the smooth $\chi$, it holds for all $\chi\in H^1$ by density. The \emph{weak form} of the backward Euler step is: find $\psi \in H^1$ such that
+\begin{equation}
+\label{eqn:ga_weak}
+\int_\Omega \langle \psi\, \widetilde\chi \rangle\, dA + \Delta t \int_\Omega \sum_k \langle (D_{e_k} \psi)\, \widetilde{(D_{e_k} \chi)} \rangle\, dA = \int_\Omega \langle \psi^0\, \widetilde\chi \rangle\, dA
+\end{equation}
+for every test spinor $\chi \in H^1$; in the notation of~(\ref{eqn:r2_forms}), $a(\psi, \chi) = l(\chi)$. It contains first derivatives of $\psi$ and $\chi$ symmetrically, and it is the stationarity condition of the energy $J$ of Stage~3. By~(\ref{eqn:r2_inner}), $\langle\psi\widetilde\chi\rangle = U\cdot V$ and $\sum_k\langle (D_{e_k}\psi)\widetilde{(D_{e_k}\chi)}\rangle = \sum_k \nabla_{e_k}U\cdot\nabla_{e_k}V = \nabla U : \nabla V$, so it is the weak form~(\ref{eqn:weak})~[\,$\int U\cdot V + \Delta t\int\nabla U:\nabla V = \int U^0\cdot V$\,] of Part~\ref{part:matrix}, written for the coordinates.
+
+\paragraph{Back to the strong form.} Suppose the weak solution has second derivatives. Then Green's identity applies, and we run the steps backwards. Substitute~(\ref{eqn:r2_green}), without boundary term, into the second integral of~(\ref{eqn:ga_weak}):
+\begin{align*}
+\int_\Omega \langle\psi\widetilde\chi\rangle\, dA + \Delta t\,\Big(\int_\Omega \big\langle (D^*D\psi)\,\widetilde\chi\big\rangle\, dA\Big) - \int_\Omega \langle\psi^0\widetilde\chi\rangle\, dA &= 0 && \text{substitute} \\
+\int_\Omega \big\langle \big(\psi + \Delta t\, D^*D\psi - \psi^0\big)\,\widetilde\chi\big\rangle\, dA &= 0 && \text{linearity.}
+\end{align*}
+This holds for every $\chi$. Call $r = \psi + \Delta t\, D^*D\psi - \psi^0$ the residual and choose $\chi = r$: $\int_\Omega|r|^2\, dA = 0$, so $r = 0$, which is~(\ref{eqn:r2_be}) at every point. So for smooth fields the weak and the strong forms are the same problem, and the weak form only enlarges the set of fields for which the question can be asked.
+
+\paragraph{The source.} In the code the value at the source vertex is prescribed, as in~(\ref{eqn:r2_source})~[\,$\psi + \Delta t\, D^*D\psi = 0 \text{ off } s,\ \psi(s) = \psi_s$\,]. Where the unknown is prescribed we need no equation to determine it, so we do not test there: the test fields are those that vanish at $s$. In the discrete method this means that the equation of the source vertex is discarded and replaced by the prescribed value, which is the row replacement of Stage~8.
+
+\paragraph{What we have.} The weak form~(\ref{eqn:ga_weak}), with only first derivatives, derived from the fundamental theorem of geometric calculus through the divergence theorem~(\ref{eqn:r2_div}) and Green's identity~(\ref{eqn:r2_green}). The remaining stages replace $H^1$ by a finite-dimensional space built on the mesh.
+
