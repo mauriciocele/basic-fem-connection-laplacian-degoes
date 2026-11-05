@@ -9,7 +9,6 @@
 \newtheorem{rem}[thm]{Remark}
 \newtheorem{example}[thm]{Worked example}
 \numberwithin{equation}{section}
-\renewcommand{\thepart}{\Roman{part}}
 
 \usepackage[noadjust]{cite}
 \usepackage{amsfonts}
@@ -30,7 +29,41 @@
 \newlength{\portraitwidth}
 \AtBeginDocument{\setlength{\portraitwidth}{\textwidth}}
 \lstset{language=C++, basicstyle=\ttfamily\scriptsize, keywordstyle=\color{blue!60!black}, commentstyle=\color{green!40!black}\itshape, columns=fullflexible, frame=single, framerule=0.3pt, rulecolor=\color{gray!50}, tabsize=4, numbers=left, numberstyle=\tiny\color{gray}, breaklines=true, xleftmargin=1.5em}
-\usepackage{hyperref}
+\usepackage[bookmarksnumbered, bookmarksopen, bookmarksopenlevel=1, colorlinks, linkcolor=blue!50!black, citecolor=green!35!black, urlcolor=blue!50!black]{hyperref}
+\usepackage{bookmark}
+
+% ---- the parts: each opens on its own page with a large title; every section heading carries the name of its part,
+% ---- and so do the running heads, so that one always sees in which part one is
+\definecolor{partcolor}{RGB}{30, 70, 120}
+\newcommand{\currentpart}{}
+\makeatletter
+\newcommand{\@bigpart}[3]{% #1 the label above the title ("Part I", "Applications"), #2 the title, #3 the toc entry
+  \clearpage
+  \thispagestyle{empty}%
+  \null\vspace*{0.22\textheight}%
+  \begin{center}
+    {\color{partcolor}\fontsize{34}{40}\selectfont\bfseries #1\par}
+    \vspace{1.2em}{\color{partcolor}\rule{0.55\linewidth}{1.2pt}}\par\vspace{1.4em}
+    {\LARGE\bfseries #2\par}
+  \end{center}
+  \addcontentsline{toc}{part}{#3}%
+  \markboth{#1: #2}{#1: #2}%
+  \clearpage}
+\renewcommand{\part}[1]{%
+  \clearpage\refstepcounter{part}%
+  \gdef\currentpart{Part \thepart\ \ \textperiodcentered\ \ #1}%
+  \@bigpart{Part \thepart}{#1}{\protect\tocpart{\partname}{\thepart}{#1}}}
+\newcommand{\applicationspart}[1]{%
+  \clearpage\refstepcounter{part}\def\thepart{A}%
+  \gdef\currentpart{#1}%
+  \@bigpart{#1}{Parallel Transport at Work}{\protect\tocpart{}{}{#1}}}
+\renewcommand{\thepart}{\Roman{part}}
+\newcommand{\@sectiontag}{\ifx\currentpart\@empty\else
+  {\normalfont\small\scshape\color{partcolor}\currentpart\endgraf}\nobreak\vskip 3pt\fi}
+\def\section{\@startsection{section}{1}%
+  \z@{2\linespacing\@plus\linespacing}{.7\linespacing}%
+  {\@sectiontag\LARGE\bfseries\raggedright}}
+\makeatother
 
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\Ge}{\mathbb{G}}
@@ -64,6 +97,11 @@ We derive, step by step, a program that spreads a tangent vector given at one po
 \label{fig:teaser}
 \end{center}
 
+\clearpage
+\setcounter{tocdepth}{1}
+{\hypersetup{linkcolor=black}\tableofcontents}
+\clearpage
+
 %%% ----------------------------------------------------------------------
 \section{Introduction}
 \label{section:introduction}
@@ -80,7 +118,7 @@ This text derives a finite element implementation of that idea \cite{ConnectionL
 \item the element matrices, computed triangle by triangle (Sections~\ref{section:gradients}--\ref{section:element});
 \item the assembly of the global matrices, the boundary condition, and the solution of the linear system (Sections~\ref{section:assembly}--\ref{section:solve}).
 \end{enumerate}
-The ingredient that is not in the scalar method is the connection: tangent vectors at different vertices live in different planes and cannot be added before they are brought into a common plane. Section~\ref{section:transport} shows how the code does that, and Section~\ref{section:galerkin} shows that this is exactly where the Levi-Civita connection enters the finite element method. Table~\ref{tab:map} at the end of Part~\ref{part:matrix} lists every formula with the function of \code{FEM.cpp} that evaluates it. Part~\ref{part:ga} repeats the derivation in the language of geometric algebra, where frames become a single vector, coordinates become complex numbers of the tangent plane, transports become rotors, and the gradients of the shape functions become a reciprocal frame; it also separates what is intrinsic to the curved surface from what depends on its embedding in space. Part~\ref{part:intrinsic} builds the same method from the edge lengths alone, slowly and with every derivation, and compares the two connections on a folded sheet, a sphere and the cactus.
+The ingredient that is not in the scalar method is the connection: tangent vectors at different vertices live in different planes and cannot be added before they are brought into a common plane. Section~\ref{section:transport} shows how the code does that, and Section~\ref{section:galerkin} shows that this is exactly where the Levi-Civita connection enters the finite element method. Table~\ref{tab:map} at the end of Part~\ref{part:matrix} lists every formula with the function of \code{FEM.cpp} that evaluates it. Part~\ref{part:ga} repeats the derivation in the language of geometric algebra, where frames become a single vector, coordinates become complex numbers of the tangent plane, transports become rotors, and the gradients of the shape functions become a reciprocal frame; it also separates what is intrinsic to the curved surface from what depends on its embedding in space. Part~\ref{part:intrinsic} builds the same method from the edge lengths alone, slowly and with every derivation, and compares the two connections on a folded sheet, a sphere and the cactus. The part \emph{Applications} (Section~\ref{section:app_logmap}) puts the method to work: geodesic polar coordinates, decals, the folded sheet as graph paper, and an atlas of charts over the whole cactus.
 
 \paragraph{How to read the formulas.} The text is meant to be read in pieces, on different days, without having to turn back. Two conventions help. Whenever an earlier equation is used, its number is followed by the equation itself in square brackets, for example ``by~(\ref{eqn:frame})~[\,$T^TT = I_2$\,]''; the bracket repeats the part that is needed, sometimes in a shortened form. And derivations are written out step by step, in the style of a school textbook: every substitution is shown, every identity that is used is named or proved on the spot, and when an expression is rewritten into a new form the intermediate lines are kept. A reader who already knows a step can skip it; a reader who does not will find it there.
 
@@ -90,6 +128,7 @@ The ingredient that is not in the scalar method is the connection: tangent vecto
 \input{parts_part2b}
 \input{parts_part3a}
 \input{parts_part3b}
+\input{parts_applications}
 
 \bibliographystyle{abbrv}
 \bibliography{fembasic2d}

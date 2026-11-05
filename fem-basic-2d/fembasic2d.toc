@@ -1,0 +1,521 @@
+\contentsline {section}{\tocsection {}{1}{Introduction}}{5}{section.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the formulas.}}{6}{section*.2}%
+\contentsline {part}{\tocpart {Part}{I}{The Derivation with Matrices}}{7}{part.1}%
+\contentsline {section}{\tocsection {}{2}{The Finite Element Method as a Recipe}}{8}{section.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the geometry comes in.}}{9}{section*.4}%
+\contentsline {section}{\tocsection {}{3}{Geometric Toolkit I: Tangent Vectors on a Surface}}{10}{section.3}%
+\contentsline {subsection}{\tocsubsection {}{3.1}{Tangent planes and frames}}{10}{subsection.3.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Frames.}}{10}{section*.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{Coordinates.}}{11}{section*.6}%
+\contentsline {subsection}{\tocsubsection {}{3.2}{The discrete surface (an ingredient of Stage 5)}}{11}{subsection.3.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Faces.}}{12}{section*.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{Vertices.}}{13}{section*.9}%
+\contentsline {paragraph}{\tocparagraph {}{}{Frames.}}{14}{section*.10}%
+\contentsline {paragraph}{\tocparagraph {}{}{Unknowns.}}{15}{section*.12}%
+\contentsline {paragraph}{\tocparagraph {}{}{The complex reading.}}{16}{section*.13}%
+\contentsline {section}{\tocsection {}{4}{Geometric Toolkit II: Parallel Transport and the Levi-Civita Connection}}{16}{section.4}%
+\contentsline {subsection}{\tocsubsection {}{4.1}{Derivatives of functions on a surface}}{16}{subsection.4.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The directional derivative in the plane.}}{16}{section*.14}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradient.}}{17}{section*.15}%
+\contentsline {paragraph}{\tocparagraph {}{}{On a surface.}}{17}{section*.16}%
+\contentsline {paragraph}{\tocparagraph {}{}{Vectors and products.}}{18}{section*.17}%
+\contentsline {subsection}{\tocsubsection {}{4.2}{The covariant derivative}}{18}{subsection.4.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{It is compatible with the metric.}}{19}{section*.19}%
+\contentsline {paragraph}{\tocparagraph {}{}{It is linear in $X$.}}{20}{section*.20}%
+\contentsline {paragraph}{\tocparagraph {}{}{In a frame.}}{20}{section*.21}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why $T^T D_X T$ and not $T T^T D_X T$.}}{21}{section*.22}%
+\contentsline {paragraph}{\tocparagraph {}{}{The entries of $\omega $.}}{22}{section*.23}%
+\contentsline {subsection}{\tocsubsection {}{4.3}{Parallel transport}}{23}{subsection.4.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Transport is a rotation.}}{24}{section*.24}%
+\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative compares transported vectors.}}{24}{section*.25}%
+\contentsline {subsection}{\tocsubsection {}{4.4}{The discrete connection (an ingredient of Stage 5)}}{25}{subsection.4.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete transport.}}{25}{section*.26}%
+\contentsline {paragraph}{\tocparagraph {}{}{The smallest rotation as a matrix.}}{25}{section*.28}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{27}{section*.29}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete connection.}}{28}{section*.30}%
+\contentsline {paragraph}{\tocparagraph {}{}{$R_i^f$ is a rotation of the plane.}}{28}{section*.32}%
+\contentsline {paragraph}{\tocparagraph {}{}{Transport between two vertices.}}{30}{section*.33}%
+\contentsline {section}{\tocsection {}{5}{Stage 1. The PDE: the Connection Laplacian and the Vector Heat Equation}}{32}{section.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{32}{section*.35}%
+\contentsline {subsection}{\tocsubsection {}{5.1}{The Dirichlet energy}}{32}{subsection.5.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Integrals over a surface.}}{32}{section*.36}%
+\contentsline {paragraph}{\tocparagraph {}{}{The two expressions of $|\nabla U|^2$.}}{33}{section*.37}%
+\contentsline {paragraph}{\tocparagraph {}{}{The derivative of the energy.}}{33}{section*.38}%
+\contentsline {subsection}{\tocsubsection {}{5.2}{The divergence theorem}}{34}{subsection.5.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{In one variable.}}{34}{section*.39}%
+\contentsline {paragraph}{\tocparagraph {}{}{Flux.}}{35}{section*.40}%
+\contentsline {paragraph}{\tocparagraph {}{}{Divergence.}}{35}{section*.41}%
+\contentsline {paragraph}{\tocparagraph {}{}{A check.}}{36}{section*.42}%
+\contentsline {paragraph}{\tocparagraph {}{}{On a surface.}}{36}{section*.43}%
+\contentsline {subsection}{\tocsubsection {}{5.3}{Green's identity and the connection Laplacian}}{36}{subsection.5.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{36}{section*.44}%
+\contentsline {paragraph}{\tocparagraph {}{}{The idea.}}{36}{section*.45}%
+\contentsline {paragraph}{\tocparagraph {}{}{What it gives.}}{38}{section*.47}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the Laplacian measures.}}{39}{section*.48}%
+\contentsline {subsection}{\tocsubsection {}{5.4}{The vector heat equation}}{39}{subsection.5.4}%
+\contentsline {subsection}{\tocsubsection {}{5.5}{Backward Euler}}{40}{subsection.5.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why backward.}}{40}{section*.50}%
+\contentsline {paragraph}{\tocparagraph {}{}{The boundary condition used by the code.}}{41}{section*.51}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 1 produced.}}{42}{section*.52}%
+\contentsline {section}{\tocsection {}{6}{Stage 2. The Function Spaces}}{42}{section.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{42}{section*.53}%
+\contentsline {paragraph}{\tocparagraph {}{}{Assumptions.}}{43}{section*.54}%
+\contentsline {paragraph}{\tocparagraph {}{}{Fields as vectors with infinitely many entries.}}{43}{section*.55}%
+\contentsline {paragraph}{\tocparagraph {}{}{Adding the derivative: the space $H^1$.}}{43}{section*.56}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the strong form asks for more.}}{44}{section*.57}%
+\contentsline {paragraph}{\tocparagraph {}{}{Complete spaces: why $H^1$ and not the smooth fields.}}{44}{section*.58}%
+\contentsline {paragraph}{\tocparagraph {}{}{The problem in two abbreviations.}}{44}{section*.59}%
+\contentsline {paragraph}{\tocparagraph {}{}{Symmetric.}}{45}{section*.60}%
+\contentsline {paragraph}{\tocparagraph {}{}{Bounded.}}{45}{section*.61}%
+\contentsline {paragraph}{\tocparagraph {}{}{Coercive.}}{46}{section*.62}%
+\contentsline {paragraph}{\tocparagraph {}{}{The linear form is bounded.}}{46}{section*.63}%
+\contentsline {paragraph}{\tocparagraph {}{}{Exactly one solution: the theorems of Lax--Milgram and Riesz.}}{46}{section*.64}%
+\contentsline {paragraph}{\tocparagraph {}{}{Stability in the energy norm.}}{47}{section*.65}%
+\contentsline {paragraph}{\tocparagraph {}{}{The best approximation: Galerkin and C\'ea.}}{47}{section*.66}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conformity.}}{48}{section*.67}%
+\contentsline {paragraph}{\tocparagraph {}{}{The source condition, honestly.}}{49}{section*.68}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 2 produced.}}{49}{section*.69}%
+\contentsline {section}{\tocsection {}{7}{Stage 3. The Variational Form}}{49}{section.7}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{49}{section*.70}%
+\contentsline {paragraph}{\tocparagraph {}{}{The energy.}}{50}{section*.71}%
+\contentsline {paragraph}{\tocparagraph {}{}{The condition for a minimum.}}{50}{section*.72}%
+\contentsline {paragraph}{\tocparagraph {}{}{The condition is also sufficient.}}{51}{section*.73}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the energy says.}}{51}{section*.74}%
+\contentsline {paragraph}{\tocparagraph {}{}{Back to the strong form.}}{51}{section*.75}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 3 produced.}}{52}{section*.77}%
+\contentsline {section}{\tocsection {}{8}{Stage 4. The Weak Form (Galerkin)}}{52}{section.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{52}{section*.78}%
+\contentsline {paragraph}{\tocparagraph {}{}{The obstacle.}}{53}{section*.79}%
+\contentsline {paragraph}{\tocparagraph {}{}{Test fields.}}{53}{section*.80}%
+\contentsline {paragraph}{\tocparagraph {}{}{Integration by parts.}}{53}{section*.81}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the boundary term vanishes.}}{54}{section*.84}%
+\contentsline {paragraph}{\tocparagraph {}{}{Which test fields.}}{54}{section*.85}%
+\contentsline {paragraph}{\tocparagraph {}{}{The same steps in one variable.}}{54}{section*.86}%
+\contentsline {paragraph}{\tocparagraph {}{}{What has been gained.}}{55}{section*.87}%
+\contentsline {paragraph}{\tocparagraph {}{}{The weak form and the energy.}}{55}{section*.88}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 4 produced.}}{55}{section*.89}%
+\contentsline {section}{\tocsection {}{9}{Stage 5. The Discretization: the Mesh and Piecewise Linear Tangent Fields}}{55}{section.9}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{55}{section*.92}%
+\contentsline {subsection}{\tocsubsection {}{9.1}{The mesh and what it provides}}{56}{subsection.9.1}%
+\contentsline {subsection}{\tocsubsection {}{9.2}{The scalar hat functions}}{57}{subsection.9.2}%
+\contentsline {subsection}{\tocsubsection {}{9.3}{Why the vector case needs a connection}}{57}{subsection.9.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The basis.}}{59}{section*.95}%
+\contentsline {subsection}{\tocsubsection {}{9.4}{How the differential geometry fits into the finite element machinery}}{60}{subsection.9.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{What is extrinsic in this part.}}{61}{section*.96}%
+\contentsline {subsection}{\tocsubsection {}{9.5}{Is the space conforming?}}{61}{subsection.9.5}%
+\contentsline {subsection}{\tocsubsection {}{9.6}{The covariant derivative of a basis function}}{62}{subsection.9.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the connection went.}}{64}{section*.98}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 5 produced.}}{64}{section*.99}%
+\contentsline {section}{\tocsection {}{10}{Stage 6. The Discrete Solution and the Test Functions}}{64}{section.10}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{64}{section*.100}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete solution.}}{64}{section*.103}%
+\contentsline {paragraph}{\tocparagraph {}{}{The test functions.}}{65}{section*.105}%
+\contentsline {paragraph}{\tocparagraph {}{}{Substituting.}}{65}{section*.106}%
+\contentsline {paragraph}{\tocparagraph {}{}{The right side with the interpolated data.}}{67}{section*.108}%
+\contentsline {paragraph}{\tocparagraph {}{}{The matrix form.}}{67}{section*.109}%
+\contentsline {paragraph}{\tocparagraph {}{}{The Galerkin equations as a minimization.}}{68}{section*.110}%
+\contentsline {paragraph}{\tocparagraph {}{}{Sparsity.}}{69}{section*.112}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 6 produced.}}{69}{section*.113}%
+\contentsline {section}{\tocsection {}{11}{Stage 7. The Element Integrals}}{69}{section.11}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{69}{section*.114}%
+\contentsline {paragraph}{\tocparagraph {}{}{The stiffness block of a face.}}{70}{section*.116}%
+\contentsline {paragraph}{\tocparagraph {}{}{The inner product of two rank-one matrices.}}{70}{section*.117}%
+\contentsline {paragraph}{\tocparagraph {}{}{Substituting.}}{70}{section*.118}%
+\contentsline {paragraph}{\tocparagraph {}{}{Integrating.}}{71}{section*.119}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete Laplacian compares a vector with its transported neighbors.}}{71}{section*.120}%
+\contentsline {paragraph}{\tocparagraph {}{}{In one variable.}}{72}{section*.122}%
+\contentsline {paragraph}{\tocparagraph {}{}{Symmetry and positivity.}}{72}{section*.123}%
+\contentsline {paragraph}{\tocparagraph {}{}{What remains.}}{73}{section*.124}%
+\contentsline {section}{\tocsection {}{12}{Stage 7, Continued: Shape Functions and Their Gradients on a Triangle in Space}}{73}{section.12}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{73}{section*.125}%
+\contentsline {subsection}{\tocsubsection {}{12.1}{The reference triangle}}{73}{subsection.12.1}%
+\contentsline {subsection}{\tocsubsection {}{12.2}{The map to a face in space}}{74}{subsection.12.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The hats are the shape functions in other coordinates.}}{75}{section*.127}%
+\contentsline {paragraph}{\tocparagraph {}{}{The chain rule for an affine map.}}{75}{section*.128}%
+\contentsline {paragraph}{\tocparagraph {}{}{Two equations for the gradient.}}{76}{section*.129}%
+\contentsline {paragraph}{\tocparagraph {}{}{Solving them.}}{76}{section*.130}%
+\contentsline {paragraph}{\tocparagraph {}{}{The Gram matrix and its inverse.}}{76}{section*.131}%
+\contentsline {paragraph}{\tocparagraph {}{}{The three gradients written out.}}{77}{section*.132}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{78}{section*.133}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradients as a reciprocal frame.}}{78}{section*.134}%
+\contentsline {paragraph}{\tocparagraph {}{}{Face coordinates.}}{79}{section*.135}%
+\contentsline {subsection}{\tocsubsection {}{12.3}{A check: the cotangent formula}}{81}{subsection.12.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Summing over the faces of an edge.}}{83}{section*.138}%
+\contentsline {section}{\tocsection {}{13}{Stage 7, Completed: The Element Matrices}}{84}{section.13}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{84}{section*.140}%
+\contentsline {subsection}{\tocsubsection {}{13.1}{The element stiffness matrix}}{84}{subsection.13.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Exactness of the integration.}}{85}{section*.141}%
+\contentsline {subsection}{\tocsubsection {}{13.2}{The element mass matrix and its lumping}}{85}{subsection.13.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{From the face to the reference triangle.}}{86}{section*.142}%
+\contentsline {paragraph}{\tocparagraph {}{}{The six integrals over the reference triangle.}}{86}{section*.143}%
+\contentsline {paragraph}{\tocparagraph {}{}{Lumping.}}{88}{section*.144}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 7 produced.}}{89}{section*.145}%
+\contentsline {section}{\tocsection {}{14}{Stage 8. Assembly}}{90}{section.14}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{90}{section*.146}%
+\contentsline {paragraph}{\tocparagraph {}{}{From local to global indices.}}{90}{section*.147}%
+\contentsline {paragraph}{\tocparagraph {}{}{What $P_f^T\mathrm L^f P_f$ is, entry by entry.}}{90}{section*.148}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the sum is the global matrix.}}{90}{section*.149}%
+\contentsline {paragraph}{\tocparagraph {}{}{In code.}}{91}{section*.150}%
+\contentsline {paragraph}{\tocparagraph {}{}{Accumulation.}}{92}{section*.152}%
+\contentsline {paragraph}{\tocparagraph {}{}{Structure.}}{93}{section*.153}%
+\contentsline {section}{\tocsection {}{15}{Stage 8, Continued: The Linear System and Its Solution}}{95}{section.15}%
+\contentsline {subsection}{\tocsubsection {}{15.1}{The system the code solves}}{95}{subsection.15.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The unit square, continued.}}{96}{section*.154}%
+\contentsline {subsection}{\tocsubsection {}{15.2}{The Dirichlet condition}}{97}{subsection.15.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The source.}}{97}{section*.155}%
+\contentsline {paragraph}{\tocparagraph {}{}{Row replacement.}}{97}{section*.156}%
+\contentsline {paragraph}{\tocparagraph {}{}{The unit square, finished.}}{98}{section*.158}%
+\contentsline {subsection}{\tocsubsection {}{15.3}{The calls in \texttt {main}}}{100}{subsection.15.3}%
+\contentsline {subsection}{\tocsubsection {}{15.4}{From the solution to vectors}}{100}{subsection.15.4}%
+\contentsline {subsection}{\tocsubsection {}{15.5}{What the program computes}}{101}{subsection.15.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{What Stage 8 produced.}}{101}{section*.159}%
+\contentsline {section}{\tocsection {}{16}{Summary: From the Equations to the Code}}{102}{section.16}%
+\contentsline {paragraph}{\tocparagraph {}{}{The recipe once more.}}{104}{section*.163}%
+\contentsline {part}{\tocpart {Part}{II}{The Same Derivation in Geometric Algebra, and What Is Intrinsic}}{106}{part.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The recipe.}}{107}{section*.164}%
+\contentsline {paragraph}{\tocparagraph {}{}{Curved surfaces.}}{107}{section*.165}%
+\contentsline {section}{\tocsection {}{17}{The Tools: the Geometric Algebra of Space}}{107}{section.17}%
+\contentsline {paragraph}{\tocparagraph {}{}{The product of two vectors.}}{107}{section*.166}%
+\contentsline {paragraph}{\tocparagraph {}{}{The pseudoscalar.}}{108}{section*.167}%
+\contentsline {paragraph}{\tocparagraph {}{}{A vector times a bivector.}}{108}{section*.168}%
+\contentsline {paragraph}{\tocparagraph {}{}{Squares and inverses of bivectors.}}{109}{section*.169}%
+\contentsline {paragraph}{\tocparagraph {}{}{The reverse.}}{109}{section*.170}%
+\contentsline {paragraph}{\tocparagraph {}{}{Rotors.}}{109}{section*.171}%
+\contentsline {paragraph}{\tocparagraph {}{}{The scalar part.}}{109}{section*.172}%
+\contentsline {section}{\tocsection {}{18}{Stage 1: The PDE (Strong Form) in Geometric Algebra}}{109}{section.18}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{109}{section*.173}%
+\contentsline {subsection}{\tocsubsection {}{18.1}{The tangent plane as a bivector}}{110}{subsection.18.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The tangent bivector.}}{110}{section*.174}%
+\contentsline {paragraph}{\tocparagraph {}{}{The same plane, written with a frame.}}{110}{section*.175}%
+\contentsline {paragraph}{\tocparagraph {}{}{Its square.}}{110}{section*.176}%
+\contentsline {paragraph}{\tocparagraph {}{}{Tangency.}}{110}{section*.177}%
+\contentsline {paragraph}{\tocparagraph {}{}{The projection, step by step.}}{111}{section*.178}%
+\contentsline {paragraph}{\tocparagraph {}{}{A check in coordinates.}}{111}{section*.179}%
+\contentsline {subsection}{\tocsubsection {}{18.2}{The tangent plane is the complex plane}}{112}{subsection.18.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Right multiplication is a quarter turn.}}{112}{section*.180}%
+\contentsline {paragraph}{\tocparagraph {}{}{Complex numbers of the plane.}}{112}{section*.181}%
+\contentsline {paragraph}{\tocparagraph {}{}{The exponential.}}{112}{section*.182}%
+\contentsline {paragraph}{\tocparagraph {}{}{Spinor coordinates.}}{113}{section*.183}%
+\contentsline {paragraph}{\tocparagraph {}{}{Changing the frame vector.}}{114}{section*.184}%
+\contentsline {paragraph}{\tocparagraph {}{}{The algebra in code.}}{114}{section*.186}%
+\contentsline {subsection}{\tocsubsection {}{18.3}{The vector derivative and the covariant derivative}}{115}{subsection.18.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{115}{section*.187}%
+\contentsline {paragraph}{\tocparagraph {}{}{The directional derivative.}}{116}{section*.188}%
+\contentsline {paragraph}{\tocparagraph {}{}{The vector derivative.}}{116}{section*.189}%
+\contentsline {paragraph}{\tocparagraph {}{}{The Gauss formula.}}{117}{section*.190}%
+\contentsline {paragraph}{\tocparagraph {}{}{The cylinder.}}{117}{section*.191}%
+\contentsline {paragraph}{\tocparagraph {}{}{Metric compatibility.}}{118}{section*.192}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the covariant derivative is intrinsic.}}{118}{section*.193}%
+\contentsline {subsection}{\tocsubsection {}{18.4}{Spinor coordinates and the connection form}}{118}{subsection.18.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{118}{section*.194}%
+\contentsline {paragraph}{\tocparagraph {}{}{The frame field and its turning.}}{118}{section*.195}%
+\contentsline {paragraph}{\tocparagraph {}{}{The second frame vector.}}{119}{section*.196}%
+\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative of a field.}}{119}{section*.197}%
+\contentsline {paragraph}{\tocparagraph {}{}{Frame independence.}}{120}{section*.198}%
+\contentsline {paragraph}{\tocparagraph {}{}{Frames with holes.}}{122}{section*.199}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the discrete setting.}}{122}{section*.200}%
+\contentsline {subsection}{\tocsubsection {}{18.5}{The vector heat equation and its backward Euler step}}{122}{subsection.18.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{The connection Laplacian on spinors.}}{122}{section*.202}%
+\contentsline {paragraph}{\tocparagraph {}{}{What $D^*D$ does.}}{123}{section*.203}%
+\contentsline {paragraph}{\tocparagraph {}{}{Lengths, the energy and the heat equation.}}{124}{section*.204}%
+\contentsline {paragraph}{\tocparagraph {}{}{One backward Euler step.}}{124}{section*.205}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we have.}}{125}{section*.207}%
+\contentsline {section}{\tocsection {}{19}{Stage 2: The Function Spaces}}{125}{section.19}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{125}{section*.208}%
+\contentsline {paragraph}{\tocparagraph {}{}{The inner product of two spinors.}}{125}{section*.209}%
+\contentsline {paragraph}{\tocparagraph {}{}{Square-integrable fields.}}{126}{section*.210}%
+\contentsline {paragraph}{\tocparagraph {}{}{The Sobolev space $H^1$.}}{126}{section*.211}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why a Hilbert space.}}{127}{section*.212}%
+\contentsline {paragraph}{\tocparagraph {}{}{The strong form needs more.}}{127}{section*.213}%
+\contentsline {paragraph}{\tocparagraph {}{}{The bilinear form and the linear form.}}{127}{section*.214}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the theorems give.}}{128}{section*.215}%
+\contentsline {paragraph}{\tocparagraph {}{}{A caveat about the source.}}{128}{section*.216}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we have.}}{128}{section*.217}%
+\contentsline {section}{\tocsection {}{20}{Stage 3: The Variational Form}}{129}{section.20}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{129}{section*.218}%
+\contentsline {paragraph}{\tocparagraph {}{}{The energy.}}{129}{section*.219}%
+\contentsline {paragraph}{\tocparagraph {}{}{Its derivative in a direction.}}{129}{section*.220}%
+\contentsline {paragraph}{\tocparagraph {}{}{Stationarity.}}{130}{section*.221}%
+\contentsline {paragraph}{\tocparagraph {}{}{Minimizing $J$ and the PDE.}}{130}{section*.222}%
+\contentsline {section}{\tocsection {}{21}{Stage 4: The Weak Form (Galerkin)}}{130}{section.21}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{130}{section*.223}%
+\contentsline {subsection}{\tocsubsection {}{21.1}{The divergence theorem of geometric calculus}}{131}{subsection.21.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The fundamental theorem.}}{131}{section*.224}%
+\contentsline {paragraph}{\tocparagraph {}{}{A check in the plane.}}{131}{section*.225}%
+\contentsline {paragraph}{\tocparagraph {}{}{The divergence theorem on a surface.}}{132}{section*.226}%
+\contentsline {subsection}{\tocsubsection {}{21.2}{Green's identity for the covariant derivative of spinors}}{133}{subsection.21.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The product rule for spinors.}}{133}{section*.227}%
+\contentsline {paragraph}{\tocparagraph {}{}{The field to which we apply the divergence theorem.}}{133}{section*.228}%
+\contentsline {paragraph}{\tocparagraph {}{}{Integrating.}}{134}{section*.229}%
+\contentsline {paragraph}{\tocparagraph {}{}{$D^*D$ is positive, and the heat flow decreases $E$.}}{135}{section*.231}%
+\contentsline {subsection}{\tocsubsection {}{21.3}{The weak form}}{135}{subsection.21.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 1: test the equation.}}{135}{section*.232}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 2: integrate by parts.}}{135}{section*.234}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 3: the boundary term.}}{136}{section*.235}%
+\contentsline {paragraph}{\tocparagraph {}{}{Back to the strong form.}}{136}{section*.236}%
+\contentsline {paragraph}{\tocparagraph {}{}{The source.}}{137}{section*.237}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we have.}}{137}{section*.238}%
+\contentsline {section}{\tocsection {}{22}{Stage 5: The Discretization: the Mesh and the Finite-Dimensional Space}}{137}{section.22}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{137}{section*.239}%
+\contentsline {subsection}{\tocsubsection {}{22.1}{Tangent bivectors of the faces and the vertices}}{137}{subsection.22.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{A face.}}{137}{section*.241}%
+\contentsline {paragraph}{\tocparagraph {}{}{A vertex.}}{138}{section*.243}%
+\contentsline {subsection}{\tocsubsection {}{22.2}{The rotor between two planes}}{139}{subsection.22.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want, and why this rotor.}}{139}{section*.246}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 1: the sandwich by one unit vector is a reflection.}}{139}{section*.248}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 2: a product of two unit vectors is a rotor.}}{140}{section*.249}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 3: the right two vectors, and $m\,a\,m = c$.}}{140}{section*.250}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 4: its formula.}}{141}{section*.251}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 5: checks, factor by factor.}}{141}{section*.252}%
+\contentsline {paragraph}{\tocparagraph {}{}{From a vertex to a face.}}{142}{section*.253}%
+\contentsline {subsection}{\tocsubsection {}{22.3}{Why the smallest rotor: rolling without twisting}}{142}{subsection.22.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{142}{section*.254}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotor of one small step.}}{143}{section*.255}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotor equation.}}{143}{section*.256}%
+\contentsline {paragraph}{\tocparagraph {}{}{How a rotated vector changes.}}{143}{section*.257}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotor follows the normal.}}{144}{section*.258}%
+\contentsline {paragraph}{\tocparagraph {}{}{The carried vector is parallel.}}{145}{section*.259}%
+\contentsline {subsection}{\tocsubsection {}{22.4}{The connection angle}}{145}{subsection.22.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{145}{section*.262}%
+\contentsline {paragraph}{\tocparagraph {}{}{The product of two unit vectors of a plane.}}{145}{section*.263}%
+\contentsline {paragraph}{\tocparagraph {}{}{Transport is multiplication.}}{146}{section*.264}%
+\contentsline {paragraph}{\tocparagraph {}{}{The matrix of the multiplication.}}{147}{section*.265}%
+\contentsline {paragraph}{\tocparagraph {}{}{Transport between two vertices.}}{147}{section*.266}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{148}{section*.267}%
+\contentsline {subsection}{\tocsubsection {}{22.5}{Intrinsic and extrinsic geometry of the discrete transport}}{151}{subsection.22.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{What an inhabitant of the surface can measure.}}{151}{section*.268}%
+\contentsline {paragraph}{\tocparagraph {}{}{Across an edge, the transport is intrinsic.}}{151}{section*.269}%
+\contentsline {paragraph}{\tocparagraph {}{}{Through a vertex, it is not.}}{151}{section*.270}%
+\contentsline {paragraph}{\tocparagraph {}{}{Holonomy.}}{152}{section*.271}%
+\contentsline {paragraph}{\tocparagraph {}{}{Rolling sees only the normals.}}{152}{section*.272}%
+\contentsline {paragraph}{\tocparagraph {}{}{Curvature.}}{152}{section*.273}%
+\contentsline {paragraph}{\tocparagraph {}{}{On a mesh.}}{152}{section*.274}%
+\contentsline {subsection}{\tocsubsection {}{22.6}{Spinor hat functions}}{153}{subsection.22.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{The scalar hats.}}{153}{section*.275}%
+\contentsline {paragraph}{\tocparagraph {}{}{The basis.}}{153}{section*.276}%
+\contentsline {paragraph}{\tocparagraph {}{}{The trial field.}}{153}{section*.278}%
+\contentsline {paragraph}{\tocparagraph {}{}{Is the space conforming?}}{154}{section*.279}%
+\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative of the trial field.}}{154}{section*.280}%
+\contentsline {section}{\tocsection {}{23}{Stage 6: The Discrete Solution and the Test Functions}}{155}{section.23}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{155}{section*.282}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete solution and the tests.}}{155}{section*.283}%
+\contentsline {paragraph}{\tocparagraph {}{}{The fields on one face.}}{155}{section*.284}%
+\contentsline {paragraph}{\tocparagraph {}{}{The reverses of the test terms.}}{156}{section*.288}%
+\contentsline {paragraph}{\tocparagraph {}{}{Two abbreviations.}}{156}{section*.289}%
+\contentsline {paragraph}{\tocparagraph {}{}{The mass integrand.}}{156}{section*.290}%
+\contentsline {paragraph}{\tocparagraph {}{}{The stiffness integrand.}}{157}{section*.291}%
+\contentsline {paragraph}{\tocparagraph {}{}{The right side.}}{157}{section*.292}%
+\contentsline {paragraph}{\tocparagraph {}{}{Collecting.}}{157}{section*.293}%
+\contentsline {paragraph}{\tocparagraph {}{}{Two real tests make one complex equation.}}{158}{section*.294}%
+\contentsline {paragraph}{\tocparagraph {}{}{Galerkin orthogonality and the best approximation.}}{158}{section*.295}%
+\contentsline {section}{\tocsection {}{24}{Stage 7: The Element Integrals}}{159}{section.24}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{159}{section*.297}%
+\contentsline {subsection}{\tocsubsection {}{24.1}{The reference triangle, the chain rule and the reciprocal frame}}{159}{subsection.24.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The map and the chain rule.}}{159}{section*.298}%
+\contentsline {paragraph}{\tocparagraph {}{}{The reciprocal frame.}}{160}{section*.300}%
+\contentsline {paragraph}{\tocparagraph {}{}{The reciprocal frame in geometric algebra.}}{160}{section*.301}%
+\contentsline {paragraph}{\tocparagraph {}{}{One vertex at a time.}}{162}{section*.302}%
+\contentsline {paragraph}{\tocparagraph {}{}{The cotangent formula.}}{163}{section*.303}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{164}{section*.304}%
+\contentsline {subsection}{\tocsubsection {}{24.2}{The element matrices}}{166}{subsection.24.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The area element.}}{166}{section*.305}%
+\contentsline {paragraph}{\tocparagraph {}{}{The stiffness integrals.}}{166}{section*.306}%
+\contentsline {paragraph}{\tocparagraph {}{}{The mass integrals.}}{166}{section*.307}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element matrices.}}{167}{section*.308}%
+\contentsline {section}{\tocsection {}{25}{Stage 8: Assembly and the Hermitian System}}{167}{section.25}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{167}{section*.310}%
+\contentsline {subsection}{\tocsubsection {}{25.1}{Assembly and the system}}{168}{subsection.25.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Assembly.}}{168}{section*.311}%
+\contentsline {paragraph}{\tocparagraph {}{}{The matrix is Hermitian.}}{168}{section*.313}%
+\contentsline {paragraph}{\tocparagraph {}{}{The matrix is positive semidefinite.}}{168}{section*.314}%
+\contentsline {paragraph}{\tocparagraph {}{}{The system.}}{169}{section*.315}%
+\contentsline {subsection}{\tocsubsection {}{25.2}{The program}}{169}{subsection.25.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The complex system.}}{169}{section*.316}%
+\contentsline {paragraph}{\tocparagraph {}{}{The real system.}}{171}{section*.317}%
+\contentsline {subsection}{\tocsubsection {}{25.3}{The same system as in Part\nonbreakingspace \ref {part:matrix}}}{172}{subsection.25.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{A complex number is a $2\times 2$ block.}}{172}{section*.318}%
+\contentsline {paragraph}{\tocparagraph {}{}{The complex system written in real numbers.}}{172}{section*.319}%
+\contentsline {paragraph}{\tocparagraph {}{}{The blocks, entry by entry.}}{172}{section*.320}%
+\contentsline {paragraph}{\tocparagraph {}{}{The comparison.}}{173}{section*.323}%
+\contentsline {subsection}{\tocsubsection {}{25.4}{From the spinors back to vectors}}{174}{subsection.25.4}%
+\contentsline {section}{\tocsection {}{26}{Dictionary}}{174}{section.26}%
+\contentsline {part}{\tocpart {Part}{III}{The Intrinsic Method: Everything from Edge Lengths}}{176}{part.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The same machine, fed in another way.}}{177}{section*.325}%
+\contentsline {paragraph}{\tocparagraph {}{}{Three facts about $e^{\mathsf T\theta }$ used everywhere.}}{178}{section*.326}%
+\contentsline {paragraph}{\tocparagraph {}{}{The plan.}}{178}{section*.327}%
+\contentsline {section}{\tocsection {}{27}{What It Means to Be Intrinsic}}{179}{section.27}%
+\contentsline {subsection}{\tocsubsection {}{27.1}{A folded sheet of paper}}{179}{subsection.27.1}%
+\contentsline {subsection}{\tocsubsection {}{27.2}{Intrinsic quantities of a mesh}}{180}{subsection.27.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{181}{section*.329}%
+\contentsline {section}{\tocsection {}{28}{Stages 1 to 4 in Gauge Language}}{182}{section.28}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{182}{section*.330}%
+\contentsline {subsection}{\tocsubsection {}{28.1}{The idea: compute in flat planes, keep the geometry in two fields}}{182}{subsection.28.1}%
+\contentsline {subsection}{\tocsubsection {}{28.2}{The displacement gauge and the metric}}{182}{subsection.28.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The displacement gauge.}}{182}{section*.331}%
+\contentsline {paragraph}{\tocparagraph {}{}{The metric.}}{183}{section*.332}%
+\contentsline {paragraph}{\tocparagraph {}{}{Only the metric is intrinsic.}}{183}{section*.333}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the finite element method needs from the metric.}}{184}{section*.334}%
+\contentsline {subsection}{\tocsubsection {}{28.3}{The rotation gauge and the covariant derivative}}{186}{subsection.28.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Spinor coordinates in a chart.}}{186}{section*.335}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotation gauge.}}{186}{section*.336}%
+\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative.}}{187}{section*.337}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotation gauge comes from the metric.}}{187}{section*.338}%
+\contentsline {paragraph}{\tocparagraph {}{}{Parallel transport in a chart.}}{187}{section*.339}%
+\contentsline {subsection}{\tocsubsection {}{28.4}{Gauge transformations and the covariance of the energy}}{188}{subsection.28.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotation gauge transformation.}}{188}{section*.340}%
+\contentsline {paragraph}{\tocparagraph {}{}{Covariance of the energy.}}{189}{section*.341}%
+\contentsline {paragraph}{\tocparagraph {}{}{The displacement gauge transformation.}}{190}{section*.342}%
+\contentsline {paragraph}{\tocparagraph {}{}{Transitions.}}{190}{section*.343}%
+\contentsline {subsection}{\tocsubsection {}{28.5}{Curvature: the field strength of the rotation gauge}}{191}{subsection.28.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{The flat-gauge condition.}}{191}{section*.344}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the field strength measures.}}{191}{section*.345}%
+\contentsline {paragraph}{\tocparagraph {}{}{Curvature.}}{192}{section*.346}%
+\contentsline {paragraph}{\tocparagraph {}{}{Holonomy.}}{193}{section*.347}%
+\contentsline {paragraph}{\tocparagraph {}{}{What this means for a mesh.}}{193}{section*.348}%
+\contentsline {subsection}{\tocsubsection {}{28.6}{Stage 1: the PDE (strong form)}}{194}{subsection.28.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{194}{section*.349}%
+\contentsline {subsection}{\tocsubsection {}{28.7}{Stage 2: the function spaces}}{195}{subsection.28.7}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{195}{section*.350}%
+\contentsline {paragraph}{\tocparagraph {}{}{Square integrable fields.}}{195}{section*.351}%
+\contentsline {paragraph}{\tocparagraph {}{}{Fields with square integrable covariant derivatives.}}{195}{section*.352}%
+\contentsline {paragraph}{\tocparagraph {}{}{The forms of the problem.}}{196}{section*.353}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the theorems say, and why they apply.}}{197}{section*.354}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the weak form needs less.}}{197}{section*.355}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conforming spaces.}}{197}{section*.356}%
+\contentsline {paragraph}{\tocparagraph {}{}{The assumptions, plainly.}}{198}{section*.357}%
+\contentsline {subsection}{\tocsubsection {}{28.8}{Stage 3: the variational form}}{198}{subsection.28.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{198}{section*.358}%
+\contentsline {paragraph}{\tocparagraph {}{}{The first variation, term by term.}}{199}{section*.360}%
+\contentsline {paragraph}{\tocparagraph {}{}{Minimizing is solving.}}{199}{section*.361}%
+\contentsline {subsection}{\tocsubsection {}{28.9}{Stage 4: the weak form (Galerkin)}}{200}{subsection.28.9}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{200}{section*.362}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got, and what Stage 5 must supply.}}{203}{section*.364}%
+\contentsline {section}{\tocsection {}{29}{Stage 5, the Faces: Flat Charts Known Only by Their Edge Lengths}}{204}{section.29}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{204}{section*.365}%
+\contentsline {subsection}{\tocsubsection {}{29.1}{The metric of a face is its Gram matrix}}{204}{subsection.29.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Lengths and angles.}}{204}{section*.366}%
+\contentsline {paragraph}{\tocparagraph {}{}{Entry by entry.}}{204}{section*.367}%
+\contentsline {paragraph}{\tocparagraph {}{}{Rigid motions do not change it.}}{205}{section*.368}%
+\contentsline {paragraph}{\tocparagraph {}{}{The metric from the three lengths.}}{205}{section*.369}%
+\contentsline {subsection}{\tocsubsection {}{29.2}{Why the Gram matrix carries everything a face needs}}{206}{subsection.29.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The area.}}{206}{section*.370}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradients.}}{206}{section*.371}%
+\contentsline {subsection}{\tocsubsection {}{29.3}{Heron's formula and the angles}}{208}{subsection.29.3}%
+\contentsline {subsection}{\tocsubsection {}{29.4}{Laying the triangle out in the plane}}{210}{subsection.29.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradients on the layout: the quarter turn.}}{211}{section*.372}%
+\contentsline {paragraph}{\tocparagraph {}{}{The face frame.}}{211}{section*.373}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rotation gauge of a face vanishes.}}{211}{section*.374}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{212}{section*.376}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{214}{section*.377}%
+\contentsline {section}{\tocsection {}{30}{Stage 5, the Vertices: the Stretched Cone as a Flat Chart}}{214}{section.30}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{214}{section*.378}%
+\contentsline {subsection}{\tocsubsection {}{30.1}{The cone around a vertex}}{215}{subsection.30.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The angle defect is a curvature.}}{215}{section*.380}%
+\contentsline {paragraph}{\tocparagraph {}{}{The defects add up to $2\pi \chi $.}}{216}{section*.381}%
+\contentsline {subsection}{\tocsubsection {}{30.2}{Why a vertex has no tangent plane}}{217}{subsection.30.2}%
+\contentsline {subsection}{\tocsubsection {}{30.3}{Directions at a vertex as angles}}{218}{subsection.30.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Half edges.}}{218}{section*.382}%
+\contentsline {paragraph}{\tocparagraph {}{}{Turning around a vertex.}}{219}{section*.383}%
+\contentsline {paragraph}{\tocparagraph {}{}{Which corner lies between two steps.}}{219}{section*.385}%
+\contentsline {paragraph}{\tocparagraph {}{}{Clockwise walk, negative angles.}}{220}{section*.386}%
+\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{220}{section*.387}%
+\contentsline {subsection}{\tocsubsection {}{30.4}{The stretched cone}}{220}{subsection.30.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The vertex chart.}}{221}{section*.388}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the defect went.}}{221}{section*.389}%
+\contentsline {paragraph}{\tocparagraph {}{}{The negative angles of the code.}}{221}{section*.390}%
+\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{221}{section*.391}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{222}{section*.392}%
+\contentsline {subsection}{\tocsubsection {}{30.5}{What the vertex normal does instead}}{223}{subsection.30.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the tables of the two examples.}}{223}{section*.393}%
+\contentsline {section}{\tocsection {}{31}{Stage 5, the Gauge Transitions: from a Vertex Chart into a Face Chart}}{225}{section.31}%
+\contentsline {subsection}{\tocsubsection {}{31.1}{What the finite element method needs}}{226}{subsection.31.1}%
+\contentsline {subsection}{\tocsubsection {}{31.2}{The exact correspondence is not a rotation}}{227}{subsection.31.2}%
+\contentsline {subsection}{\tocsubsection {}{31.3}{The best rotation: match the bisectors}}{227}{subsection.31.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{229}{section*.396}%
+\contentsline {subsection}{\tocsubsection {}{31.4}{Going around the vertex}}{230}{subsection.31.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The data.}}{231}{section*.397}%
+\contentsline {paragraph}{\tocparagraph {}{}{The two routes.}}{231}{section*.398}%
+\contentsline {paragraph}{\tocparagraph {}{}{The extra rotation.}}{231}{section*.399}%
+\contentsline {paragraph}{\tocparagraph {}{}{Once around.}}{232}{section*.400}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the curvature sits.}}{233}{section*.401}%
+\contentsline {paragraph}{\tocparagraph {}{}{Gauge transformations on the mesh.}}{233}{section*.402}%
+\contentsline {subsection}{\tocsubsection {}{31.5}{Stage 5 completed: the finite element space}}{234}{subsection.31.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{234}{section*.403}%
+\contentsline {paragraph}{\tocparagraph {}{}{The basis functions.}}{234}{section*.404}%
+\contentsline {paragraph}{\tocparagraph {}{}{Their derivatives.}}{234}{section*.406}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conformity.}}{235}{section*.408}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{236}{section*.409}%
+\contentsline {section}{\tocsection {}{32}{Stages 6 to 8: the Discrete Solution, the Element Integrals and the Assembly}}{236}{section.32}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why nothing else changes.}}{236}{section*.410}%
+\contentsline {subsection}{\tocsubsection {}{32.1}{Stage 6: the discrete solution and the test functions}}{236}{subsection.32.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{236}{section*.411}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete solution.}}{236}{section*.412}%
+\contentsline {paragraph}{\tocparagraph {}{}{The test functions.}}{237}{section*.413}%
+\contentsline {paragraph}{\tocparagraph {}{}{Substitution.}}{237}{section*.414}%
+\contentsline {paragraph}{\tocparagraph {}{}{Hermitian and positive definite.}}{238}{section*.415}%
+\contentsline {paragraph}{\tocparagraph {}{}{Gauge covariance of the discrete system.}}{238}{section*.416}%
+\contentsline {subsection}{\tocsubsection {}{32.2}{Stage 7: the element integrals}}{239}{subsection.32.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{239}{section*.417}%
+\contentsline {paragraph}{\tocparagraph {}{}{The stiffness.}}{239}{section*.418}%
+\contentsline {paragraph}{\tocparagraph {}{}{The mass.}}{240}{section*.419}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element matrices.}}{240}{section*.420}%
+\contentsline {paragraph}{\tocparagraph {}{}{The frame of the face cancels.}}{240}{section*.421}%
+\contentsline {subsection}{\tocsubsection {}{32.3}{Stage 8: assembly and the linear system}}{240}{subsection.32.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{240}{section*.422}%
+\contentsline {paragraph}{\tocparagraph {}{}{The assembly.}}{240}{section*.423}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{241}{section*.424}%
+\contentsline {paragraph}{\tocparagraph {}{}{The same gauge as Part\nonbreakingspace \ref {part:matrix}.}}{242}{section*.425}%
+\contentsline {paragraph}{\tocparagraph {}{}{Drawing the result.}}{242}{section*.426}%
+\contentsline {section}{\tocsection {}{33}{Experiments}}{243}{section.33}%
+\contentsline {subsection}{\tocsubsection {}{33.1}{Where the experiments compare: inside the faces}}{243}{subsection.33.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The exact vectors.}}{244}{section*.427}%
+\contentsline {paragraph}{\tocparagraph {}{}{The source vector.}}{245}{section*.428}%
+\contentsline {subsection}{\tocsubsection {}{33.2}{Folded sheets: exact bendings}}{245}{subsection.33.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the Miura-ori is intrinsically flat.}}{245}{section*.429}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{246}{section*.430}%
+\contentsline {subsection}{\tocsubsection {}{33.3}{The sphere: convergence}}{246}{subsection.33.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{247}{section*.431}%
+\contentsline {subsection}{\tocsubsection {}{33.4}{The cactus: how large is the choice?}}{247}{subsection.33.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The numbers.}}{248}{section*.432}%
+\contentsline {section}{\tocsection {}{34}{Part III in the Matrix Language of Part I}}{249}{section.34}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{249}{section*.434}%
+\contentsline {subsection}{\tocsubsection {}{34.1}{The dictionary}}{249}{subsection.34.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{A coordinate is two numbers.}}{249}{section*.435}%
+\contentsline {paragraph}{\tocparagraph {}{}{Multiplying by $e^{\mathsf T\rho }$ is multiplying by a rotation matrix.}}{249}{section*.436}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conjugating is transposing.}}{249}{section*.437}%
+\contentsline {paragraph}{\tocparagraph {}{}{The transport of the element.}}{249}{section*.438}%
+\contentsline {subsection}{\tocsubsection {}{34.2}{The element}}{250}{subsection.34.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Substituting.}}{250}{section*.439}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element written out.}}{250}{section*.440}%
+\contentsline {paragraph}{\tocparagraph {}{}{The matrix is symmetric.}}{250}{section*.441}%
+\contentsline {paragraph}{\tocparagraph {}{}{The rest is Part I.}}{251}{section*.442}%
+\contentsline {subsection}{\tocsubsection {}{34.3}{The code}}{251}{subsection.34.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{A check.}}{252}{section*.443}%
+\contentsline {section}{\tocsection {}{35}{Summary: Two Ways to Give a Vertex a Plane}}{253}{section.35}%
+\contentsline {paragraph}{\tocparagraph {}{}{The recipe, in the intrinsic way.}}{253}{section*.445}%
+\setcounter {tocdepth}{2}
+\contentsline {part}{\tocpart {}{}{Applications}}{255}{part.4}%
+\contentsline {section}{\tocsection {}{36}{The Logarithmic Map: a Decal, a Folded Sheet and an Atlas}}{256}{section.36}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{256}{section*.446}%
+\contentsline {subsection}{\tocsubsection {}{36.1}{The logarithmic map}}{256}{subsection.36.1}%
+\contentsline {subsection}{\tocsubsection {}{36.2}{The key fact: the angle can be read at the far end}}{257}{subsection.36.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 1: parallel transport along a geodesic keeps the angle to the geodesic.}}{257}{section*.447}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 2: the direction of the geodesic at $x$ is the gradient of the distance.}}{257}{section*.448}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 3: the angle as a complex number.}}{257}{section*.449}%
+\contentsline {subsection}{\tocsubsection {}{36.3}{The distance by the heat method: the recipe once more, for scalars}}{258}{subsection.36.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The idea.}}{258}{section*.450}%
+\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 1 to 4.}}{258}{section*.451}%
+\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 5 to 8.}}{258}{section*.452}%
+\contentsline {paragraph}{\tocparagraph {}{}{(b) The direction.}}{259}{section*.453}%
+\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 1 to 4.}}{259}{section*.454}%
+\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 5 to 8.}}{259}{section*.455}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{260}{section*.456}%
+\contentsline {subsection}{\tocsubsection {}{36.4}{The direction: the vector heat step}}{261}{subsection.36.4}%
+\contentsline {subsection}{\tocsubsection {}{36.5}{The angle at the vertices}}{262}{subsection.36.5}%
+\contentsline {subsection}{\tocsubsection {}{36.6}{A decal on the cactus}}{263}{subsection.36.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why a smooth mesh.}}{263}{section*.458}%
+\contentsline {paragraph}{\tocparagraph {}{}{The whole cactus.}}{264}{section*.459}%
+\contentsline {paragraph}{\tocparagraph {}{}{An atlas of charts.}}{265}{section*.461}%
+\contentsline {subsection}{\tocsubsection {}{36.7}{Graph paper on the folded sheet: extrinsic against intrinsic}}{266}{subsection.36.7}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the application shows.}}{268}{section*.464}%
+\contentsline {section}{\tocsection {}{}{References}}{268}{section*.465}%
