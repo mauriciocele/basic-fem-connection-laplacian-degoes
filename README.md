@@ -41,6 +41,19 @@ c++ -std=c++17 -O3 -I/path/to/eigen showcase_render.cpp HalfEdge/Mesh.cpp -o sho
 ./showcase_render ../showcase 256 1 atlas   # only one picture: teaser, cactus, miura, whole or atlas
 ```
 
+A picture can be tiled over a whole surface with an atlas of logarithmic maps (sources by farthest-point
+sampling, each point painted by the chart of its nearest source, each picture drawn whole by one chart). The
+smiley is the "grinning face" of [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), in
+`showcase/textures/openmoji-1F600.png`; the pictures made with it, `showcase/showcase_smiley_*.png`, are
+CC BY-SA 4.0 as well. The Armadillo is the Stanford scan (not included).
+
+```sh
+sips -s format bmp ../showcase/textures/openmoji-1F600.png --out /tmp/smile.bmp   # the renderer reads BMP
+./showcase_render ../showcase 256 1 smiley /tmp/smile.bmp
+./showcase_render ../showcase 256 1 smileymiura /tmp/smile.bmp   # one chart: extrinsic left, intrinsic right
+./showcase_render ../showcase 256 1 armadillo /tmp/smile.bmp /path/to/armadillo.obj
+```
+
 
 ## The interactive viewer, extrinsic or intrinsic
 

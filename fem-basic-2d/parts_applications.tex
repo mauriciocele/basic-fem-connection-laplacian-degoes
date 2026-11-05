@@ -214,4 +214,46 @@ intrinsic, Part~\ref{part:intrinsic} & $6.6\cdot 10^{-14}$ degrees & $2.7\cdot 1
 \end{center}
 The intrinsic result is exact for the reason found in Section~\ref{section:int_connection}: at a flat vertex, $s_i = 1$, the bisector rule~(\ref{eqn:intrinsic_rho})~[\,$\rho_i^f = (\beta_e + \tfrac\alpha2) - s_i(\theta_e + \tfrac\alpha2)$\,] becomes $\rho_i^f = \beta_e - \theta_e$, which is the exact unfolding, so every transport the method makes is exact and so is $Y$. The extrinsic connection rolls the four faces of a Miura vertex into the plane of the vertex normal about four different axes; the rolled corners do not fit edge to edge, every transport is slightly wrong, and the errors add up along the paths from the source.
 
-\paragraph{What the application shows.} The finite element machine of this text is reusable: the distance needed one more pass of the recipe, for scalars, with a variational problem (least squares for the gradient) instead of a heat step, and with one function-space subtlety (the constant in the kernel, fixed by $r(s) = 0$). And the difference between the two ways of giving a vertex a plane, which in the experiments of Section~\ref{section:int_experiments} was a column of small numbers, becomes something one can see.
+%%% ......................................................................
+\subsection{A picture over a whole surface}
+\label{section:app_tiling}
+
+\paragraph{What we want.} Instead of one decal, cover a whole closed surface with copies of a picture, all upright and of the same size, as on wrapping paper. We use the ``grinning face'' of OpenMoji (CC BY-SA 4.0) on the cactus, on the Stanford Armadillo ($172\,974$ vertices) and on the Miura sheet. It is the atlas of Section~\ref{section:app_logmap} with three changes: many charts, placed automatically; one factorization for all of them; and pictures that are never cut by the boundary between two charts.
+
+\paragraph{One factorization for every source.} So far each source $s$ had its own matrices, because its Dirichlet row (\,$\psi_s = 1$, $u_s = 1$, $r_s = 0$\,) replaced the row of $s$. With sixty sources on a mesh of $173$ thousand vertices that is sixty times three sparse factorizations. Two changes give one matrix per problem, factored once:
+\begin{itemize}
+\item The heat steps take the source as the initial condition instead of a boundary condition, as Sharp et al.\ do: $(\mathrm M + \Delta t\,\mathrm L)\,\psi = e_s$ and $(\mathrm M + \Delta t\,\mathrm K)\,\mathrm u = e_s$, where $e_s$ is the vector with a $1$ at $s$ and $0$ elsewhere. The matrix no longer depends on $s$; only the right-hand side does. The result differs from the Dirichlet version in its magnitudes, not in the directions that we keep.
+\item The Poisson problem $\mathrm K\,\mathrm r = \mathrm b$ is pinned at one fixed vertex, vertex $0$, for every source, and then shifted: $r \leftarrow r - r_s$. This is allowed by the function-space remark of Section~\ref{section:app_logmap}: the solutions of $\mathrm K\,\mathrm r = \mathrm b$ differ by constants, and pinning any vertex picks one of them; subtracting $r_s$ picks the one with $r(s) = 0$.
+\end{itemize}
+Each source then costs three solves with the stored factors:
+\lstinputlisting[firstline=559, lastline=579, firstnumber=559]{../src/showcase_render.cpp}
+Lines 561 to 563 are the vector heat step, lines 564 to 566 the scalar one, lines 567 to 575 the right-hand side $b_i = \sum_f A_f\,X_f\cdot\nabla\phi_i$ of the Poisson problem, line 576 the pinned row, and line 578 the shift. On the Armadillo the time step is $(2.5\,\bar h)^2$ instead of $\bar h^2$: the heat solution decays like $e^{-r/\sqrt{\Delta t}}$, and with the smaller step it would fall below the smallest double precision number at the far end of the model, leaving no direction to normalize.
+
+\paragraph{Where to put the sources.} By farthest points: the first source is any vertex; each next one is the vertex farthest, in geodesic distance, from all the sources chosen so far, which is the vertex where $\min_k r_k$ is largest. The distances are computed anyway for the charts, so the choice costs nothing. With $14$ sources on the cactus every point is within $0.33$ of a source, and with $60$ on the Armadillo within $0.19$, about a third of the typical width of a limb: every chart is used far from its cut locus. Each chart is turned upright as before (its reference direction along $e_z$), and translated to match the earlier charts along their boundaries.
+
+\paragraph{Pictures that are not cut.} The plane of each chart is divided into square cells of side $c$, every other row shifted by half a cell, and the picture is drawn in each cell. If each point simply took the picture of its nearest chart, a picture lying across the boundary between two charts would be cut in two, half from one chart and half from the other. Instead, every cell belongs to the chart whose region contains its centre: the vertex closest to the centre of a cell, if that vertex lies in the chart's own region, claims the cell for the chart. A point is then painted by any nearby chart that owns the cell containing it, so a picture near a boundary is drawn whole, by one chart, even where it reaches into the region of its neighbour. Two charts can then claim overlapping cells along a boundary; a last pass keeps a claimed cell only if its centre is at least $0.62\,c$, the diameter of the face in its cell, from the centres already kept, taking the charts in order and, inside a chart, the cells nearest to its source first.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../showcase/showcase_smiley_cactus.png}
+\caption{A picture tiled over the cactus with fourteen charts placed by farthest points, front and back. Every face is drawn whole by one chart, upright. Emoji: OpenMoji ``grinning face'', CC BY-SA 4.0.}
+\label{fig:app_smiley_cactus}
+\end{figure}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../showcase/showcase_smiley_armadillo.png}
+\caption{The same on the Stanford Armadillo, $172\,974$ vertices and sixty charts, front and back. The three matrices are factored once; each chart costs three back-substitutions. Emoji: OpenMoji, CC BY-SA 4.0.}
+\label{fig:app_smiley_armadillo}
+\end{figure}
+
+\paragraph{What remains.} Figures~\ref{fig:app_smiley_cactus} and~\ref{fig:app_smiley_armadillo} show the result. The faces are upright and of nearly the same size everywhere; a few are stretched where the surface curves strongly in two directions, at the saddles where the arms meet the trunk and on the ears and claws of the Armadillo. That is the curvature itself: a flat picture cannot lie on a curved patch without distortion, and the logarithmic map distorts the least near its source, which is why the charts are many and small.
+
+\paragraph{The folded sheet.} On the Miura sheet no atlas is needed. The sheet is intrinsically flat, so one chart, the logarithmic map from its centre, covers it all, and with the intrinsic connection that chart is the unfolding of the paper (Section~\ref{section:app_logmap}): the faces sit in straight rows, at equal distances, across every fold, as if printed on the flat sheet before folding (Figure~\ref{fig:app_smiley_miura}, right). With the extrinsic connection of Part~\ref{part:ga} the same chart bends the rows, and the faces turn and tear where the errors of the transport accumulate (left).
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{../showcase/showcase_smiley_miura.png}
+\caption{One chart on the Miura sheet. Left: the extrinsic connection of Part~\ref{part:ga}. Right: the intrinsic connection of Part~\ref{part:intrinsic}, which unfolds the paper exactly. Emoji: OpenMoji, CC BY-SA 4.0.}
+\label{fig:app_smiley_miura}
+\end{figure}
+
+\paragraph{What the application shows.} The finite element machine of this text is reusable: the distance needed one more pass of the recipe, for scalars, with a variational problem (least squares for the gradient) instead of a heat step, and with one function-space subtlety (the constant in the kernel, fixed by $r(s) = 0$). And the difference between the two ways of giving a vertex a plane, which in the experiments of Section~\ref{section:int_experiments} was a column of small numbers, becomes something one can see, and the same machine, factored once, paints a whole surface.

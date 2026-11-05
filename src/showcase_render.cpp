@@ -16,6 +16,8 @@
 #include "showcase.cpp"
 #undef main
 #include "PathTracer.h"
+#include <unordered_map>
+#include <unordered_set>
 
 using pt::V3;
 
@@ -445,6 +447,401 @@ void atlasScene(const std::string& dir, int spp, double scale, double cell, int 
 	save(both, 2 * w, h, dir + (charts == 8 ? std::string("/showcase_atlas.ppm") : "/showcase_atlas" + std::to_string(charts) + ".ppm"));
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// A picture tiled over a whole surface, with an atlas of logarithmic maps from sources spread by farthest points
+// ---------------------------------------------------------------------------------------------------------------
+
+/// An RGBA picture read from an uncompressed 24- or 32-bit BMP (on macOS: sips -s format bmp in.png --out out.bmp).
+struct Picture {
+	int w = 0, h = 0;
+	std::vector<Eigen::Vector4d> px;   // row-major from the top, sRGB and straight alpha, in [0, 1]
+	explicit Picture(const std::string& path) {
+		std::ifstream in(path, std::ios::binary);
+		const std::vector<unsigned char> b((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		auto u32 = [&](size_t o) { return (uint32_t)b[o] | (uint32_t)b[o + 1] << 8 | (uint32_t)b[o + 2] << 16 | (uint32_t)b[o + 3] << 24; };
+		auto u16 = [&](size_t o) { return (uint32_t)b[o] | (uint32_t)b[o + 1] << 8; };
+		if (b.size() < 54 || b[0] != 'B' || b[1] != 'M') { fprintf(stderr, "%s: not a BMP file\n", path.c_str()); return; }
+		const uint32_t offset = u32(10), header = u32(14), bpp = u16(28), compression = u32(30);
+		const int32_t width = (int32_t)u32(18), height = (int32_t)u32(22);
+		if ((bpp != 24 && bpp != 32) || (compression != 0 && compression != 3) || width <= 0 || width > 16384 ||
+		    height == 0 || std::abs(height) > 16384) {
+			fprintf(stderr, "%s: unsupported BMP (bits %u, compression %u)\n", path.c_str(), bpp, compression);
+			return;
+		}
+		uint32_t mask[4] = { 0x00ff0000u, 0x0000ff00u, 0x000000ffu, bpp == 32 ? 0xff000000u : 0u };
+		if (compression == 3) {
+			if (b.size() < 70) return;
+			for (int k = 0; k < 3; ++k) mask[k] = u32(54 + 4 * k);
+			mask[3] = header >= 56 ? u32(66) : 0u;
+		}
+		const size_t stride = ((size_t)width * bpp / 8 + 3) & ~(size_t)3;
+		if ((size_t)offset + stride * std::abs(height) > b.size()) { fprintf(stderr, "%s: truncated BMP\n", path.c_str()); return; }
+		w = width;
+		h = std::abs(height);
+		px.resize((size_t)w * h);
+		auto channel = [](uint32_t v, uint32_t m) {
+			if (!m) return 1.0;
+			int shift = 0;
+			while (!((m >> shift) & 1u)) ++shift;
+			return (double)((v & m) >> shift) / (double)(m >> shift);
+		};
+		for (int y = 0; y < h; ++y) {
+			const size_t row = offset + stride * (height > 0 ? h - 1 - y : y);
+			for (int x = 0; x < w; ++x) {
+				const size_t o = row + (size_t)x * bpp / 8;
+				const uint32_t v = bpp == 32 ? u32(o) : ((uint32_t)b[o] | (uint32_t)b[o + 1] << 8 | (uint32_t)b[o + 2] << 16);
+				px[(size_t)y * w + x] = Eigen::Vector4d(channel(v, mask[0]), channel(v, mask[1]), channel(v, mask[2]), channel(v, mask[3]));
+			}
+		}
+	}
+	/// Bilinear sample at (s, t) in [0, 1]^2, t measured from the top.
+	Eigen::Vector4d at(double s, double t) const {
+		const double x = std::max(0.0, std::min(w - 1.0, s * w - 0.5)), y = std::max(0.0, std::min(h - 1.0, t * h - 0.5));
+		const int x0 = (int)x, y0 = (int)y, x1 = std::min(w - 1, x0 + 1), y1 = std::min(h - 1, y0 + 1);
+		const double fx = x - x0, fy = y - y0;
+		auto P = [&](int i, int j) -> Eigen::Vector4d { return px[(size_t)j * w + i]; };
+		return (1 - fy) * ((1 - fx) * P(x0, y0) + fx * P(x1, y0)) + fy * ((1 - fx) * P(x0, y1) + fx * P(x1, y1));
+	}
+};
+
+/// A closed mesh with its intrinsic geometry, and the three matrices of the method factored once. To use one
+/// factorization for every source, the source enters as the initial condition (the right-hand side e_s, as in Sharp
+/// et al.) instead of a Dirichlet row, and the Poisson problem is pinned at vertex 0 and then shifted so that r(s) = 0
+/// (the constant is free, Section 36.3).
+struct Shape {
+	Mesh mesh;
+	intrinsic::Geometry G;
+	Corners rho;
+	double h = 0, dt = 0;
+	Eigen::SparseLU<Eigen::SparseMatrix<Complex>> vec;
+	Eigen::SparseLU<Eigen::SparseMatrix<double>> heat, poisson;
+
+	Shape(const std::string& path, bool yUp, double dtScale) {
+		mesh.readOBJ(path.c_str());
+		if (yUp) for (Vertex& v : mesh.getVertices()) v.p = Vector3d(v.p.x(), -v.p.z(), v.p.y());
+		mesh.CenterAndNormalize();
+		mesh.computeNormals();
+		G = intrinsic::compute(mesh);
+		rho = cornerConnections(mesh, G, false);
+		h = meanEdgeLength(mesh);
+		dt = dtScale * dtScale * h * h;
+		const int n = mesh.numVertices();
+		std::vector<Eigen::Triplet<Complex>> TV;
+		std::vector<Eigen::Triplet<double>> TH, TP;
+		for (Face& f : mesh.getFaces()) {
+			Vertex* v[3];
+			Edge* e[3];
+			intrinsic::faceCorners(f, v, e);
+			const intrinsic::FaceGeometry& g = G.faces[f.ID];
+			for (int a = 0; a < 3; ++a) {
+				TV.emplace_back(v[a]->ID, v[a]->ID, g.area / 3);
+				TH.emplace_back(v[a]->ID, v[a]->ID, g.area / 3);
+				for (int c = 0; c < 3; ++c) {
+					const double w = g.area * g.grad[a].dot(g.grad[c]);
+					TV.emplace_back(v[a]->ID, v[c]->ID, dt * w * (a == c ? Complex(1) : rho[f.ID][c] * std::conj(rho[f.ID][a])));
+					TH.emplace_back(v[a]->ID, v[c]->ID, dt * w);
+					if (v[a]->ID != 0) TP.emplace_back(v[a]->ID, v[c]->ID, w);
+				}
+			}
+		}
+		TP.emplace_back(0, 0, 1.0);
+		Eigen::SparseMatrix<Complex> AV(n, n);
+		Eigen::SparseMatrix<double> AH(n, n), AP(n, n);
+		AV.setFromTriplets(TV.begin(), TV.end());
+		AH.setFromTriplets(TH.begin(), TH.end());
+		AP.setFromTriplets(TP.begin(), TP.end());
+		vec.compute(AV);
+		heat.compute(AH);
+		poisson.compute(AP);
+	}
+
+	/// The transported reference direction of s and the geodesic distance from s.
+	void solve(int s, Eigen::VectorXcd& Y, Eigen::VectorXd& r) {
+		const int n = mesh.numVertices();
+		Eigen::VectorXcd ec = Eigen::VectorXcd::Zero(n);
+		ec(s) = 1;
+		Y = vec.solve(ec);
+		Eigen::VectorXd e = Eigen::VectorXd::Zero(n);
+		e(s) = 1;
+		const Eigen::VectorXd u = heat.solve(e);
+		Eigen::VectorXd b = Eigen::VectorXd::Zero(n);
+		for (Face& f : mesh.getFaces()) {
+			const Vector2d gu = faceGradient(mesh, G, f, u);
+			const Vector2d X = -gu / std::max(gu.norm(), 1e-300);
+			Vertex* v[3];
+			Edge* hh[3];
+			intrinsic::faceCorners(f, v, hh);
+			for (int a = 0; a < 3; ++a) b(v[a]->ID) += G.faces[f.ID].area * G.faces[f.ID].grad[a].dot(X);
+		}
+		b(0) = 0;
+		r = poisson.solve(b);
+		r.array() -= r(s);
+	}
+};
+
+/// The atlas: charts from sources spread by farthest-point sampling (each new source is the vertex farthest from
+/// all the previous ones), turned upright, owned by the points nearest to their source, and translated to match
+/// the charts before them along their common boundaries (as in atlasScene).
+struct Atlas {
+	std::vector<int> source;
+	std::vector<std::vector<Vector2d>> uv;
+	std::vector<Eigen::VectorXd> r;
+	std::vector<int> nearest;   // per vertex, the chart of its nearest source
+
+	Atlas(Shape& S, int charts, int first) {
+		Mesh& mesh = S.mesh;
+		const int n = mesh.numVertices();
+		Eigen::VectorXd minDist = Eigen::VectorXd::Constant(n, 1e300);
+		int s = first;
+		for (int k = 0; k < charts; ++k) {
+			Eigen::VectorXcd Y;
+			Eigen::VectorXd rk;
+			S.solve(s, Y, rk);
+			auto radial = [&](const Face& f, int) {
+				const Vector2d g = faceGradient(mesh, S.G, f, rk);
+				return Complex(g.x(), g.y());
+			};
+			std::vector<Vector2d> t = logMap(mesh, S.G, S.rho, Y, rk, radial);
+			// upright: the red arrow of the chart along e_z projected into the first face of the source (along e_x
+			// where the surface is nearly horizontal)
+			const Edge* e = mesh.vertexAt(s).edge;
+			const Face& f = *e->face;
+			Vertex* v[3];
+			Edge* hh[3];
+			intrinsic::faceCorners(f, v, hh);
+			int a = 0;
+			while (hh[a] != e) ++a;
+			const Vector3d nf = (v[1]->p - v[0]->p).cross(v[2]->p - v[0]->p).normalized();
+			const Vector3d tf = (v[1]->p - v[0]->p).normalized(), bf = nf.cross(tf);
+			Vector3d up = Vector3d(0, 0, 1) - nf.z() * nf;
+			if (up.norm() < 0.3) up = Vector3d(1, 0, 0) - nf.x() * nf;
+			const double alpha = std::atan2(up.dot(bf), up.dot(tf)) - std::arg(S.rho[f.ID][a]);
+			const Eigen::Rotation2Dd turn(-alpha);
+			for (Vector2d& q : t) q = turn * q;
+			source.push_back(s);
+			uv.push_back(std::move(t));
+			r.push_back(rk);
+			minDist = minDist.cwiseMin(rk);
+			minDist.maxCoeff(&s);
+			printf("atlas: chart %d at vertex %d, farthest point now %.3f away\n", k, source.back(), minDist.maxCoeff());
+		}
+		nearest.assign(n, 0);
+		for (int i = 0; i < n; ++i)
+			for (int k = 1; k < charts; ++k) if (r[k](i) < r[nearest[i]](i)) nearest[i] = k;
+		for (int k = 1; k < charts; ++k) {   // stitch: translate chart k to its earlier neighbours
+			Vector2d shift = Vector2d::Zero();
+			int count = 0;
+			for (int i = 0; i < n; ++i) {
+				int owner = 0;
+				for (int j = 1; j < k; ++j) if (r[j](i) < r[owner](i)) owner = j;
+				if ((nearest[i] == k || nearest[i] == owner) && std::abs(r[k](i) - r[owner](i)) < 3 * S.h) {
+					shift += uv[owner][i] - uv[k][i];
+					++count;
+				}
+			}
+			if (count) for (Vector2d& q : uv[k]) q += shift / count;
+		}
+	}
+
+	/// The chart for a point of a face: the one with the smallest interpolated distance among the charts nearest to
+	/// its three corners.
+	int chartAt(Vertex* const v[3], const double l[3]) const {
+		int best = nearest[v[0]->ID];
+		double rb = 1e300;
+		for (int c = 0; c < 3; ++c) {
+			const int k = nearest[v[c]->ID];
+			const double rk = l[0] * r[k](v[0]->ID) + l[1] * r[k](v[1]->ID) + l[2] * r[k](v[2]->ID);
+			if (rk < rb) { rb = rk; best = k; }
+		}
+		return best;
+	}
+};
+
+/// The cell of the tiling of a chart's plane that contains t: square cells of side `cell`, every other row shifted
+/// by half a cell. Returns the row and column, and the position (s, q) in the cell, q measured from the top.
+struct Tile { long row, col; double s, q; };
+Tile tileOf(const Vector2d& t, double cell) {
+	const double v = t.y() / cell, row = std::floor(v);
+	const double u = t.x() / cell + 0.5 * ((long)row & 1), col = std::floor(u);
+	return { (long)row, (long)col, u - col, 1.0 - (v - row) };
+}
+long long tileKey(int chart, const Tile& T) { return ((long long)chart << 40) ^ ((T.row & 0xFFFFF) << 20) ^ (T.col & 0xFFFFF); }
+
+/// Each chart owns the cells whose centres lie in its own region (its nearest-source zone): a picture is drawn
+/// whole by one chart, never cut by the boundary between two charts.
+struct Tiling {
+	std::unordered_set<long long> owned;
+	std::vector<std::vector<int>> candidates;   // per vertex, the charts whose source is nearly as near as the nearest
+	Tiling(const Shape& S, const Atlas& A, double cell) {
+		const int n = const_cast<Mesh&>(S.mesh).numVertices(), K = (int)A.uv.size();
+		candidates.resize(n);
+		for (int i = 0; i < n; ++i) {
+			const double rmin = A.r[A.nearest[i]](i);
+			candidates[i].push_back(A.nearest[i]);
+			for (int k = 0; k < K; ++k) if (k != A.nearest[i] && A.r[k](i) < rmin + 1.5 * cell) candidates[i].push_back(k);
+			const Tile T = tileOf(A.uv[A.nearest[i]][i], cell);   // the vertex nearest to the centre of a cell claims it
+			const double d = std::abs(T.s - 0.5) + std::abs(T.q - 0.5);
+			auto it = claim.find(tileKey(A.nearest[i], T));
+			if (d < 0.3 && (it == claim.end() || d < it->second.first)) claim[tileKey(A.nearest[i], T)] = { d, i };
+		}
+		// keep the claimed cells far enough apart on the surface (near a boundary two charts may claim cells that
+		// overlap), the charts in the order of the atlas, and inside a chart the cells nearest to its source first
+		std::vector<std::pair<double, std::pair<long long, int>>> order;
+		for (const auto& [key, c] : claim) {
+			const int k = (int)(key >> 40), i = c.second;
+			order.push_back({ k * 1e3 + A.r[k](i), { key, i } });
+		}
+		std::sort(order.begin(), order.end());
+		std::unordered_map<long long, std::vector<Vector3d>> grid;
+		const double gap = 0.62 * cell;   // the face fills about 0.65 of its cell
+		auto cellOf = [&](const Vector3d& p, int dx, int dy, int dz) {
+			return ((long long)(std::floor(p.x() / gap) + dx) * 73856093) ^ ((long long)(std::floor(p.y() / gap) + dy) * 19349663) ^
+			       ((long long)(std::floor(p.z() / gap) + dz) * 83492791);
+		};
+		for (const auto& o : order) {
+			const Vector3d p = const_cast<Mesh&>(S.mesh).vertexAt(o.second.second).p;
+			bool free = true;
+			for (int dx = -1; dx <= 1 && free; ++dx)
+				for (int dy = -1; dy <= 1 && free; ++dy)
+					for (int dz = -1; dz <= 1 && free; ++dz) {
+						auto it = grid.find(cellOf(p, dx, dy, dz));
+						if (it != grid.end()) for (const Vector3d& q : it->second) if ((p - q).norm() < gap) { free = false; break; }
+					}
+			if (!free) continue;
+			owned.insert(o.second.first);
+			grid[cellOf(p, 0, 0, 0)].push_back(p);
+		}
+	}
+	std::unordered_map<long long, std::pair<double, int>> claim;
+};
+
+pt::Material tiledMaterial(const Shape& S, const Atlas& A, const Tiling& T, const Picture& pic, double cell, const V3& ground) {
+	const Shape* sp = &S;
+	const Atlas* ap = &A;
+	const Tiling* tp = &T;
+	const Picture* pp = &pic;
+	pt::Material m;
+	m.albedo = [sp, ap, tp, pp, cell, ground](int face, const double l[3]) -> V3 {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(const_cast<Mesh&>(sp->mesh).faceAt(face), v, h);
+		for (int c = 0; c < 3; ++c)
+			for (int k : tp->candidates[v[c]->ID]) {
+				const Tile t = tileOf(texCoord(ap->uv[k], v, l, false), cell);
+				if (!tp->owned.count(tileKey(k, t))) continue;
+				const Eigen::Vector4d p = pp->at(t.s, t.q);
+				if (p(3) > 0.01) return V3(p(0), p(1), p(2)) * p(3) + ground * (1 - p(3));
+			}
+		return ground;
+	};
+	m.f0 = 0.05;
+	m.roughness = 0.25;
+	return m;
+}
+
+/// Front and back views of a shape, side by side, rendered into one picture.
+void frontAndBack(pt::Scene& scene, const std::string& path, int spp, double scale, double azimuth, const V3& target,
+                  double distance, double fov) {
+	const int w = (int)(800 * scale), h = (int)(1000 * scale);
+	std::vector<V3> both(2 * w * h);
+	for (int k = 0; k < 2; ++k) {
+		const V3 view = viewDirection(14, azimuth + 180 * k);
+		const V3 right = V3(0, 0, 1).cross(view).normalized();
+		softbox(scene, target + 4.0 * (0.5 * view - 0.7 * right + V3(0, 0, 0.9)).normalized(), target, 2.4, 2.6);
+		const std::vector<V3> img = pt::render(scene, pt::Camera(target + distance * view, target, fov), w, h, spp,
+		                                       [k](double x, double y) { return backdrop(0.5 * (x + k), y); }, kExposure);
+		for (int y = 0; y < h; ++y)
+			for (int x = 0; x < w; ++x) both[y * 2 * w + k * w + x] = img[y * w + x];
+	}
+	save(both, 2 * w, h, path);
+}
+
+void smileyCactus(const std::string& dir, const std::string& picture, int spp, double scale) {
+	const Picture pic(picture);
+	if (!pic.w) return;
+	Shape S("cactus2.obj", false, 1.0);
+	Atlas A(S, 14, 484);
+	const Tiling T(S, A, 0.13);
+	pt::Scene scene;
+	scene.materials.push_back(tiledMaterial(S, A, T, pic, 0.13, V3(0.47, 0.72, 0.44)));
+	addMesh(scene, S.mesh, Placement(), 0);
+	pt::Material clay;
+	clay.albedo = [](int, const double*) { return kClay; };
+	clay.f0 = 0.03;
+	clay.roughness = 0.5;
+	scene.materials.push_back(clay);
+	pt::Material earth;
+	earth.albedo = [](int, const double*) { return kEarth; };
+	earth.f0 = 0.0;
+	scene.materials.push_back(earth);
+	addPot(scene, V3(-0.004, 0.04, 0), -1.10, -0.74, 0.27, 1, 2);
+	scene.floorZ = -1.10;
+	scene.build();
+	setSky(scene, 0.55);
+	frontAndBack(scene, dir + "/showcase_smiley_cactus.ppm", spp, scale, -25, V3(0, 0, -0.14), 6.5, 22);
+}
+
+void smileyArmadillo(const std::string& dir, const std::string& picture, const std::string& mesh, int spp, double scale) {
+	const Picture pic(picture);
+	if (!pic.w) return;
+	Shape S(mesh, true, 2.5);
+	Atlas A(S, 60, 0);
+	const Tiling T(S, A, 0.09);
+	pt::Scene scene;
+	scene.materials.push_back(tiledMaterial(S, A, T, pic, 0.09, V3(0.55, 0.78, 0.92)));
+	addMesh(scene, S.mesh, Placement(), 0);
+	double zmin = 1e300;
+	for (Vertex& v : S.mesh.getVertices()) zmin = std::min(zmin, v.p.z());
+	scene.floorZ = zmin;
+	scene.build();
+	setSky(scene, 0.55);
+	frontAndBack(scene, dir + "/showcase_smiley_armadillo.ppm", spp, scale, 90, V3(0, 0, 0), 5.0, 26);
+}
+
+/// Smileys on the Miura sheet. The sheet is intrinsically flat, so one chart, the logarithmic map from its centre,
+/// covers it all: with the intrinsic connection it is the unfolding, and the smileys sit in straight rows across
+/// every fold; with the extrinsic one the rows bend and the faces turn. Extrinsic left, intrinsic right.
+void smileyMiura(const std::string& dir, const std::string& picture, int spp, double scale) {
+	const Picture pic(picture);
+	if (!pic.w) return;
+	Miura E(dir, true), I(dir, false);
+	pt::Scene scene;
+	const V3 view = viewDirection(30, -90);
+	const V3 right = V3(0, 0, 1).cross(view).normalized();
+	const V3 target(0, 0, 0.45);
+	const pt::Camera cam(target + 8.0 * view, target, 20);
+	const double cell = 0.2;
+	const V3 paper(1.0, 0.97, 0.90);
+	for (int k = 0; k < 2; ++k) {
+		const Miura* mp = k == 0 ? &E : &I;
+		const Picture* pp = &pic;
+		pt::Material m;
+		m.albedo = [mp, pp, cell, paper](int face, const double l[3]) -> V3 {
+			Vertex* v[3];
+			Edge* h[3];
+			intrinsic::faceCorners(const_cast<Mesh&>(mp->mesh).faceAt(face), v, h);
+			const Tile t = tileOf(texCoord(mp->uv, v, l, false) + Vector2d(0.5 * cell, 0.5 * cell), cell);
+			const Eigen::Vector4d c = pp->at(t.s, t.q);
+			return V3(c(0), c(1), c(2)) * c(3) + paper * (1 - c(3));
+		};
+		m.f0 = 0.02;
+		m.roughness = 0.6;
+		m.smooth = false;
+		scene.materials.push_back(m);
+		Placement P;
+		P.R = seenAs(::Camera(60, -62), cam);
+		P.t = target + (k == 0 ? -1.22 : 1.22) * right;
+		addMesh(scene, const_cast<Mesh&>(mp->mesh), P, k);
+	}
+	scene.build();
+	scene.floorZ = -0.35;
+	setSky(scene, 0.55);
+	scene.floorAlbedo = V3(0.75, 0.75, 0.76);
+	softbox(scene, target + 5.0 * (0.6 * view - 0.5 * right + V3(0, 0, 1.0)).normalized(), target, 3.0, 2.8);
+	const int w = (int)(1600 * scale), h = (int)(760 * scale);
+	save(pt::render(scene, cam, w, h, spp, backdrop, kExposure), w, h, dir + "/showcase_smiley_miura.ppm");
+}
+
 }   // namespace
 
 int main(int argc, char** argv) {
@@ -457,6 +854,10 @@ int main(int argc, char** argv) {
 	if (only == "all" || only == "miura") miuraScene(dir, spp, scale);
 	if (only == "all" || only == "atlas" || only == "atlas2")
 		atlasScene(dir, spp, scale, 0.045, only == "atlas2" ? 2 : 8, argc > 5 ? std::atof(argv[5]) : 0.0);
+	// a picture (BMP) tiled over the cactus and over the Armadillo: argv[5] is the picture, argv[6] the Armadillo mesh
+	if (only == "smiley") smileyCactus(dir, argc > 5 ? argv[5] : "smile.bmp", spp, scale);
+	if (only == "smileymiura") smileyMiura(dir, argc > 5 ? argv[5] : "smile.bmp", spp, scale);
+	if (only == "armadillo") smileyArmadillo(dir, argc > 5 ? argv[5] : "smile.bmp", argc > 6 ? argv[6] : "armadillo.obj", spp, scale);
 	if (only == "all" || only == "whole") wholeScene(dir, spp, scale, argc > 5 ? std::atof(argv[5]) : 0.045);
 	return 0;
 }

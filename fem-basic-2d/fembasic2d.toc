@@ -517,5 +517,12 @@
 \contentsline {paragraph}{\tocparagraph {}{}{The whole cactus.}}{264}{section*.459}%
 \contentsline {paragraph}{\tocparagraph {}{}{An atlas of charts.}}{265}{section*.461}%
 \contentsline {subsection}{\tocsubsection {}{36.7}{Graph paper on the folded sheet: extrinsic against intrinsic}}{266}{subsection.36.7}%
-\contentsline {paragraph}{\tocparagraph {}{}{What the application shows.}}{268}{section*.464}%
-\contentsline {section}{\tocsection {}{}{References}}{268}{section*.465}%
+\contentsline {subsection}{\tocsubsection {}{36.8}{A picture over a whole surface}}{268}{subsection.36.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{268}{section*.464}%
+\contentsline {paragraph}{\tocparagraph {}{}{One factorization for every source.}}{268}{section*.465}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where to put the sources.}}{269}{section*.466}%
+\contentsline {paragraph}{\tocparagraph {}{}{Pictures that are not cut.}}{269}{section*.467}%
+\contentsline {paragraph}{\tocparagraph {}{}{What remains.}}{270}{section*.470}%
+\contentsline {paragraph}{\tocparagraph {}{}{The folded sheet.}}{270}{section*.471}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the application shows.}}{270}{section*.473}%
+\contentsline {section}{\tocsection {}{}{References}}{272}{section*.474}%

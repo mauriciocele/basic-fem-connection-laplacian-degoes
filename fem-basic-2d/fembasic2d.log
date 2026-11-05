@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  5 NOV 2026 00:49
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  5 NOV 2026 16:28
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1599,27 +1599,27 @@ Underfull \hbox (badness 1521) in paragraph at lines 159--160
 .cpp\OT1/cmr/m/n/10 , which in-cludes
  []
 
-<../showcase/showcase_cactus.png, id=4490, 903.375pt x 903.375pt>
+<../showcase/showcase_cactus.png, id=4492, 903.375pt x 903.375pt>
 File: ../showcase/showcase_cactus.png Graphic file (type png)
 <use ../showcase/showcase_cactus.png>
 Package pdftex.def Info: ../showcase/showcase_cactus.png  used on input line 16
 4.
 (pdftex.def)             Requested size: 139.81624pt x 139.81491pt.
-<../showcase/showcase_cactus_zoom.png, id=4491, 903.375pt x 903.375pt>
+<../showcase/showcase_cactus_zoom.png, id=4493, 903.375pt x 903.375pt>
 File: ../showcase/showcase_cactus_zoom.png Graphic file (type png)
 <use ../showcase/showcase_cactus_zoom.png>
 Package pdftex.def Info: ../showcase/showcase_cactus_zoom.png  used on input li
 ne 165.
 (pdftex.def)             Requested size: 139.81624pt x 139.81491pt.
 [263] (../src/showcase.cpp)
-<../showcase/showcase_whole.png, id=4531, 1606.0pt x 1003.75pt>
+<../showcase/showcase_whole.png, id=4533, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_whole.png Graphic file (type png)
 <use ../showcase/showcase_whole.png>
 Package pdftex.def Info: ../showcase/showcase_whole.png  used on input line 176
 .
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
  [264 <../showcase/showcase_cactus.png> <../showcase/showcase_cactus_zoom.png>]
-<../showcase/showcase_atlas.png, id=4550, 1606.0pt x 1003.75pt>
+<../showcase/showcase_atlas.png, id=4552, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_atlas.png Graphic file (type png)
 <use ../showcase/showcase_atlas.png>
 Package pdftex.def Info: ../showcase/showcase_atlas.png  used on input line 184
@@ -1627,14 +1627,34 @@ Package pdftex.def Info: ../showcase/showcase_atlas.png  used on input line 184
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
  [265 <../showcase/showcase_whole.png>]
 (../src/showcase.cpp [266 <../showcase/showcase_atlas.png>])
-<../showcase/showcase_miura.png, id=4580, 1606.0pt x 762.85pt>
+<../showcase/showcase_miura.png, id=4582, 1606.0pt x 762.85pt>
 File: ../showcase/showcase_miura.png Graphic file (type png)
 <use ../showcase/showcase_miura.png>
 Package pdftex.def Info: ../showcase/showcase_miura.png  used on input line 199
 .
 (pdftex.def)             Requested size: 316.25137pt x 150.21599pt.
-) [267]
-(./fembasic2d.bbl [268 <../showcase/showcase_miura.png>]
+ [267] [268 <../showcase/showcase_miura.png>] (../src/showcase_render.cpp) [269
+]
+<../showcase/showcase_smiley_cactus.png, id=4663, 1606.0pt x 1003.75pt>
+File: ../showcase/showcase_smiley_cactus.png Graphic file (type png)
+<use ../showcase/showcase_smiley_cactus.png>
+Package pdftex.def Info: ../showcase/showcase_smiley_cactus.png  used on input 
+line 238.
+(pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
+<../showcase/showcase_smiley_armadillo.png, id=4664, 1606.0pt x 1003.75pt>
+File: ../showcase/showcase_smiley_armadillo.png Graphic file (type png)
+<use ../showcase/showcase_smiley_armadillo.png>
+Package pdftex.def Info: ../showcase/showcase_smiley_armadillo.png  used on inp
+ut line 244.
+(pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
+<../showcase/showcase_smiley_miura.png, id=4670, 1606.0pt x 762.85pt>
+File: ../showcase/showcase_smiley_miura.png Graphic file (type png)
+<use ../showcase/showcase_smiley_miura.png>
+Package pdftex.def Info: ../showcase/showcase_smiley_miura.png  used on input l
+ine 254.
+(pdftex.def)             Requested size: 332.89726pt x 158.11964pt.
+) [270 <../showcase/showcase_smiley_cactus.png>] (./fembasic2d.bbl [271 <../sho
+wcase/showcase_smiley_armadillo.png> <../showcase/showcase_smiley_miura.png>]
 Underfull \hbox (badness 10000) in paragraph at lines 47--52
 []\OT1/cmr/m/n/9 M. C. Lopez Be-lon. Project on github. Avail-able at
  []
@@ -1645,7 +1665,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 47--52
 egoes,
  []
 
-) [269] (./fembasic2d.aux)
+) [272] (./fembasic2d.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
@@ -1660,10 +1680,10 @@ LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
  ) 
 Here is how much of TeX's memory you used:
- 45849 strings out of 474116
- 991270 string characters out of 5743682
- 4026795 words of memory out of 5000000
- 64972 multiletter control sequences out of 15000+600000
+ 45926 strings out of 474116
+ 993122 string characters out of 5743682
+ 4027559 words of memory out of 5000000
+ 65011 multiletter control sequences out of 15000+600000
  571581 words of font info for 87 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
  84i,21n,97p,2086b,2505s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -1701,10 +1721,10 @@ ype1/public/amsfonts/cm/cmtt9.pfb></usr/local/texlive/2024/texmf-dist/fonts/typ
 e1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2024/texmf-dist/fonts
 /type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2024/texmf-dist/f
 onts/type1/public/cm-super/sfrm0900.pfb>
-Output written on fembasic2d.pdf (269 pages, 9351549 bytes).
+Output written on fembasic2d.pdf (272 pages, 13730926 bytes).
 PDF statistics:
- 5641 PDF objects out of 6186 (max. 8388607)
- 4977 compressed objects within 50 object streams
- 2248 named destinations out of 2487 (max. 500000)
- 1083 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 5712 PDF objects out of 6186 (max. 8388607)
+ 5039 compressed objects within 51 object streams
+ 2283 named destinations out of 2487 (max. 500000)
+ 1106 words of extra memory for PDF output out of 10000 (max. 10000000)
 
