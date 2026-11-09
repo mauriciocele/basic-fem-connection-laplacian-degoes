@@ -615,8 +615,10 @@ struct Atlas {
 			const Vector3d tf = (v[1]->p - v[0]->p).normalized(), bf = nf.cross(tf);
 			Vector3d up = Vector3d(0, 0, 1) - nf.z() * nf;
 			if (up.norm() < 0.3) up = Vector3d(1, 0, 0) - nf.x() * nf;
+			// the reference direction goes to "up"; then a quarter turn more, so that "up" is the v axis of the chart
+			// (the top of the pictures), and u points to the right
 			const double alpha = std::atan2(up.dot(bf), up.dot(tf)) - std::arg(S.rho[f.ID][a]);
-			const Eigen::Rotation2Dd turn(-alpha);
+			const Eigen::Rotation2Dd turn(M_PI / 2 - alpha);
 			for (Vector2d& q : t) q = turn * q;
 			source.push_back(s);
 			uv.push_back(std::move(t));
@@ -672,7 +674,7 @@ long long tileKey(int chart, const Tile& T) { return ((long long)chart << 40) ^ 
 struct Tiling {
 	std::unordered_set<long long> owned;
 	std::vector<std::vector<int>> candidates;   // per vertex, the charts whose source is nearly as near as the nearest
-	Tiling(const Shape& S, const Atlas& A, double cell) {
+	Tiling(const Shape& S, const Atlas& A, double cell, double spacing = 0.62) {
 		const int n = const_cast<Mesh&>(S.mesh).numVertices(), K = (int)A.uv.size();
 		candidates.resize(n);
 		for (int i = 0; i < n; ++i) {
@@ -693,7 +695,7 @@ struct Tiling {
 		}
 		std::sort(order.begin(), order.end());
 		std::unordered_map<long long, std::vector<Vector3d>> grid;
-		const double gap = 0.62 * cell;   // the face fills about 0.65 of its cell
+		const double gap = spacing * cell;   // about the size of the picture in its cell (0.65 for the smiley)
 		auto cellOf = [&](const Vector3d& p, int dx, int dy, int dz) {
 			return ((long long)(std::floor(p.x() / gap) + dx) * 73856093) ^ ((long long)(std::floor(p.y() / gap) + dy) * 19349663) ^
 			       ((long long)(std::floor(p.z() / gap) + dz) * 83492791);
@@ -781,21 +783,23 @@ void smileyCactus(const std::string& dir, const std::string& picture, int spp, d
 	frontAndBack(scene, dir + "/showcase_smiley_cactus.ppm", spp, scale, -25, V3(0, 0, -0.14), 6.5, 22);
 }
 
-void smileyArmadillo(const std::string& dir, const std::string& picture, const std::string& mesh, int spp, double scale) {
+void smileyArmadillo(const std::string& dir, const std::string& picture, const std::string& mesh, int spp, double scale,
+                     const std::string& name = "showcase_smiley_armadillo", const V3& ground = V3(0.55, 0.78, 0.92),
+                     double cell = 0.09, double spacing = 0.62) {
 	const Picture pic(picture);
 	if (!pic.w) return;
 	Shape S(mesh, true, 2.5);
 	Atlas A(S, 60, 0);
-	const Tiling T(S, A, 0.09);
+	const Tiling T(S, A, cell, spacing);
 	pt::Scene scene;
-	scene.materials.push_back(tiledMaterial(S, A, T, pic, 0.09, V3(0.55, 0.78, 0.92)));
+	scene.materials.push_back(tiledMaterial(S, A, T, pic, cell, ground));
 	addMesh(scene, S.mesh, Placement(), 0);
 	double zmin = 1e300;
 	for (Vertex& v : S.mesh.getVertices()) zmin = std::min(zmin, v.p.z());
 	scene.floorZ = zmin;
 	scene.build();
 	setSky(scene, 0.55);
-	frontAndBack(scene, dir + "/showcase_smiley_armadillo.ppm", spp, scale, 90, V3(0, 0, 0), 5.0, 26);
+	frontAndBack(scene, dir + "/" + name + ".ppm", spp, scale, 90, V3(0, 0, 0), 5.0, 26);
 }
 
 /// Smileys on the Miura sheet. The sheet is intrinsically flat, so one chart, the logarithmic map from its centre,
@@ -842,6 +846,153 @@ void smileyMiura(const std::string& dir, const std::string& picture, int spp, do
 	save(pt::render(scene, cam, w, h, spp, backdrop, kExposure), w, h, dir + "/showcase_smiley_miura.ppm");
 }
 
+/// Smooth value noise in the plane, and a sum of octaves of it (fractal noise), in [0, 1].
+double hashNoise(long i, long j) {
+	uint64_t h = (uint64_t)(i * 374761393 + j * 668265263);
+	h = (h ^ (h >> 13)) * 1274126177u;
+	return ((h ^ (h >> 16)) & 0xFFFFFF) / (double)0xFFFFFF;
+}
+double valueNoise(double x, double y) {
+	const double fx = std::floor(x), fy = std::floor(y), tx = x - fx, ty = y - fy;
+	const double sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+	const long i = (long)fx, j = (long)fy;
+	const double a = hashNoise(i, j), b = hashNoise(i + 1, j), c = hashNoise(i, j + 1), d = hashNoise(i + 1, j + 1);
+	return (1 - sy) * ((1 - sx) * a + sx * b) + sy * ((1 - sx) * c + sx * d);
+}
+double fractalNoise(double x, double y) {
+	double sum = 0, amplitude = 0.5, norm = 0;
+	for (int o = 0; o < 4; ++o) { sum += amplitude * valueNoise(x, y); norm += amplitude; x *= 2.03; y *= 2.03; amplitude *= 0.5; }
+	return sum / norm;
+}
+
+/// A thin-plate spline of the plane: the smoothest map (least bending energy) that sends the points a_k to b_k,
+/// f(x) = A x + c + sum_k w_k U(|x - a_k|) with U(r) = r^2 log r.
+struct ThinPlate {
+	std::vector<Vector2d> a;
+	Eigen::MatrixXd coef;   // (n + 3) x 2: the w_k, then c and the two columns of A
+	ThinPlate(const std::vector<Vector2d>& from, const std::vector<Vector2d>& to) : a(from) {
+		const int n = (int)a.size();
+		Eigen::MatrixXd L = Eigen::MatrixXd::Zero(n + 3, n + 3), rhs = Eigen::MatrixXd::Zero(n + 3, 2);
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < n; ++j) L(i, j) = U((a[i] - a[j]).norm());
+			L(i, n) = L(n, i) = 1;
+			L(i, n + 1) = L(n + 1, i) = a[i].x();
+			L(i, n + 2) = L(n + 2, i) = a[i].y();
+			rhs.row(i) = to[i].transpose();
+		}
+		coef = L.fullPivLu().solve(rhs);
+	}
+	static double U(double r) { return r > 1e-12 ? r * r * std::log(r) : 0.0; }
+	Vector2d operator()(const Vector2d& x) const {
+		const int n = (int)a.size();
+		Vector2d f = coef.row(n).transpose() + x.x() * coef.row(n + 1).transpose() + x.y() * coef.row(n + 2).transpose();
+		for (int k = 0; k < n; ++k) f += U((x - a[k]).norm()) * coef.row(k).transpose();
+		return f;
+	}
+};
+
+/// The Armadillo dressed as a wolf: a photograph of a wolf's face projected onto its head from the front (the
+/// direction the photograph was taken from), aligned by nine landmarks with a thin-plate spline, and wolf fur
+/// everywhere else. (A logarithmic map from the snout was tried first for the face: its polar coordinates stretch
+/// the photograph over the brow and the eye sockets, which a frontal photograph does not survive.)
+/// The fur is noise stretched along the v axis of each chart of the atlas, which is "up" carried over the surface:
+/// the strands are combed by the transported direction field. Darker on the back, cream on the chest and belly.
+void werewolf(const std::string& dir, const std::string& photo, const std::string& mesh, int spp, double scale) {
+	const Picture face(photo);
+	if (!face.w) return;
+	Shape S(mesh, true, 2.5);
+	Atlas A(S, 60, 0);
+	// landmarks, picked on a front view of the head: vertex of the Armadillo, and pixel of the photograph (500 x 675)
+	const std::vector<std::pair<int, Vector2d>> marks = {
+		{ 2738, { 243, 390 } },    // the tip of the snout, the nose
+		{ 21602, { 176, 272 } },   // the eyes
+		{ 18480, { 322, 272 } },
+		{ 30362, { 82, 35 } },     // the tips of the ears
+		{ 22892, { 418, 35 } },
+		{ 27721, { 150, 150 } },   // the inner bases of the ears
+		{ 48556, { 352, 150 } },
+		{ 29877, { 250, 165 } },   // the forehead
+		{ 20496, { 245, 450 } },   // the chin
+	};
+	const int snout = marks[0].first;
+	Atlas F(S, 1, snout);   // the geodesic distance from the snout limits the mask to the head
+	// the photograph was taken from the front, so it is projected onto the head along the direction of the view in
+	// which the landmarks were picked, like a slide projector; the warp only corrects the differences of proportion
+	const V3 lookFrom = viewDirection(8, 90);
+	const pt::Camera projector(V3(0, 0.30, 0.42) + 1.6 * lookFrom, V3(0, 0.30, 0.42), 22);
+	auto onSlide = [projector](const Vector3d& p) { return Vector2d(p.dot(projector.right), p.dot(projector.up)); };
+	std::vector<Vector2d> from, to;
+	double reach = 0;
+	const double zoom = face.w / 500.0;   // the landmarks were picked on a 500-pixel copy
+	for (const auto& [vid, px] : marks) {
+		from.push_back(onSlide(S.mesh.vertexAt(vid).p));
+		to.push_back(zoom * px);
+		reach = std::max(reach, F.r[0](vid));
+	}
+	const ThinPlate warp(from, to);   // from the slide to the photograph
+	const ThinPlate* wp = &warp;
+	const Shape* sp = &S;
+	const Atlas* ap = &A;
+	const Atlas* fp = &F;
+	const Picture* pp = &face;
+	pt::Material m;
+	m.albedo = [sp, ap, fp, pp, wp, reach, onSlide, lookFrom](int f, const double l[3]) -> V3 {
+		Vertex* v[3];
+		Edge* h[3];
+		intrinsic::faceCorners(const_cast<Mesh&>(sp->mesh).faceAt(f), v, h);
+		// the fur
+		const int k = ap->chartAt(v, l);
+		const Vector2d t = texCoord(ap->uv[k], v, l, false);
+		const double strands = fractalNoise(300 * t.x(), 22 * t.y());   // thin across, long along "up"
+		const Vector3d n = (l[0] * v[0]->n + l[1] * v[1]->n + l[2] * v[2]->n).normalized();
+		const double z = l[0] * v[0]->p.z() + l[1] * v[1]->p.z() + l[2] * v[2]->p.z();
+		double tone = 0.44 + 0.16 * std::max(0.0, n.y()) - 0.22 * std::max(0.0, -n.y()) + 0.10 * std::max(0.0, -n.z());
+		tone += 0.12 * (fractalNoise(9 * t.x(), 9 * t.y()) - 0.5);   // patches
+		const double legs = std::max(0.0, std::min(1.0, (-0.30 - z) / 0.16));
+		tone += 0.12 * legs * legs * (3 - 2 * legs);                       // pale lower legs, blended in
+		tone = std::max(0.0, std::min(1.0, tone + 0.55 * (strands - 0.5)));
+		const V3 dark(0.20, 0.17, 0.14), mid(0.52, 0.46, 0.39), light(0.86, 0.81, 0.73);   // the palette of the photograph
+		V3 fur = tone < 0.5 ? V3(dark + (mid - dark) * (2 * tone)) : V3(mid + (light - mid) * (2 * tone - 1));
+		// the mask: the photograph, through the warp of the landmarks, on the points near the head
+		const double rf = l[0] * fp->r[0](v[0]->ID) + l[1] * fp->r[0](v[1]->ID) + l[2] * fp->r[0](v[2]->ID);
+		if (rf < 1.15 * reach) {
+			const Vector3d x = l[0] * v[0]->p + l[1] * v[1]->p + l[2] * v[2]->p;
+			const Vector2d q = (*wp)(onSlide(x));
+			const double px = q.x(), py = q.y();
+			if (px >= 0 && px < pp->w && py >= 0 && py < pp->h) {
+				const Eigen::Vector4d c = pp->at(px / pp->w, py / pp->h);
+				// fade out below the chin, at the sides of the photograph, and towards the edge of the reach
+				const double zoom = pp->w / 500.0;
+				const double below = std::max(0.0, std::min(1.0, (540 * zoom - py) / (60 * zoom))), sides = std::max(0.0, std::min(1.0, std::min(px, pp->w - px) / (30 * zoom)));
+				const double far = std::max(0.0, std::min(1.0, (1.05 * reach - rf) / (0.35 * reach)));
+				const double facing = std::max(0.0, std::min(1.0, (n.dot(lookFrom) - 0.05) / 0.25));   // not on the back
+				double alpha = below * sides * far * facing;
+				if (c(1) > c(0) + 0.02 && c(0) + c(1) + c(2) < 0.75) alpha = 0;   // the dark green background
+				fur = 0.82 * V3(c(0), c(1), c(2)) * alpha + fur * (1 - alpha);   // a little darker, to match the fur
+			}
+		}
+		return fur;
+	};
+	m.f0 = 0.03;
+	m.roughness = 0.5;
+	pt::Scene scene;
+	scene.materials.push_back(m);
+	addMesh(scene, S.mesh, Placement(), 0);
+	double zmin = 1e300;
+	for (Vertex& v : S.mesh.getVertices()) zmin = std::min(zmin, v.p.z());
+	scene.floorZ = zmin;
+	scene.build();
+	setSky(scene, 0.55);
+	frontAndBack(scene, dir + "/showcase_werewolf.ppm", spp, scale, 90, V3(0, 0, 0), 5.0, 26);
+	// a portrait: the head, from the front, a little from below and from the side, as in a photograph
+	const V3 head(0, 0.30, 0.44), view = viewDirection(4, 75);
+	const V3 right = V3(0, 0, 1).cross(view).normalized();
+	softbox(scene, head + 4.0 * (0.5 * view - 0.7 * right + V3(0, 0, 0.9)).normalized(), head, 2.4, 2.6);
+	const int w = (int)(900 * scale), hh = (int)(900 * scale);
+	save(pt::render(scene, pt::Camera(head + 2.2 * view, head, 15), w, hh, spp, backdrop, kExposure), w, hh,
+	     dir + "/showcase_werewolf_portrait.ppm");
+}
+
 }   // namespace
 
 int main(int argc, char** argv) {
@@ -857,6 +1008,11 @@ int main(int argc, char** argv) {
 	// a picture (BMP) tiled over the cactus and over the Armadillo: argv[5] is the picture, argv[6] the Armadillo mesh
 	if (only == "smiley") smileyCactus(dir, argc > 5 ? argv[5] : "smile.bmp", spp, scale);
 	if (only == "smileymiura") smileyMiura(dir, argc > 5 ? argv[5] : "smile.bmp", spp, scale);
+	if (only == "wolf")   // the OpenMoji wolf face on the Armadillo, over a moon yellow
+		smileyArmadillo(dir, argc > 5 ? argv[5] : "wolf.bmp", argc > 6 ? argv[6] : "armadillo.obj", spp, scale,
+		                "showcase_wolf_armadillo", V3(0.98, 0.80, 0.36), 0.11, 0.72);
+	if (only == "werewolf")   // argv[5]: the photograph of a wolf's face (BMP), argv[6]: the Armadillo
+		werewolf(dir, argc > 5 ? argv[5] : "wolfface.bmp", argc > 6 ? argv[6] : "armadillo.obj", spp, scale);
 	if (only == "armadillo") smileyArmadillo(dir, argc > 5 ? argv[5] : "smile.bmp", argc > 6 ? argv[6] : "armadillo.obj", spp, scale);
 	if (only == "all" || only == "whole") wholeScene(dir, spp, scale, argc > 5 ? std::atof(argv[5]) : 0.045);
 	return 0;

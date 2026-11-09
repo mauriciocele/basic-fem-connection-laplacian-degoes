@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  5 NOV 2026 16:28
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.9.23)  9 NOV 2026 02:40
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1407,51 +1407,77 @@ Underfull \hbox (badness 2762) in paragraph at lines 998--999
 
 ] [177
 
-]
-Overfull \hbox (1.72073pt too wide) detected at line 42
-[]
+] [178]
+Underfull \hbox (badness 6944) in paragraph at lines 69--70
+\OT1/cmr/m/n/10 e-try, with the func-tions \OT1/cmtt/m/n/10 AssembleStiffnessEl
+ementIntrinsic \OT1/cmr/m/n/10 and
  []
 
-[178] (./figures/fig_miura.tex) [179] [180] (../src/IntrinsicConnection.h)
-(../src/IntrinsicConnection.h) [181] [182] [183] [184] [185] [186] [187]
-Underfull \vbox (badness 1655) has occurred while \output is active []
+[179] (./figures/fig_miura.tex) [180] (../src/IntrinsicConnection.h) [181]
+(../src/IntrinsicConnection.h) [182] [183] [184]
+Underfull \vbox (badness 1931) has occurred while \output is active []
+
+ [185]
+Underfull \hbox (badness 4505) in paragraph at lines 239--240
+ []\OT1/cmr/b/n/10 The con-nec-tion form.[] \OT1/cmr/m/n/10 Part [][]I[][] mea-
+sured the turn-ing of the frame
+ []
+
+
+Underfull \hbox (badness 1122) in paragraph at lines 239--240
+\OT1/cmr/m/n/10 with ([][]4.5[][]) [$\OML/cmm/m/it/10 T[]\OMS/cmtt/m/n/10 r[]\O
+ML/cmm/m/it/10 U \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 X \OMS/cmtt/m/n/10 ^^A r\OM
+L/cmm/m/it/10 u \OT1/cmr/m/n/10 + \OML/cmm/m/it/10 !\OT1/cmr/m/n/10 (\OML/cmm/m
+/it/10 X\OT1/cmr/m/n/10 ) \OML/cmm/m/it/10 u;  !\OT1/cmr/m/n/10 (\OML/cmm/m/it/
+10 X\OT1/cmr/m/n/10 ) = \OML/cmm/m/it/10 T[]D[]T$\OT1/cmr/m/n/10 ], and
+ []
+
+[186]
+Underfull \hbox (badness 1132) in paragraph at lines 271--273
+\OT1/cmr/m/n/10 Let $\OML/cmm/m/it/10 '\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 s\OT1/
+cmr/m/n/10 ) = [][] \OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 h^^X[
+]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^[\OT1/cmr/m/n/10 )) \OML/cmm/m/it/10 d^^[$
+\OT1/cmr/m/n/10 , so that $\OML/cmm/m/it/10 '[] \OT1/cmr/m/n/10 = \OML/cmm/m/it
+/10 ^^R\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 h^^X[]\OT1/cmr/m/n/10 )$, and try $\OM
+L/cmm/m/it/10 u\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 s\OT1/cmr/m/n/10 ) =
+ []
+
+[187]
+Underfull \vbox (badness 2951) has occurred while \output is active []
 
  [188]
 [189]
-Underfull \hbox (badness 2653) in paragraph at lines 350--352
+Underfull \hbox (badness 2653) in paragraph at lines 351--353
 \OT1/cmr/m/n/10 The third line is the area el-e-ment ([][]28.3[][]) of the new 
 chart, and
  []
 
-[190] [191] [192] [193]
-Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [194]
-[195]
-Underfull \hbox (badness 3168) in paragraph at lines 541--543
+Underfull \hbox (badness 1484) in paragraph at lines 351--353
+\OMS/cmtt/m/n/10 j [] \OT1/cmr/m/n/10 ^^C\OMS/cmtt/m/n/10 j \OML/cmm/m/it/10 d^
+^Q[]d^^Q[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 d^^X[]d^^X[]$ \OT1/cmr/m/n/10 is 
+the change of vari-ables of a dou-ble in-
+ []
+
+
+Underfull \hbox (badness 1194) in paragraph at lines 351--353
+\OT1/cmr/m/n/10 te-gral, so $\OML/cmm/m/it/10 dA$ \OT1/cmr/m/n/10 is the same. 
+For the deriva-tives, the chain rule gives
+ []
+
+[190] [191] [192] [193]
+Underfull \hbox (badness 1112) in paragraph at lines 491--492
+[]\OT1/cmr/m/it/10 Invariance of the strong form. \OT1/cmr/m/n/10 Un-der a chan
+ge of frame, $\OML/cmm/m/it/10 u[] \OT1/cmr/m/n/10 =
+ []
+
+[194] [195]
+Underfull \hbox (badness 3168) in paragraph at lines 542--544
 \OT1/cmr/m/n/10 by (1) the tri-an-gle in-equal-ity, (2) Cauchy--Schwarz for eac
 h form,
  []
 
-[196]
-Overfull \hbox (4.7567pt too wide) detected at line 566
-[]
- []
-
-[197] [198]
-Overfull \hbox (2.24385pt too wide) detected at line 621
-[]
- []
-
-[199] [200] [201]
-Overfull \hbox (3.74321pt too wide) detected at line 726
-[]\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 D[] \OT1/cmr/m/n/10 ) [][] \OML/cmm/m/it/10
- ds \OT1/cmr/m/n/10 = [] [] [][][] [] \OML/cmm/m/it/10 G[]D[] [][][] d[] \OT1/c
-mr/m/n/10 = [] [] \OML/cmm/m/it/10 W[] d[] \OT1/cmr/m/n/10 = \OML/cmm/m/it/10 W
- \OMS/cmtt/m/n/10 ^^A [] \OML/cmm/m/it/10 d[]:
- []
-
-[202]) (./parts_part3b.tex [203] [204]
+[196] [197] [198] [199] [200] [201] [202]) (./parts_part3b.tex [203] [204]
 Overfull \hbox (8.69954pt too wide) detected at line 55
 []
  []
@@ -1467,11 +1493,11 @@ Overfull \hbox (8.96625pt too wide) detected at line 133
 []
  []
 
-[207] [208] (../src/IntrinsicConnection.h) [209] [210] [211]
-(./figures/fig_layout_3d.tex) (./figures/fig_layout_2d.tex)
-(../src/IntrinsicConnection.h [212]) (../src/IntrinsicConnection.h) [213]
+[207] [208] (../src/IntrinsicConnection.h) [209] [210]
+(./figures/fig_layout_3d.tex) (./figures/fig_layout_2d.tex) [211]
+(../src/IntrinsicConnection.h) [212] (../src/IntrinsicConnection.h) [213]
 [214] (./figures/fig_cone_rescale.tex) [215] [216] (../src/ga_fem.cpp) [217]
-Overfull \hbox (7.31247pt too wide) detected at line 369
+Overfull \hbox (7.31247pt too wide) detected at line 365
 \OML/cmm/m/it/10 ^^R\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 e[]\OT1/cmr/m/n/10 ) = 0 
 + \OML/cmm/m/it/10 [];  ^^R\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 e[]\OT1/cmr/m/n/1
 0 ) = (\OML/cmm/m/it/10 []\OT1/cmr/m/n/10 ) + \OML/cmm/m/it/10 [];  [] ;  ^^R
@@ -1480,13 +1506,16 @@ OT1/cmr/m/n/10 + \OML/cmm/m/it/10 [] \OT1/cmr/m/n/10 + [] + \OML/cmm/m/it/10 
 []:
  []
 
-[218] (../src/IntrinsicConnection.h [219]) [220] [221]
-(../src/IntrinsicConnection.h) [222] (../src/ga_fem.cpp) [223]
+[218] (../src/IntrinsicConnection.h) [219] [220] [221]
+(../src/IntrinsicConnection.h) [222] (../src/ga_fem.cpp [223])
 Overfull \hbox (5.84282pt too wide) detected at line 501
 []
  []
 
-[224] (./figures/fig_projection.tex) [225] [226]
+[224] (./figures/fig_projection.tex) [225]
+Underfull \vbox (badness 1112) has occurred while \output is active []
+
+ [226]
 Overfull \hbox (7.16562pt too wide) detected at line 578
 []
  []
@@ -1497,32 +1526,37 @@ Overfull \hbox (5.60716pt too wide) detected at line 694
 []
  []
 
-
-Underfull \vbox (badness 6348) has occurred while \output is active []
-
- [231]
-[232] [233] [234] [235] [236]
-Underfull \hbox (badness 3078) in paragraph at lines 825--826
- []\OT1/cmr/b/n/10 Substitution.[] \OT1/cmr/m/n/10 The weak form ([][]28.24[][]
-) is $\OML/cmm/m/it/10 a\OT1/cmr/m/n/10 (\OML/cmm/m/it/10  ; ^^_\OT1/cmr/m/n/10
- ) = \OML/cmm/m/it/10 l\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 ^^_\OT1/cmr/m/n/10 )$,
- with the
+[231] [232] [233] [234] [235] [236]
+Overfull \hbox (5.91098pt too wide) detected at line 830
+\OML/cmm/m/it/10 a\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 u; v\OT1/cmr/m/n/10 ) = [][
+] \OML/cmm/m/it/10 u[]v dA \OT1/cmr/m/n/10 + ^^A\OML/cmm/m/it/10 t [][] [] G[] 
+\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 D[]u\OT1/cmr/m/n/10 )[](\OML/cmm/m/it/10 D[]v
+\OT1/cmr/m/n/10 ) \OML/cmm/m/it/10 dA;  l\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 v\OT
+1/cmr/m/n/10 ) = [][](\OML/cmm/m/it/10 u[]\OT1/cmr/m/n/10 )[]\OML/cmm/m/it/10 v
+ dA:
  []
 
-[237] [238]
-Underfull \vbox (badness 1609) has occurred while \output is active []
-
- [239]
-[240]
-Underfull \hbox (badness 3713) in paragraph at lines 941--942
- []\OT1/cmr/b/n/10 The code.[] \OT1/cmr/m/n/10 The func-tion \OT1/cmtt/m/n/10 i
-ntrinsicform::solve \OT1/cmr/m/n/10 is the as-sem-bly of
+[237]
+Underfull \hbox (badness 2913) in paragraph at lines 871--872
+ []\OT1/cmr/b/n/10 Symmetric and pos-i-tive def-i-nite.[] \OT1/cmr/m/n/10 Trans
+-pose the in-te-grand of ([][]32.2[][]):
  []
 
-(../src/ga_fem.cpp) [241] (../src/IntrinsicConnection.h) [242]
-(../src/ga_fem.cpp [243]) (../src/ga_fem.cpp) [244] (../src/ga_fem.cpp [245])
-(../src/ga_fem.cpp [246]) (../src/ga_fem.cpp [247])
-(./figures/fig_intrinsic_plots.tex
+[238] [239]
+Underfull \hbox (badness 1320) in paragraph at lines 922--922
+[]|$\OML/cmm/m/it/8 T[]Q[]T[]$\OT1/cmr/m/n/8 , ([][]4.7[][]): frames and
+ []
+
+
+Underfull \hbox (badness 1314) in paragraph at lines 947--948
+ []\OT1/cmr/b/n/10 The code.[] \OT1/cmr/m/n/10 The in-trin-sic el-e-ment is the
+ func-tion \OT1/cmtt/m/n/10 AssembleStiffness-
+ []
+
+(../src/FEM.cpp [240]) [241] (../src/FEM.cpp) [242]
+(../src/IntrinsicConnection.h) [243] (../src/ga_fem.cpp) [244]
+(../src/ga_fem.cpp) [245] (../src/ga_fem.cpp) [246] (../src/ga_fem.cpp)
+[247] (../src/ga_fem.cpp) [248] (./figures/fig_intrinsic_plots.tex
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: xmod
 e=log unsupported (yet).
 Package pgfplots info on input line 5: Using 'lua backend=false' for axis: ymod
@@ -1534,46 +1568,40 @@ PGFPlots: reading {data/sphere_convergence.csv}
 Package pgfplots info on input line 15: Using 'lua backend=false' for axis: xmo
 de=log unsupported (yet).
 PGFPlots: reading {data/cactus_intrinsic.csv}
-) [248]
-Underfull \hbox (badness 1028) in paragraph at lines 1085--1086
- []\OT1/cmr/b/n/10 The trans-port of the el-e-ment.[] \OT1/cmr/m/n/10 The el-e-
-ment ([][]32.3[][]) [$L[] = \OML/cmm/m/it/10 A[]\OT1/cmr/m/n/10 (\OMS/cmtt/m/n/
-10 r\OML/cmm/m/it/10 ^^^[] \OMS/cmtt/m/n/10 ^^A
- []
-
-[249]
-Underfull \hbox (badness 1320) in paragraph at lines 1107--1107
-[]|$\OML/cmm/m/it/8 T[]Q[]T[]$\OT1/cmr/m/n/8 , ([][]4.7[][]): frames and
- []
-
+) [249]
 [250]
-Underfull \hbox (badness 5924) in paragraph at lines 1137--1138
-\OT1/cmr/m/n/10 The in-trin-sic el-e-ment is the func-tion \OT1/cmtt/m/n/10 Ass
-embleStiffness-Element-
+Underfull \hbox (badness 1789) in paragraph at lines 1130--1131
+ []\OT1/cmr/b/n/10 The code.[] \OT1/cmtt/m/n/10 IntrinsicConnection.h \OT1/cmr/
+m/n/10 com-putes each cor-ner ro-ta-tion as
  []
 
 
-Underfull \hbox (badness 4120) in paragraph at lines 1137--1138
-\OT1/cmtt/m/n/10 Embedded2 \OT1/cmr/m/n/10 of Sec-tion [][]13[][], with its thr
-ee in-gre-di-ents fetched from
+Underfull \hbox (badness 5359) in paragraph at lines 1130--1131
+\OT1/cmtt/m/n/10 std::polar(1.0, rho)\OT1/cmr/m/n/10 , the unit com-plex num-be
+r $\OML/cmm/m/it/10 e[]$ \OT1/cmr/m/n/10 (line 136);
  []
 
-(../src/FEM.cpp) [251] (../src/FEM.cpp) [252]
-Underfull \hbox (badness 10000) in paragraph at lines 1171--1171
+(../src/ga_fem.cpp [251]) [252]
+Underfull \hbox (badness 10000) in paragraph at lines 1160--1160
 []|\OT1/cmr/m/n/8 where cur-va-ture
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 1179--1179
+Underfull \hbox (badness 10000) in paragraph at lines 1167--1167
+[]|\OT1/cmr/m/n/8 corner ro-ta-tion
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 1168--1168
 []|\OT1/cmr/m/n/8 intrinsically flat
  []
 
-) (./parts_applications.tex [253] [254] [255
+) (./parts_applications.tex [253] [254
 
 
-] [256
+] [255
 
-] [257]
+] [256]
 Overfull \hbox (1.66286pt too wide) detected at line 79
 []
  []
@@ -1591,70 +1619,76 @@ MS/cmtt/m/n/10 r\OML/cmm/m/it/10 ^^^[] \OMS/cmtt/m/n/10 ^^A r\OML/cmm/m/it/10 ^
 ^^[]$\OT1/cmr/m/n/10 , the scalar fac-tor
  []
 
-[258] [259] (../src/showcase.cpp) (../src/showcase.cpp) (../src/showcase.cpp
-[260]) (../src/showcase.cpp) [261] (../src/showcase.cpp) [262]
-(../src/showcase.cpp)
+[257] [258] (../src/showcase.cpp) (../src/showcase.cpp) (../src/showcase.cpp
+[259]) (../src/showcase.cpp)
+Underfull \hbox (badness 1675) in paragraph at lines 138--139
+\OMS/cmtt/m/n/10 r\OML/cmm/m/it/10 ^^^[]\OT1/cmr/m/n/10 ) \OML/cmm/m/it/10 e[]$
+\OT1/cmr/m/n/10 ], as-sem-bled ex-actly as in \OT1/cmtt/m/n/10 intrinsicform::s
+olve \OT1/cmr/m/n/10 (Sec-
+ []
+
+[260] (../src/showcase.cpp) [261] (../src/showcase.cpp)
 Underfull \hbox (badness 1521) in paragraph at lines 159--160
 \OT1/cmr/m/n/10 above by a small path tracer, \OT1/cmtt/m/n/10 showcase[]render
 .cpp\OT1/cmr/m/n/10 , which in-cludes
  []
 
-<../showcase/showcase_cactus.png, id=4492, 903.375pt x 903.375pt>
+<../showcase/showcase_cactus.png, id=4486, 903.375pt x 903.375pt>
 File: ../showcase/showcase_cactus.png Graphic file (type png)
 <use ../showcase/showcase_cactus.png>
 Package pdftex.def Info: ../showcase/showcase_cactus.png  used on input line 16
 4.
 (pdftex.def)             Requested size: 139.81624pt x 139.81491pt.
-<../showcase/showcase_cactus_zoom.png, id=4493, 903.375pt x 903.375pt>
+<../showcase/showcase_cactus_zoom.png, id=4487, 903.375pt x 903.375pt>
 File: ../showcase/showcase_cactus_zoom.png Graphic file (type png)
 <use ../showcase/showcase_cactus_zoom.png>
 Package pdftex.def Info: ../showcase/showcase_cactus_zoom.png  used on input li
 ne 165.
 (pdftex.def)             Requested size: 139.81624pt x 139.81491pt.
-[263] (../src/showcase.cpp)
-<../showcase/showcase_whole.png, id=4533, 1606.0pt x 1003.75pt>
+[262] (../src/showcase.cpp)
+<../showcase/showcase_whole.png, id=4527, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_whole.png Graphic file (type png)
 <use ../showcase/showcase_whole.png>
 Package pdftex.def Info: ../showcase/showcase_whole.png  used on input line 176
 .
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
- [264 <../showcase/showcase_cactus.png> <../showcase/showcase_cactus_zoom.png>]
-<../showcase/showcase_atlas.png, id=4552, 1606.0pt x 1003.75pt>
+ [263 <../showcase/showcase_cactus.png> <../showcase/showcase_cactus_zoom.png>]
+<../showcase/showcase_atlas.png, id=4546, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_atlas.png Graphic file (type png)
 <use ../showcase/showcase_atlas.png>
 Package pdftex.def Info: ../showcase/showcase_atlas.png  used on input line 184
 .
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
- [265 <../showcase/showcase_whole.png>]
-(../src/showcase.cpp [266 <../showcase/showcase_atlas.png>])
-<../showcase/showcase_miura.png, id=4582, 1606.0pt x 762.85pt>
+ [264 <../showcase/showcase_whole.png>]
+(../src/showcase.cpp [265 <../showcase/showcase_atlas.png>])
+<../showcase/showcase_miura.png, id=4570, 1606.0pt x 762.85pt>
 File: ../showcase/showcase_miura.png Graphic file (type png)
 <use ../showcase/showcase_miura.png>
 Package pdftex.def Info: ../showcase/showcase_miura.png  used on input line 199
 .
 (pdftex.def)             Requested size: 316.25137pt x 150.21599pt.
- [267] [268 <../showcase/showcase_miura.png>] (../src/showcase_render.cpp) [269
+ [266] [267 <../showcase/showcase_miura.png>] (../src/showcase_render.cpp) [268
 ]
-<../showcase/showcase_smiley_cactus.png, id=4663, 1606.0pt x 1003.75pt>
+<../showcase/showcase_smiley_cactus.png, id=4657, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_smiley_cactus.png Graphic file (type png)
 <use ../showcase/showcase_smiley_cactus.png>
 Package pdftex.def Info: ../showcase/showcase_smiley_cactus.png  used on input 
 line 238.
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
-<../showcase/showcase_smiley_armadillo.png, id=4664, 1606.0pt x 1003.75pt>
+<../showcase/showcase_smiley_armadillo.png, id=4658, 1606.0pt x 1003.75pt>
 File: ../showcase/showcase_smiley_armadillo.png Graphic file (type png)
 <use ../showcase/showcase_smiley_armadillo.png>
 Package pdftex.def Info: ../showcase/showcase_smiley_armadillo.png  used on inp
 ut line 244.
 (pdftex.def)             Requested size: 332.89726pt x 208.05215pt.
-<../showcase/showcase_smiley_miura.png, id=4670, 1606.0pt x 762.85pt>
+<../showcase/showcase_smiley_miura.png, id=4664, 1606.0pt x 762.85pt>
 File: ../showcase/showcase_smiley_miura.png Graphic file (type png)
 <use ../showcase/showcase_smiley_miura.png>
 Package pdftex.def Info: ../showcase/showcase_smiley_miura.png  used on input l
 ine 254.
 (pdftex.def)             Requested size: 332.89726pt x 158.11964pt.
-) [270 <../showcase/showcase_smiley_cactus.png>] (./fembasic2d.bbl [271 <../sho
-wcase/showcase_smiley_armadillo.png> <../showcase/showcase_smiley_miura.png>]
+) [269 <../showcase/showcase_smiley_cactus.png>] [270 <../showcase/showcase_smi
+ley_armadillo.png> <../showcase/showcase_smiley_miura.png>] (./fembasic2d.bbl
 Underfull \hbox (badness 10000) in paragraph at lines 47--52
 []\OT1/cmr/m/n/9 M. C. Lopez Be-lon. Project on github. Avail-able at
  []
@@ -1665,7 +1699,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 47--52
 egoes,
  []
 
-) [272] (./fembasic2d.aux)
+) [271] (./fembasic2d.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
@@ -1681,8 +1715,8 @@ LaTeX Font Warning: Some font shapes were not available, defaults substituted.
  ) 
 Here is how much of TeX's memory you used:
  45926 strings out of 474116
- 993122 string characters out of 5743682
- 4027559 words of memory out of 5000000
+ 993151 string characters out of 5743682
+ 4028720 words of memory out of 5000000
  65011 multiletter control sequences out of 15000+600000
  571581 words of font info for 87 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
@@ -1721,10 +1755,10 @@ ype1/public/amsfonts/cm/cmtt9.pfb></usr/local/texlive/2024/texmf-dist/fonts/typ
 e1/public/amsfonts/symbols/msam10.pfb></usr/local/texlive/2024/texmf-dist/fonts
 /type1/public/amsfonts/symbols/msbm10.pfb></usr/local/texlive/2024/texmf-dist/f
 onts/type1/public/cm-super/sfrm0900.pfb>
-Output written on fembasic2d.pdf (272 pages, 13730926 bytes).
+Output written on fembasic2d.pdf (271 pages, 13716029 bytes).
 PDF statistics:
- 5712 PDF objects out of 6186 (max. 8388607)
- 5039 compressed objects within 51 object streams
+ 5703 PDF objects out of 6186 (max. 8388607)
+ 5034 compressed objects within 51 object streams
  2283 named destinations out of 2487 (max. 500000)
- 1106 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1098 words of extra memory for PDF output out of 10000 (max. 10000000)
 

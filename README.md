@@ -43,15 +43,24 @@ c++ -std=c++17 -O3 -I/path/to/eigen showcase_render.cpp HalfEdge/Mesh.cpp -o sho
 
 A picture can be tiled over a whole surface with an atlas of logarithmic maps (sources by farthest-point
 sampling, each point painted by the chart of its nearest source, each picture drawn whole by one chart). The
-smiley is the "grinning face" of [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), in
-`showcase/textures/openmoji-1F600.png`; the pictures made with it, `showcase/showcase_smiley_*.png`, are
-CC BY-SA 4.0 as well. The Armadillo is the Stanford scan (not included).
+smiley and the wolf are the "grinning face" and "wolf" of [OpenMoji](https://openmoji.org) (CC BY-SA 4.0), in
+`showcase/textures/`; the pictures made with them, `showcase/showcase_smiley_*.png` and
+`showcase/showcase_wolf_armadillo.png`, are CC BY-SA 4.0 as well. The wolf's face of `showcase/showcase_werewolf*.png` is
+["Loup portrait"](https://commons.wikimedia.org/wiki/File:Loup_portrait.jpg) by Raoul Feignoux (CC BY-SA 4.0),
+500-pixel copy in `showcase/textures/wikimedia-loup-portrait.png`; those pictures are CC BY-SA 4.0 too.
+The Armadillo is the Stanford scan (not included).
 
 ```sh
 sips -s format bmp ../showcase/textures/openmoji-1F600.png --out /tmp/smile.bmp   # the renderer reads BMP
 ./showcase_render ../showcase 256 1 smiley /tmp/smile.bmp
 ./showcase_render ../showcase 256 1 smileymiura /tmp/smile.bmp   # one chart: extrinsic left, intrinsic right
 ./showcase_render ../showcase 256 1 armadillo /tmp/smile.bmp /path/to/armadillo.obj
+sips -s format bmp ../showcase/textures/openmoji-1F43A.png --out /tmp/wolf.bmp   # the OpenMoji wolf face
+./showcase_render ../showcase 256 1 wolf /tmp/wolf.bmp /path/to/armadillo.obj
+# the Armadillo dressed as a wolf: a photo of a wolf's face projected from the front onto the head (aligned by
+# nine landmarks with a thin-plate spline), and fur combed along the transported "up" direction of the atlas
+sips -s format bmp ../showcase/textures/wikimedia-loup-portrait.png --out /tmp/wolfface.bmp   # or the 1412-pixel original
+./showcase_render ../showcase 256 1 werewolf /tmp/wolfface.bmp /path/to/armadillo.obj
 ```
 
 

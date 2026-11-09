@@ -1036,7 +1036,7 @@ for each of the two coordinates, so the vector at every vertex is a positive mul
 
 The whole computation of Sections~\ref{section:element}--\ref{section:solve} is a handful of lines of \code{main}:
 \lstinputlisting[firstline=638, lastline=645, firstnumber=638]{../src/FEM.cpp}
-Line~638 assembles $\Delta t\,\mathrm L$ with $\Delta t = \bar h^2$ (with the option \code{--intrinsic} it calls instead the assembly of Part~\ref{part:intrinsic} written in this part's matrices, Section~\ref{section:int_matrix}); lines~639--640 assemble the lumped $\mathrm M$; line~641 turns \code{A} into $I + \Delta t\,\mathrm M^{-1}\mathrm L$; line~643 replaces the rows of the source and factors; and line~645 solves the system for the right-hand side built above, storing $\mathrm u$ in \code{solutionU}. The program then enters the drawing loop, and the drawing function reads \code{solutionU}.
+Line~638 assembles $\Delta t\,\mathrm L$ with $\Delta t = \bar h^2$ (with the option \code{--intrinsic} it calls instead the assembly of Part~\ref{part:intrinsic} written in this part's matrices, Section~\ref{section:r3_stage8}); lines~639--640 assemble the lumped $\mathrm M$; line~641 turns \code{A} into $I + \Delta t\,\mathrm M^{-1}\mathrm L$; line~643 replaces the rows of the source and factors; and line~645 solves the system for the right-hand side built above, storing $\mathrm u$ in \code{solutionU}. The program then enters the drawing loop, and the drawing function reads \code{solutionU}.
 
 \subsection{From the solution to vectors}
 

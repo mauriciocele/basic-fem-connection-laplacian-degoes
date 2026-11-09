@@ -19,12 +19,12 @@ The plan has three steps, and only the first is new:
 %%% ......................................................................
 \subsection{The logarithmic map}
 
-Fix the source $s$ and a reference unit vector $e_s$ in its tangent plane (for us, the reference direction $\varphi = 0$ of the stretched cone of $s$, the direction whose spinor coordinate is $\psi = 1$). For a point $x$, let $\gamma$ be the shortest curve on the surface from $s$ to $x$, a \emph{geodesic}, traversed at unit speed, so that its length is the distance $r = r(x)$. It leaves $s$ in some unit direction $\gamma'(0)$, and we call $\theta$ the angle from $e_s$ to $\gamma'(0)$, measured counterclockwise in the tangent plane of $s$. The logarithmic map writes $x$ as the vector of the tangent plane of $s$ with that length and that angle:
+Fix the source $s$ and a reference unit vector $e_s$ in its tangent plane (for us, the reference direction $\varphi = 0$ of the stretched cone of $s$, the direction with coordinates $(1, 0)$). We write vectors of a plane in the complex shorthand of Section~\ref{section:int_matrix}: the coordinates $(u_1, u_2)$ are the complex number $u_1 + \mathrm i\,u_2$, and the rotation $R(\alpha)$ is the multiplication by $e^{\mathrm i\alpha}$; it makes the angles of this section one line each. For a point $x$, let $\gamma$ be the shortest curve on the surface from $s$ to $x$, a \emph{geodesic}, traversed at unit speed, so that its length is the distance $r = r(x)$. It leaves $s$ in some unit direction $\gamma'(0)$, and we call $\theta$ the angle from $e_s$ to $\gamma'(0)$, measured counterclockwise in the tangent plane of $s$. The logarithmic map writes $x$ as the vector of the tangent plane of $s$ with that length and that angle:
 \begin{equation}
 \label{eqn:app_log}
-\log_s(x) = r\, e^{\mathsf T\theta}, \qquad (u, v) = (r\cos\theta,\ r\sin\theta) .
+\log_s(x) = r\, e^{\mathrm i\theta}, \qquad (u, v) = (r\cos\theta,\ r\sin\theta) .
 \end{equation}
-with $\log_s(x)$ written as a spinor coordinate in the frame of $e_s$. The pair $(u, v)$ is what we will use as texture coordinates. (The name comes from the inverse map, the \emph{exponential map}, which walks from $s$ along the direction $e^{\mathsf T\theta}$ for the length $r$ and lands at $x$.) Near $s$ the surface is almost a plane and the map is almost an isometry: the decal is pasted almost without distortion. Further away, curvature bends the geodesics towards each other ($K > 0$) or away from each other ($K < 0$), and the decal stretches or shrinks. Past the \emph{cut locus}, the set of points reached by two different shortest geodesics, the map is not one to one at all; we keep the decal inside it.
+with $\log_s(x)$ written as a complex coordinate in the frame of $e_s$. The pair $(u, v)$ is what we will use as texture coordinates. (The name comes from the inverse map, the \emph{exponential map}, which walks from $s$ along the direction $e^{\mathrm i\theta}$ for the length $r$ and lands at $x$.) Near $s$ the surface is almost a plane and the map is almost an isometry: the decal is pasted almost without distortion. Further away, curvature bends the geodesics towards each other ($K > 0$) or away from each other ($K < 0$), and the decal stretches or shrinks. Past the \emph{cut locus}, the set of points reached by two different shortest geodesics, the map is not one to one at all; we keep the decal inside it.
 
 %%% ......................................................................
 \subsection{The key fact: the angle can be read at the far end}
@@ -47,16 +47,16 @@ Both vectors keep their length (parallel transport and unit speed), so the angle
 \theta(x) = \text{the angle from } Y(x) \text{ to } \nabla r(x) .
 \end{equation*}
 
-\paragraph{Step 3: the angle as a complex number.} At a vertex both vectors are spinor coordinates of the same plane. Write them in polar form, $Y = |Y|\, e^{\mathsf T\alpha}$ and $R = \nabla r = |R|\, e^{\mathsf T\beta}$. The angle from $Y$ to $R$ is $\beta - \alpha$, and multiplying one by the conjugate of the other subtracts the angles:
+\paragraph{Step 3: the angle as a complex number.} At a vertex both vectors are complex coordinates in the same plane. Write them in polar form, $Y = |Y|\, e^{\mathrm i\alpha}$ and $R = \nabla r = |R|\, e^{\mathrm i\beta}$. The angle from $Y$ to $R$ is $\beta - \alpha$, and multiplying one by the conjugate of the other subtracts the angles:
 \begin{align*}
-\frac{R}{|R|}\,\overline{\Big(\frac{Y}{|Y|}\Big)} &= e^{\mathsf T\beta}\; \overline{e^{\mathsf T\alpha}} && \text{substitute the polar forms} \\
-&= e^{\mathsf T\beta}\, e^{-\mathsf T\alpha} && \overline{e^{\mathsf T\alpha}} = e^{-\mathsf T\alpha} \\
-&= e^{\mathsf T(\beta - \alpha)} = e^{\mathsf T\theta} .
+\frac{R}{|R|}\,\overline{\Big(\frac{Y}{|Y|}\Big)} &= e^{\mathrm i\beta}\; \overline{e^{\mathrm i\alpha}} && \text{substitute the polar forms} \\
+&= e^{\mathrm i\beta}\, e^{-\mathrm i\alpha} && \overline{e^{\mathrm i\alpha}} = e^{-\mathrm i\alpha} \\
+&= e^{\mathrm i(\beta - \alpha)} = e^{\mathrm i\theta} .
 \end{align*}
 So
 \begin{equation}
 \label{eqn:app_theta}
-e^{\mathsf T\theta} = \frac{R\,\overline{Y}}{|R|\,|Y|}, \qquad \log_s(x) = r\, e^{\mathsf T\theta} .
+e^{\mathrm i\theta} = \frac{R\,\overline{Y}}{|R|\,|Y|}, \qquad \log_s(x) = r\, e^{\mathrm i\theta} .
 \end{equation}
 The magnitude of $Y$ does not matter, which is fortunate, because the vector heat method gives the right direction but a magnitude that decays fast with the distance (Section~\ref{section:pde}).
 
@@ -90,12 +90,12 @@ and the coefficient of $\epsilon$ gives the weak form: find $u$ with $u(s) = 1$ 
 &= \sum_j u_j\int\phi_j\phi_i\, dA + \Delta t\sum_j u_j\int\nabla\phi_j\cdot\nabla\phi_i\, dA && \text{linearity} \\
 &= \sum_j \big(\mathrm M_{ij} + \Delta t\, \mathrm K_{ij}\big)\, u_j && \text{name the integrals,}
 \end{align*}
-with $\mathrm K_{ij} = \int\nabla\phi_j\cdot\nabla\phi_i\, dA$ and the lumped mass $\mathrm M_{ii} = \frac13\sum_{f\ni i} A_f$ of~(\ref{eqn:lumped_mass})~[\,$\mathrm M^f_{aa} = \tfrac{A_f}3 I_2$\,], here for scalars. The stiffness $\mathrm K$ is assembled from the element matrices $A_f\,\nabla\phi_a\cdot\nabla\phi_b$, the scalar factor of~(\ref{eqn:intrinsic_element})~[\,$\mathrm L^f_{ij} = A_f(\nabla\phi_i\cdot\nabla\phi_j)\, e^{\mathsf T(\rho_j^f - \rho_i^f)}$\,] without the phase. The row of $s$ is replaced by $u_s = 1$, as in Stage~8. The linear system is
+with $\mathrm K_{ij} = \int\nabla\phi_j\cdot\nabla\phi_i\, dA$ and the lumped mass $\mathrm M_{ii} = \frac13\sum_{f\ni i} A_f$ of~(\ref{eqn:lumped_mass})~[\,$\mathrm M^f_{aa} = \tfrac{A_f}3 I_2$\,], here for scalars. The stiffness $\mathrm K$ is assembled from the element matrices $A_f\,\nabla\phi_a\cdot\nabla\phi_b$, the scalar factor of~(\ref{eqn:intrinsic_element})~[\,$\mathrm L^f_{ij} = A_f(\nabla\phi_i\cdot\nabla\phi_j)\, e^{\mathrm i(\rho_j^f - \rho_i^f)}$\,] without the phase. The row of $s$ is replaced by $u_s = 1$, as in Stage~8. The linear system is
 \begin{equation*}
 \big(\mathrm M + \Delta t\,\mathrm K\big)\, \mathrm u = 0 \quad\text{(rows } i \ne s\text{)}, \qquad u_s = 1 .
 \end{equation*}
 
-\paragraph{(b) The direction.} On each face $u_h$ is linear, so its gradient is constant there: $\nabla u_h|_f = \sum_{a\in f} u_a\nabla\phi_a$, with the gradients of the layout, (\ref{eqn:intrinsic_gradient})~[\,$\nabla\phi_a = \frac{J(\bar x_c - \bar x_b)}{2A_f}$\,]. The unit field $X_f = -\nabla u_h|_f / |\nabla u_h|_f|$ is constant on each face.
+\paragraph{(b) The direction.} On each face $u_h$ is linear, so its gradient is constant there: $\nabla u_h|_f = \sum_{a\in f} u_a\nabla\phi_a$, with the gradients of the layout, (\ref{eqn:intrinsic_gradient})~[\,$\nabla\phi_a = \frac{\mathcal J(\bar x_c - \bar x_b)}{2A_f}$\,]. The unit field $X_f = -\nabla u_h|_f / |\nabla u_h|_f|$ is constant on each face.
 
 \paragraph{(c) The distance, Stages 1 to 4.} We look for the function $r$ whose gradient is closest to $X$ in the least-squares sense:
 \begin{equation*}
@@ -135,22 +135,22 @@ Line~128 is the heat step (with mass, time step $\Delta t$, source value $1$); l
 
 The transported source direction $Y$ is the solution of Stages~6 to~8, with the value $\psi_s = 1$ (the reference direction $e_s$) at the source:
 \lstinputlisting[firstline=61, lastline=88, firstnumber=61]{../src/showcase.cpp}
-It is the system~(\ref{eqn:intrinsic_element})~[\,$\mathrm L^f_{ij} = A_f(\nabla\phi_i\cdot\nabla\phi_j)\, e^{\mathsf T(\rho_j^f - \rho_i^f)}$\,] assembled exactly as in \code{intrinsicform::solve}, with one difference of form: the rows are $(\mathrm M + \Delta t\,\mathrm L)\,\psi = 0$, not divided by the masses. Dividing a row by a positive number does not change its solution, so the two systems have the same $Y$. Line~76 is the phase $e^{\mathsf T(\rho_b^f - \rho_a^f)}$, the transport from $b$ to $a$ through the face; line~81 puts the mass on the diagonal, and the $1$ of the source row.
+It is the system~(\ref{eqn:intrinsic_element}) in the complex form~(\ref{eqn:int_matrix_element})~[\,$\mathrm L^f_{ij} = A_f(\nabla\phi_i\cdot\nabla\phi_j)\, e^{\mathrm i(\rho_j^f - \rho_i^f)}$\,], assembled exactly as in \code{intrinsicform::solve} (Section~\ref{section:int_matrix}), with one difference of form: the rows are $(\mathrm M + \Delta t\,\mathrm L)\,\psi = 0$, not divided by the masses. Dividing a row by a positive number does not change its solution, so the two systems have the same $Y$. Line~76 is the phase $e^{\mathrm i(\rho_b^f - \rho_a^f)}$, the transport from $b$ to $a$ through the face; line~81 puts the mass on the diagonal, and the $1$ of the source row.
 
 %%% ......................................................................
 \subsection{The angle at the vertices}
 
-Formula~(\ref{eqn:app_theta})~[\,$e^{\mathsf T\theta} = R\,\overline Y/(|R||Y|)$\,] needs $R$ and $Y$ in the same plane. A vertex has no tangent plane (Section~\ref{section:int_vertex}), but each face around it is a plane, and the method already knows how to carry the vertex value into each face: multiply by the corner connection $e^{\mathsf T\rho_a^f}$. So in each corner $(i, f)$ we compare, in the face frame of $f$,
+Formula~(\ref{eqn:app_theta})~[\,$e^{\mathrm i\theta} = R\,\overline Y/(|R||Y|)$\,] needs $R$ and $Y$ in the same plane. A vertex has no tangent plane (Section~\ref{section:int_vertex}), but each face around it is a plane, and the method already knows how to carry the vertex value into each face: multiply by the corner connection $e^{\mathrm i\rho_a^f}$. So in each corner $(i, f)$ we compare, in the face frame of $f$,
 \begin{equation*}
-R_f = \nabla r_h|_f \quad\text{(constant on } f\text{)}, \qquad y_{i,f} = e^{\mathsf T\rho_i^f}\, Y_i ,
+R_f = \nabla r_h|_f \quad\text{(constant on } f\text{)}, \qquad y_{i,f} = e^{\mathrm i\rho_i^f}\, Y_i ,
 \end{equation*}
-which gives one estimate $e^{\mathsf T\theta_{i,f}} = R_f\,\overline{y_{i,f}}/(|R_f||y_{i,f}|)$ per corner. The faces around $i$ give slightly different estimates (the gradient is constant on each face, and the faces are tilted), and we average them as unit complex numbers, each weighted by the angle $\alpha_{i,f}$ of its corner:
+which gives one estimate $e^{\mathrm i\theta_{i,f}} = R_f\,\overline{y_{i,f}}/(|R_f||y_{i,f}|)$ per corner. The faces around $i$ give slightly different estimates (the gradient is constant on each face, and the faces are tilted), and we average them as unit complex numbers, each weighted by the angle $\alpha_{i,f}$ of its corner:
 \begin{equation*}
-e^{\mathsf T\theta_i} = \frac{\sum_{f\ni i} \alpha_{i,f}\, e^{\mathsf T\theta_{i,f}}}{\big|\sum_{f\ni i} \alpha_{i,f}\, e^{\mathsf T\theta_{i,f}}\big|}, \qquad \log_s(x_i) = r_i\, e^{\mathsf T\theta_i} .
+e^{\mathrm i\theta_i} = \frac{\sum_{f\ni i} \alpha_{i,f}\, e^{\mathrm i\theta_{i,f}}}{\big|\sum_{f\ni i} \alpha_{i,f}\, e^{\mathrm i\theta_{i,f}}\big|}, \qquad \log_s(x_i) = r_i\, e^{\mathrm i\theta_i} .
 \end{equation*}
 Averaging the unit complex numbers, rather than the angles, avoids the jump of the angle at $\pm\pi$. In the code:
 \lstinputlisting[firstline=141, lastline=164, firstnumber=141]{../src/showcase.cpp}
-Line~153 forms $R$ and $y = e^{\mathsf T\rho_a^f} Y_i$; line~155 adds $\alpha\, (R/|R|)\,\overline{(y/|y|)}$; lines~160--161 take the angle of the sum and build $r_i(\cos\theta_i, \sin\theta_i)$, the texture coordinates of~(\ref{eqn:app_log})~[\,$(u, v) = (r\cos\theta, r\sin\theta)$\,]. The reference direction $e_s$ is the reference edge of $s$, an arbitrary choice; for the picture we turn all the coordinates by one angle so that $e_s$ points up the trunk, which changes nothing else:
+Line~153 forms $R$ and $y = e^{\mathrm i\rho_a^f} Y_i$; line~155 adds $\alpha\, (R/|R|)\,\overline{(y/|y|)}$; lines~160--161 take the angle of the sum and build $r_i(\cos\theta_i, \sin\theta_i)$, the texture coordinates of~(\ref{eqn:app_log})~[\,$(u, v) = (r\cos\theta, r\sin\theta)$\,]. The reference direction $e_s$ is the reference edge of $s$, an arbitrary choice; for the picture we turn all the coordinates by one angle so that $e_s$ points up the trunk, which changes nothing else:
 \lstinputlisting[firstline=392, lastline=422, firstnumber=392]{../src/showcase.cpp}
 
 %%% ......................................................................
@@ -158,7 +158,7 @@ Line~153 forms $R$ and $y = e^{\mathsf T\rho_a^f} Y_i$; line~155 adds $\alpha\, 
 
 The pictures of this section are rendered from the coordinates computed above by a small path tracer, \code{showcase\_render.cpp}, which includes \code{showcase.cpp} unchanged; the pot and the studio light are decoration.
 
-Figure~\ref{fig:app_cactus} shows the result on a smooth cactus of $5261$ vertices: a checkerboard with two arrows, the red one along $e_s$ and the blue one a quarter turn to its left, $e^{\mathsf T\pi/2}e_s$. Near the source the squares are square; away from it they bend, following the curvature of the trunk, but the checkerboard stays continuous and keeps its orientation and handedness everywhere inside the decal.
+Figure~\ref{fig:app_cactus} shows the result on a smooth cactus of $5261$ vertices: a checkerboard with two arrows, the red one along $e_s$ and the blue one a quarter turn to its left, $e^{\mathrm i\pi/2}e_s$. Near the source the squares are square; away from it they bend, following the curvature of the trunk, but the checkerboard stays continuous and keeps its orientation and handedness everywhere inside the decal.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.42\linewidth]{../showcase/showcase_cactus.png}\hfill
