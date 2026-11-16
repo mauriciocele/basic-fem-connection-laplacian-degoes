@@ -247,17 +247,89 @@ the rate at which the frame turns, relative to parallel transport, along the sur
 \end{equation}
 two numbers per point, the \emph{connection form} of the chart and its frame. A function that is linear in the direction, like $\theta$, is called a \emph{1-form}.
 
-\paragraph{The covariant derivative.} We want the covariant derivative of $U = Tu$ along the surface direction $ha$, in coordinates. Put $X = ha$ in~(\ref{eqn:covariant_frame}). The term $X\cdot\nabla u$ is the rate of change of the two components of $u$ along $ha$, which by the chain rule of (ii) above is the flat rate $a\cdot\hat\nabla u$; and $\omega(ha) = \theta(ha)\,\mathcal J$. So
+\paragraph{The covariant derivative.} We want the covariant derivative of $U = Tu$ along the surface direction $ha$, written with the coordinates $u$ and the chart. We derive it from scratch, without quoting~(\ref{eqn:covariant_frame}), in five steps.
+
+\emph{Step 1: walk along a straight line of the chart.} Fix a point $\xi$ of the chart and a flat direction $a = (a_1, a_2)$, and walk along the straight line
+\begin{equation*}
+\xi(s) = \xi + s\,a = \big(\xi_1 + s\,a_1,\ \xi_2 + s\,a_2\big), \qquad s \text{ near } 0 .
+\end{equation*}
+On the surface the walker is at $x(\xi(s))$, and its velocity at $s = 0$ is $ha$, by~(\ref{eqn:r3_h}). Along the walk every quantity of the chart becomes a function of the single variable $s$: the coordinates $u(\xi(s))$, the frame vectors $t(\xi(s))$ and $b(\xi(s))$, and the field $U(\xi(s))$. We write a prime for the derivative with respect to $s$ at $s = 0$.
+
+\emph{Step 2: the chain rule, written out.} Let $f(\xi_1, \xi_2)$ be any function of the chart, a number or a vector. Along the walk it is $s \mapsto f\big(\xi_1 + s\,a_1,\ \xi_2 + s\,a_2\big)$: a function of two variables, each of which is a function of $s$, with $\frac{d}{ds}(\xi_1 + s a_1) = a_1$ and $\frac{d}{ds}(\xi_2 + s a_2) = a_2$. The chain rule for a function of two variables says: change each variable in turn, and add,
+\begin{equation}
+\label{eqn:s3a_chain}
+f' = \frac{\partial f}{\partial\xi_1}\cdot\frac{d(\xi_1 + s a_1)}{ds} + \frac{\partial f}{\partial\xi_2}\cdot\frac{d(\xi_2 + s a_2)}{ds} = a_1\,\partial_1 f + a_2\,\partial_2 f = a\cdot\hat\nabla f .
+\end{equation}
+So along a straight walk with direction $a$, the rate of change of anything is $a_1$ times its rate along the first axis plus $a_2$ times its rate along the second. Applied to the two coordinates $u_1, u_2$, it gives the column $u' = a_1\,\partial_1u + a_2\,\partial_2u = a\cdot\hat\nabla u$, the rate of change of the coordinates \emph{as numbers}, seen in the flat chart. Applied to the frame vector $t$, it gives $t' = a_1\,\partial_1t + a_2\,\partial_2t$.
+
+\emph{Step 3: differentiate the field.} The field along the walk is $U = u_1\, t + u_2\, b$, a sum of two products of a number and a vector. The product rule, for each product, gives
+\begin{equation*}
+U' = u_1'\, t + u_1\, t' + u_2'\, b + u_2\, b' .
+\end{equation*}
+Two kinds of change appear: $u_1'$ and $u_2'$, the change of the coordinates; and $t'$ and $b'$, the change of the frame, multiplied by the coordinates.
+
+\emph{Step 4: how the frame turns.} We need the components of $t'$ and $b'$ along $t$ and $b$. Three facts follow from the frame being orthonormal at every point of the walk, that is, from $t\cdot t = 1$, $b\cdot b = 1$ and $t\cdot b = 0$ for every $s$. Differentiate each identity with the product rule for the inner product:
 \begin{align*}
-T^T\nabla_{ha} U &= (ha) \cdot \nabla u + \theta(ha)\, \mathcal J\, u && X = ha \\
-&= a \cdot \hat\nabla u + \theta(ha)\,\mathcal J\, u && \text{chain rule,}
+0 = (t\cdot t)' &= t'\cdot t + t\cdot t' = 2\, t\cdot t' && \text{so } t\cdot t' = 0, \\
+0 = (b\cdot b)' &= 2\, b\cdot b' && \text{so } b\cdot b' = 0, \\
+0 = (t\cdot b)' &= t'\cdot b + t\cdot b' && \text{so } t\cdot b' = -\,b\cdot t' .
 \end{align*}
-and the coordinates of the covariant derivative of $U$ along $ha$ are
+A unit vector cannot grow along itself, and what $t$ gains towards $b$, $b$ loses towards $t$. So one number describes the turning of the frame in the tangent plane, the rate
+\begin{equation*}
+\theta = b\cdot t' , \qquad\text{with}\qquad t\cdot t' = 0, \quad b\cdot b' = 0, \quad t\cdot b' = -\theta .
+\end{equation*}
+It is the connection form~(\ref{eqn:r3_Omega}) along the walk: by Step 2, $t' = a_1\partial_1t + a_2\partial_2t$, so
+\begin{equation*}
+\theta = b\cdot\big(a_1\,\partial_1t + a_2\,\partial_2t\big) = a_1\,(b\cdot\partial_1t) + a_2\,(b\cdot\partial_2t) = a_1\,\theta_1 + a_2\,\theta_2 = \theta(ha) .
+\end{equation*}
+The rate of turning along the direction $a$ is $a_1$ times the rate along the first axis plus $a_2$ times the rate along the second, because the derivative $t'$ is.
+
+\emph{Step 5: keep the tangential part, in coordinates.} The covariant derivative is the tangential part of $U'$ (Section~\ref{section:transport}): we drop the component along the normal. In the frame, its coordinates are the components of $U'$ along $t$ and along $b$, which drop the normal component automatically. Take the inner product of Step 3 with $t$, term by term, using $t\cdot t = 1$, $t\cdot b = 0$ and Step 4:
+\begin{align*}
+t\cdot U' &= u_1'\,(t\cdot t) + u_1\,(t\cdot t') + u_2'\,(t\cdot b) + u_2\,(t\cdot b') && \text{Step 3} \\
+&= u_1'\cdot 1 + u_1\cdot 0 + u_2'\cdot 0 + u_2\cdot(-\theta) && \text{Step 4} \\
+&= u_1' - \theta\, u_2 ,
+\end{align*}
+and with $b$, using $b\cdot t = 0$, $b\cdot b = 1$ and Step 4:
+\begin{align*}
+b\cdot U' &= u_1'\,(b\cdot t) + u_1\,(b\cdot t') + u_2'\,(b\cdot b) + u_2\,(b\cdot b') && \text{Step 3} \\
+&= u_1'\cdot 0 + u_1\cdot\theta + u_2'\cdot 1 + u_2\cdot 0 && \text{Step 4} \\
+&= u_2' + \theta\, u_1 .
+\end{align*}
+Written as one column, and with the quarter turn $\mathcal J(u_1, u_2) = (-u_2, u_1)$ of~(\ref{eqn:s3a_rotation}),
+\begin{equation*}
+\begin{pmatrix} u_1' - \theta\,u_2 \\ u_2' + \theta\,u_1 \end{pmatrix} = \begin{pmatrix} u_1' \\ u_2' \end{pmatrix} + \theta\begin{pmatrix} -u_2 \\ u_1 \end{pmatrix} = u' + \theta\,\mathcal J u .
+\end{equation*}
+Finally substitute $u' = a\cdot\hat\nabla u$ (Step 2) and $\theta = \theta(ha)$ (Step 4). The coordinates of the covariant derivative of $U$ along $ha$ are
 \begin{equation}
 \label{eqn:r3_covariant}
 D_au = a\cdot\hat\nabla u + \theta(ha)\,\mathcal J u, \qquad D_ku = \partial_ku + \theta_k\,\mathcal J\,u \quad (a = \varepsilon_k) .
 \end{equation}
-The first term is the change of the coordinates seen in the flat plane; the second is the correction for the turning of the frame, a quarter turn of $u$ scaled by the rate of turning. All the geometry of differentiation is in $\theta$. Both terms are linear in $a$, so $D_au = a_1 D_1u + a_2 D_2u$.
+The second form is the first for the walk along the $k$-th axis, $a = \varepsilon_k$, where $a\cdot\hat\nabla u = \partial_ku$ and $\theta(h\varepsilon_k) = \theta_k$. This is~(\ref{eqn:covariant_frame}) of Part~\ref{part:matrix} written in a chart, with $\omega(ha) = \theta(ha)\,\mathcal J$.
+
+\paragraph{What the two terms mean.} The coordinates $u$ are measured against the frame, so they change for two reasons, and the two terms of~(\ref{eqn:r3_covariant}) separate them.
+\begin{itemize}
+\item $a\cdot\hat\nabla u$ is how fast the two numbers $u_1, u_2$ change along the walk. If the frame did not turn, this would be the whole answer: the field would be differentiated component by component, as on a plane with a constant frame.
+\item $\theta(ha)\,\mathcal Ju$ corrects for the turning of the frame. If the frame turns counterclockwise by a small angle $\epsilon\,\theta$ over a small step $\epsilon$, a fixed vector, measured against the new frame, appears turned \emph{clockwise} by the same angle: its coordinates change by about $-\epsilon\,\theta\,\mathcal J u$, since by the small-angle form of~(\ref{eqn:s3a_exp_deriv}) a turn by $-\epsilon\theta$ is $I - \epsilon\theta\,\mathcal J$. That apparent change is not a change of the field. Adding $+\theta\,\mathcal J u$ cancels it.
+\end{itemize}
+So $D_au = 0$ means: the coordinates change exactly as much as the turning of the frame forces them to, and no more; the field itself does not turn. All the geometry of differentiation is in the number $\theta$: the metric does not enter~(\ref{eqn:r3_covariant}), only the turning of the frame.
+
+\emph{Linearity in the direction.} Both terms are linear in $a$: the first is $a_1\partial_1u + a_2\partial_2u$, and the second is $(a_1\theta_1 + a_2\theta_2)\,\mathcal Ju$. Grouping the terms with $a_1$ and those with $a_2$,
+\begin{equation*}
+D_au = a_1\big(\partial_1u + \theta_1\,\mathcal Ju\big) + a_2\big(\partial_2u + \theta_2\,\mathcal Ju\big) = a_1\, D_1u + a_2\, D_2u .
+\end{equation*}
+So the two derivatives along the axes, $D_1u$ and $D_2u$, determine the derivative along every direction, as the two partial derivatives of a function determine its directional derivatives. This is why the weak form of Stage 4 needs only $D_1$ and $D_2$.
+
+\emph{Example: a constant field in polar coordinates.} Take the plane with the polar chart $\xi = (r, \varphi)$, $x = (r\cos\varphi, r\sin\varphi)$, and the polar frame $t = e_r = (\cos\varphi, \sin\varphi)$, $b = e_\varphi = (-\sin\varphi, \cos\varphi)$ of Example~\ref{ex:polar_frame}. The frame does not depend on $r$, so $\partial_1t = 0$ and $\theta_1 = 0$; along $\varphi$, $\partial_2t = (-\sin\varphi, \cos\varphi) = e_\varphi$, so $\theta_2 = e_\varphi\cdot e_\varphi = 1$: the frame turns by one radian per radian of $\varphi$. The constant field $U = e_x$ has the coordinates
+\begin{equation*}
+u = (e_r\cdot e_x,\ e_\varphi\cdot e_x) = (\cos\varphi,\ -\sin\varphi) ,
+\end{equation*}
+which change as we walk around the origin although the field is constant. Substituting into~(\ref{eqn:r3_covariant}):
+\begin{align*}
+D_1u &= \partial_r u + \theta_1\,\mathcal Ju = (0, 0) + 0 = (0, 0) , \\
+D_2u &= \partial_\varphi u + \theta_2\,\mathcal Ju = (-\sin\varphi,\ -\cos\varphi) + 1\cdot(\sin\varphi,\ \cos\varphi) = (0, 0) ,
+\end{align*}
+using $\mathcal J(\cos\varphi, -\sin\varphi) = (\sin\varphi, \cos\varphi)$. The covariant derivative vanishes in both directions, as it must for a constant field: the change of the coordinates along $\varphi$ is exactly the apparent change caused by the turning frame, and the term $\theta_2\,\mathcal Ju$ removes it.
 
 \paragraph{The connection form comes from the metric.} The connection form is not extra data: it is determined by the metric and by the choice of frame (we show in Section~\ref{section:r3_curvature} that its curl is the curvature, which the metric determines). One case matters above all. Suppose the chart is \emph{isometric}, $G = I$, as for the layout of a face in the plane: $x(\xi) = x_0 + \xi_1 E_1 + \xi_2 E_2$ with two fixed orthonormal vectors $E_1, E_2$. Take as frame a constant direction of the chart, $t = \cos\gamma\, E_1 + \sin\gamma\, E_2$ with a fixed angle $\gamma$. Then $t$ is the same vector at every point, its derivative along any direction is zero, and
 \begin{equation*}

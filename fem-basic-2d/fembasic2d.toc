@@ -358,172 +358,173 @@
 \contentsline {subsection}{\tocsubsection {}{28.3}{Frames, coordinates and the connection form}}{186}{subsection.28.3}%
 \contentsline {paragraph}{\tocparagraph {}{}{Coordinates in a chart.}}{186}{section*.335}%
 \contentsline {paragraph}{\tocparagraph {}{}{The connection form.}}{186}{section*.336}%
-\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative.}}{187}{section*.337}%
-\contentsline {paragraph}{\tocparagraph {}{}{The connection form comes from the metric.}}{187}{section*.338}%
-\contentsline {paragraph}{\tocparagraph {}{}{Parallel transport in a chart.}}{187}{section*.339}%
-\contentsline {subsection}{\tocsubsection {}{28.4}{Changes of frame and the invariance of the energy}}{188}{subsection.28.4}%
-\contentsline {paragraph}{\tocparagraph {}{}{Turning the frame.}}{188}{section*.340}%
-\contentsline {paragraph}{\tocparagraph {}{}{Invariance of the energy.}}{189}{section*.341}%
-\contentsline {paragraph}{\tocparagraph {}{}{Changing the coordinates of the chart.}}{190}{section*.342}%
-\contentsline {paragraph}{\tocparagraph {}{}{From one chart to another.}}{190}{section*.343}%
-\contentsline {subsection}{\tocsubsection {}{28.5}{Curvature: the curl of the connection form}}{190}{subsection.28.5}%
-\contentsline {paragraph}{\tocparagraph {}{}{When can a chart be flat?}}{190}{section*.344}%
-\contentsline {paragraph}{\tocparagraph {}{}{What the curl measures.}}{191}{section*.345}%
-\contentsline {paragraph}{\tocparagraph {}{}{The curl is the curvature.}}{192}{section*.346}%
-\contentsline {paragraph}{\tocparagraph {}{}{Holonomy.}}{193}{section*.347}%
-\contentsline {paragraph}{\tocparagraph {}{}{What this means for a mesh.}}{194}{section*.348}%
-\contentsline {subsection}{\tocsubsection {}{28.6}{Stage 1: the PDE (strong form)}}{194}{subsection.28.6}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{194}{section*.349}%
-\contentsline {subsection}{\tocsubsection {}{28.7}{Stage 2: the function spaces}}{195}{subsection.28.7}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{195}{section*.350}%
-\contentsline {paragraph}{\tocparagraph {}{}{Square integrable fields.}}{195}{section*.351}%
-\contentsline {paragraph}{\tocparagraph {}{}{Fields with square integrable covariant derivatives.}}{195}{section*.352}%
-\contentsline {paragraph}{\tocparagraph {}{}{The forms of the problem.}}{196}{section*.353}%
-\contentsline {paragraph}{\tocparagraph {}{}{What the theorems say, and why they apply.}}{196}{section*.354}%
-\contentsline {paragraph}{\tocparagraph {}{}{Why the weak form needs less.}}{197}{section*.355}%
-\contentsline {paragraph}{\tocparagraph {}{}{Conforming spaces.}}{197}{section*.356}%
-\contentsline {paragraph}{\tocparagraph {}{}{The assumptions, plainly.}}{197}{section*.357}%
-\contentsline {subsection}{\tocsubsection {}{28.8}{Stage 3: the variational form}}{198}{subsection.28.8}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{198}{section*.358}%
-\contentsline {paragraph}{\tocparagraph {}{}{The first variation, term by term.}}{198}{section*.360}%
-\contentsline {paragraph}{\tocparagraph {}{}{Minimizing is solving.}}{199}{section*.361}%
-\contentsline {subsection}{\tocsubsection {}{28.9}{Stage 4: the weak form (Galerkin)}}{200}{subsection.28.9}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{200}{section*.362}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we got, and what Stage 5 must supply.}}{203}{section*.364}%
-\contentsline {section}{\tocsection {}{29}{Stage 5, the Faces: Flat Charts Known Only by Their Edge Lengths}}{204}{section.29}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{204}{section*.365}%
-\contentsline {subsection}{\tocsubsection {}{29.1}{The metric of a face is its Gram matrix}}{204}{subsection.29.1}%
-\contentsline {paragraph}{\tocparagraph {}{}{Lengths and angles.}}{204}{section*.366}%
-\contentsline {paragraph}{\tocparagraph {}{}{Entry by entry.}}{204}{section*.367}%
-\contentsline {paragraph}{\tocparagraph {}{}{Rigid motions do not change it.}}{205}{section*.368}%
-\contentsline {paragraph}{\tocparagraph {}{}{The metric from the three lengths.}}{205}{section*.369}%
-\contentsline {subsection}{\tocsubsection {}{29.2}{Why the Gram matrix carries everything a face needs}}{206}{subsection.29.2}%
-\contentsline {paragraph}{\tocparagraph {}{}{The area.}}{206}{section*.370}%
-\contentsline {paragraph}{\tocparagraph {}{}{The gradients.}}{206}{section*.371}%
-\contentsline {subsection}{\tocsubsection {}{29.3}{Heron's formula and the angles}}{208}{subsection.29.3}%
-\contentsline {subsection}{\tocsubsection {}{29.4}{Laying the triangle out in the plane}}{210}{subsection.29.4}%
-\contentsline {paragraph}{\tocparagraph {}{}{The gradients on the layout: the quarter turn.}}{211}{section*.372}%
-\contentsline {paragraph}{\tocparagraph {}{}{The face frame.}}{211}{section*.373}%
-\contentsline {paragraph}{\tocparagraph {}{}{The connection form of a face vanishes.}}{211}{section*.374}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{212}{section*.376}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{214}{section*.377}%
-\contentsline {section}{\tocsection {}{30}{Stage 5, the Vertices: the Stretched Cone as a Flat Chart}}{214}{section.30}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{214}{section*.378}%
-\contentsline {subsection}{\tocsubsection {}{30.1}{The cone around a vertex}}{214}{subsection.30.1}%
-\contentsline {paragraph}{\tocparagraph {}{}{The angle defect is a curvature.}}{215}{section*.380}%
-\contentsline {paragraph}{\tocparagraph {}{}{The defects add up to $2\pi \chi $.}}{216}{section*.381}%
-\contentsline {subsection}{\tocsubsection {}{30.2}{Why a vertex has no tangent plane}}{217}{subsection.30.2}%
-\contentsline {subsection}{\tocsubsection {}{30.3}{Directions at a vertex as angles}}{218}{subsection.30.3}%
-\contentsline {paragraph}{\tocparagraph {}{}{Half edges.}}{218}{section*.382}%
-\contentsline {paragraph}{\tocparagraph {}{}{Turning around a vertex.}}{219}{section*.383}%
-\contentsline {paragraph}{\tocparagraph {}{}{Which corner lies between two steps.}}{219}{section*.385}%
-\contentsline {paragraph}{\tocparagraph {}{}{Clockwise walk, negative angles.}}{220}{section*.386}%
-\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{220}{section*.387}%
-\contentsline {subsection}{\tocsubsection {}{30.4}{The stretched cone}}{220}{subsection.30.4}%
-\contentsline {paragraph}{\tocparagraph {}{}{The vertex chart.}}{221}{section*.388}%
-\contentsline {paragraph}{\tocparagraph {}{}{Where the defect went.}}{221}{section*.389}%
-\contentsline {paragraph}{\tocparagraph {}{}{The negative angles of the code.}}{221}{section*.390}%
-\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{221}{section*.391}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{222}{section*.392}%
-\contentsline {subsection}{\tocsubsection {}{30.5}{What the vertex normal does instead}}{223}{subsection.30.5}%
-\contentsline {paragraph}{\tocparagraph {}{}{How to read the tables of the two examples.}}{223}{section*.393}%
-\contentsline {section}{\tocsection {}{31}{Stage 5, the Corner Rotations: from a Vertex Chart into a Face Chart}}{225}{section.31}%
-\contentsline {subsection}{\tocsubsection {}{31.1}{What the finite element method needs}}{225}{subsection.31.1}%
-\contentsline {subsection}{\tocsubsection {}{31.2}{The exact correspondence is not a rotation}}{227}{subsection.31.2}%
-\contentsline {subsection}{\tocsubsection {}{31.3}{The best rotation: match the bisectors}}{227}{subsection.31.3}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{229}{section*.396}%
-\contentsline {subsection}{\tocsubsection {}{31.4}{Going around the vertex}}{231}{subsection.31.4}%
-\contentsline {paragraph}{\tocparagraph {}{}{The data.}}{231}{section*.397}%
-\contentsline {paragraph}{\tocparagraph {}{}{The two routes.}}{231}{section*.398}%
-\contentsline {paragraph}{\tocparagraph {}{}{The extra rotation.}}{231}{section*.399}%
-\contentsline {paragraph}{\tocparagraph {}{}{Once around.}}{232}{section*.400}%
-\contentsline {paragraph}{\tocparagraph {}{}{Where the curvature sits.}}{233}{section*.401}%
-\contentsline {paragraph}{\tocparagraph {}{}{Changes of frame on the mesh.}}{233}{section*.402}%
-\contentsline {subsection}{\tocsubsection {}{31.5}{Stage 5 completed: the finite element space}}{234}{subsection.31.5}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{234}{section*.403}%
-\contentsline {paragraph}{\tocparagraph {}{}{The basis functions.}}{234}{section*.404}%
-\contentsline {paragraph}{\tocparagraph {}{}{Their derivatives.}}{234}{section*.406}%
-\contentsline {paragraph}{\tocparagraph {}{}{Conformity.}}{235}{section*.407}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{236}{section*.408}%
-\contentsline {section}{\tocsection {}{32}{Stages 6 to 8: the Discrete Solution, the Element Integrals and the Assembly}}{236}{section.32}%
-\contentsline {paragraph}{\tocparagraph {}{}{Why nothing else changes.}}{236}{section*.409}%
-\contentsline {subsection}{\tocsubsection {}{32.1}{Stage 6: the discrete solution and the test functions}}{236}{subsection.32.1}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{236}{section*.410}%
-\contentsline {paragraph}{\tocparagraph {}{}{The discrete solution.}}{237}{section*.411}%
-\contentsline {paragraph}{\tocparagraph {}{}{The test functions.}}{237}{section*.412}%
-\contentsline {paragraph}{\tocparagraph {}{}{Substitution.}}{237}{section*.413}%
-\contentsline {paragraph}{\tocparagraph {}{}{Symmetric and positive definite.}}{238}{section*.414}%
-\contentsline {paragraph}{\tocparagraph {}{}{The choice of frames does not matter.}}{238}{section*.415}%
-\contentsline {subsection}{\tocsubsection {}{32.2}{Stage 7: the element integrals}}{238}{subsection.32.2}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{238}{section*.416}%
-\contentsline {paragraph}{\tocparagraph {}{}{The stiffness.}}{238}{section*.417}%
-\contentsline {paragraph}{\tocparagraph {}{}{The mass.}}{239}{section*.418}%
-\contentsline {paragraph}{\tocparagraph {}{}{The element matrices.}}{240}{section*.419}%
-\contentsline {paragraph}{\tocparagraph {}{}{The element written out.}}{240}{section*.420}%
-\contentsline {paragraph}{\tocparagraph {}{}{The frame of the face cancels.}}{240}{section*.421}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{240}{section*.422}%
-\contentsline {subsection}{\tocsubsection {}{32.3}{Stage 8: assembly and the linear system}}{241}{subsection.32.3}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{241}{section*.423}%
-\contentsline {paragraph}{\tocparagraph {}{}{The assembly.}}{241}{section*.424}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{242}{section*.425}%
-\contentsline {paragraph}{\tocparagraph {}{}{The same reference direction as Part\nonbreakingspace \ref {part:matrix}.}}{242}{section*.426}%
-\contentsline {paragraph}{\tocparagraph {}{}{Drawing the result.}}{242}{section*.427}%
-\contentsline {section}{\tocsection {}{33}{Experiments}}{243}{section.33}%
-\contentsline {subsection}{\tocsubsection {}{33.1}{Where the experiments compare: inside the faces}}{244}{subsection.33.1}%
-\contentsline {paragraph}{\tocparagraph {}{}{The exact vectors.}}{245}{section*.428}%
-\contentsline {paragraph}{\tocparagraph {}{}{The source vector.}}{245}{section*.429}%
-\contentsline {subsection}{\tocsubsection {}{33.2}{Folded sheets: exact bendings}}{245}{subsection.33.2}%
-\contentsline {paragraph}{\tocparagraph {}{}{Why the Miura-ori is intrinsically flat.}}{246}{section*.430}%
-\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{247}{section*.431}%
-\contentsline {subsection}{\tocsubsection {}{33.3}{The sphere: convergence}}{247}{subsection.33.3}%
-\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{248}{section*.432}%
-\contentsline {subsection}{\tocsubsection {}{33.4}{The cactus: how large is the choice?}}{248}{subsection.33.4}%
-\contentsline {paragraph}{\tocparagraph {}{}{The numbers.}}{249}{section*.433}%
-\contentsline {section}{\tocsection {}{34}{Part III with Complex Numbers}}{249}{section.34}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{249}{section*.435}%
-\contentsline {subsection}{\tocsubsection {}{34.1}{The dictionary}}{250}{subsection.34.1}%
-\contentsline {paragraph}{\tocparagraph {}{}{A column is a complex number.}}{250}{section*.436}%
-\contentsline {paragraph}{\tocparagraph {}{}{The quarter turn is the multiplication by $\mathrm i$.}}{250}{section*.437}%
-\contentsline {paragraph}{\tocparagraph {}{}{A rotation is the multiplication by a unit complex number.}}{250}{section*.438}%
-\contentsline {paragraph}{\tocparagraph {}{}{The transpose is the conjugate.}}{250}{section*.439}%
-\contentsline {paragraph}{\tocparagraph {}{}{The inner product is a real part.}}{250}{section*.440}%
-\contentsline {paragraph}{\tocparagraph {}{}{The continuous problem.}}{251}{section*.441}%
-\contentsline {subsection}{\tocsubsection {}{34.2}{The discrete system}}{251}{subsection.34.2}%
-\contentsline {paragraph}{\tocparagraph {}{}{The element.}}{251}{section*.442}%
-\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{251}{section*.443}%
-\contentsline {paragraph}{\tocparagraph {}{}{A check.}}{252}{section*.444}%
-\contentsline {section}{\tocsection {}{35}{Summary: Two Ways to Give a Vertex a Plane}}{252}{section.35}%
-\contentsline {paragraph}{\tocparagraph {}{}{The recipe, in the intrinsic way.}}{253}{section*.446}%
+\contentsline {paragraph}{\tocparagraph {}{}{The covariant derivative.}}{186}{section*.337}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the two terms mean.}}{188}{section*.338}%
+\contentsline {paragraph}{\tocparagraph {}{}{The connection form comes from the metric.}}{189}{section*.339}%
+\contentsline {paragraph}{\tocparagraph {}{}{Parallel transport in a chart.}}{189}{section*.340}%
+\contentsline {subsection}{\tocsubsection {}{28.4}{Changes of frame and the invariance of the energy}}{190}{subsection.28.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{Turning the frame.}}{190}{section*.341}%
+\contentsline {paragraph}{\tocparagraph {}{}{Invariance of the energy.}}{191}{section*.342}%
+\contentsline {paragraph}{\tocparagraph {}{}{Changing the coordinates of the chart.}}{192}{section*.343}%
+\contentsline {paragraph}{\tocparagraph {}{}{From one chart to another.}}{192}{section*.344}%
+\contentsline {subsection}{\tocsubsection {}{28.5}{Curvature: the curl of the connection form}}{192}{subsection.28.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{When can a chart be flat?}}{192}{section*.345}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the curl measures.}}{193}{section*.346}%
+\contentsline {paragraph}{\tocparagraph {}{}{The curl is the curvature.}}{194}{section*.347}%
+\contentsline {paragraph}{\tocparagraph {}{}{Holonomy.}}{195}{section*.348}%
+\contentsline {paragraph}{\tocparagraph {}{}{What this means for a mesh.}}{196}{section*.349}%
+\contentsline {subsection}{\tocsubsection {}{28.6}{Stage 1: the PDE (strong form)}}{196}{subsection.28.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{196}{section*.350}%
+\contentsline {subsection}{\tocsubsection {}{28.7}{Stage 2: the function spaces}}{197}{subsection.28.7}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{197}{section*.351}%
+\contentsline {paragraph}{\tocparagraph {}{}{Square integrable fields.}}{197}{section*.352}%
+\contentsline {paragraph}{\tocparagraph {}{}{Fields with square integrable covariant derivatives.}}{197}{section*.353}%
+\contentsline {paragraph}{\tocparagraph {}{}{The forms of the problem.}}{198}{section*.354}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the theorems say, and why they apply.}}{198}{section*.355}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the weak form needs less.}}{199}{section*.356}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conforming spaces.}}{199}{section*.357}%
+\contentsline {paragraph}{\tocparagraph {}{}{The assumptions, plainly.}}{200}{section*.358}%
+\contentsline {subsection}{\tocsubsection {}{28.8}{Stage 3: the variational form}}{200}{subsection.28.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{200}{section*.359}%
+\contentsline {paragraph}{\tocparagraph {}{}{The first variation, term by term.}}{201}{section*.361}%
+\contentsline {paragraph}{\tocparagraph {}{}{Minimizing is solving.}}{201}{section*.362}%
+\contentsline {subsection}{\tocsubsection {}{28.9}{Stage 4: the weak form (Galerkin)}}{202}{subsection.28.9}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{202}{section*.363}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got, and what Stage 5 must supply.}}{205}{section*.365}%
+\contentsline {section}{\tocsection {}{29}{Stage 5, the Faces: Flat Charts Known Only by Their Edge Lengths}}{206}{section.29}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{206}{section*.366}%
+\contentsline {subsection}{\tocsubsection {}{29.1}{The metric of a face is its Gram matrix}}{206}{subsection.29.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{Lengths and angles.}}{206}{section*.367}%
+\contentsline {paragraph}{\tocparagraph {}{}{Entry by entry.}}{206}{section*.368}%
+\contentsline {paragraph}{\tocparagraph {}{}{Rigid motions do not change it.}}{207}{section*.369}%
+\contentsline {paragraph}{\tocparagraph {}{}{The metric from the three lengths.}}{207}{section*.370}%
+\contentsline {subsection}{\tocsubsection {}{29.2}{Why the Gram matrix carries everything a face needs}}{208}{subsection.29.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The area.}}{208}{section*.371}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradients.}}{208}{section*.372}%
+\contentsline {subsection}{\tocsubsection {}{29.3}{Heron's formula and the angles}}{210}{subsection.29.3}%
+\contentsline {subsection}{\tocsubsection {}{29.4}{Laying the triangle out in the plane}}{212}{subsection.29.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The gradients on the layout: the quarter turn.}}{213}{section*.373}%
+\contentsline {paragraph}{\tocparagraph {}{}{The face frame.}}{213}{section*.374}%
+\contentsline {paragraph}{\tocparagraph {}{}{The connection form of a face vanishes.}}{213}{section*.375}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{214}{section*.377}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{216}{section*.378}%
+\contentsline {section}{\tocsection {}{30}{Stage 5, the Vertices: the Stretched Cone as a Flat Chart}}{216}{section.30}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{216}{section*.379}%
+\contentsline {subsection}{\tocsubsection {}{30.1}{The cone around a vertex}}{216}{subsection.30.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The angle defect is a curvature.}}{217}{section*.381}%
+\contentsline {paragraph}{\tocparagraph {}{}{The defects add up to $2\pi \chi $.}}{218}{section*.382}%
+\contentsline {subsection}{\tocsubsection {}{30.2}{Why a vertex has no tangent plane}}{219}{subsection.30.2}%
+\contentsline {subsection}{\tocsubsection {}{30.3}{Directions at a vertex as angles}}{220}{subsection.30.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{Half edges.}}{220}{section*.383}%
+\contentsline {paragraph}{\tocparagraph {}{}{Turning around a vertex.}}{221}{section*.384}%
+\contentsline {paragraph}{\tocparagraph {}{}{Which corner lies between two steps.}}{221}{section*.386}%
+\contentsline {paragraph}{\tocparagraph {}{}{Clockwise walk, negative angles.}}{222}{section*.387}%
+\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{222}{section*.388}%
+\contentsline {subsection}{\tocsubsection {}{30.4}{The stretched cone}}{222}{subsection.30.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The vertex chart.}}{223}{section*.389}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the defect went.}}{223}{section*.390}%
+\contentsline {paragraph}{\tocparagraph {}{}{The negative angles of the code.}}{223}{section*.391}%
+\contentsline {paragraph}{\tocparagraph {}{}{Boundary vertices.}}{223}{section*.392}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{224}{section*.393}%
+\contentsline {subsection}{\tocsubsection {}{30.5}{What the vertex normal does instead}}{225}{subsection.30.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the tables of the two examples.}}{225}{section*.394}%
+\contentsline {section}{\tocsection {}{31}{Stage 5, the Corner Rotations: from a Vertex Chart into a Face Chart}}{227}{section.31}%
+\contentsline {subsection}{\tocsubsection {}{31.1}{What the finite element method needs}}{227}{subsection.31.1}%
+\contentsline {subsection}{\tocsubsection {}{31.2}{The exact correspondence is not a rotation}}{229}{subsection.31.2}%
+\contentsline {subsection}{\tocsubsection {}{31.3}{The best rotation: match the bisectors}}{229}{subsection.31.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{231}{section*.397}%
+\contentsline {subsection}{\tocsubsection {}{31.4}{Going around the vertex}}{233}{subsection.31.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The data.}}{233}{section*.398}%
+\contentsline {paragraph}{\tocparagraph {}{}{The two routes.}}{233}{section*.399}%
+\contentsline {paragraph}{\tocparagraph {}{}{The extra rotation.}}{233}{section*.400}%
+\contentsline {paragraph}{\tocparagraph {}{}{Once around.}}{234}{section*.401}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where the curvature sits.}}{235}{section*.402}%
+\contentsline {paragraph}{\tocparagraph {}{}{Changes of frame on the mesh.}}{235}{section*.403}%
+\contentsline {subsection}{\tocsubsection {}{31.5}{Stage 5 completed: the finite element space}}{236}{subsection.31.5}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{236}{section*.404}%
+\contentsline {paragraph}{\tocparagraph {}{}{The basis functions.}}{236}{section*.405}%
+\contentsline {paragraph}{\tocparagraph {}{}{Their derivatives.}}{236}{section*.407}%
+\contentsline {paragraph}{\tocparagraph {}{}{Conformity.}}{237}{section*.408}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we got.}}{238}{section*.409}%
+\contentsline {section}{\tocsection {}{32}{Stages 6 to 8: the Discrete Solution, the Element Integrals and the Assembly}}{238}{section.32}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why nothing else changes.}}{238}{section*.410}%
+\contentsline {subsection}{\tocsubsection {}{32.1}{Stage 6: the discrete solution and the test functions}}{238}{subsection.32.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{238}{section*.411}%
+\contentsline {paragraph}{\tocparagraph {}{}{The discrete solution.}}{239}{section*.412}%
+\contentsline {paragraph}{\tocparagraph {}{}{The test functions.}}{239}{section*.413}%
+\contentsline {paragraph}{\tocparagraph {}{}{Substitution.}}{239}{section*.414}%
+\contentsline {paragraph}{\tocparagraph {}{}{Symmetric and positive definite.}}{240}{section*.415}%
+\contentsline {paragraph}{\tocparagraph {}{}{The choice of frames does not matter.}}{240}{section*.416}%
+\contentsline {subsection}{\tocsubsection {}{32.2}{Stage 7: the element integrals}}{240}{subsection.32.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{240}{section*.417}%
+\contentsline {paragraph}{\tocparagraph {}{}{The stiffness.}}{240}{section*.418}%
+\contentsline {paragraph}{\tocparagraph {}{}{The mass.}}{241}{section*.419}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element matrices.}}{242}{section*.420}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element written out.}}{242}{section*.421}%
+\contentsline {paragraph}{\tocparagraph {}{}{The frame of the face cancels.}}{242}{section*.422}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{242}{section*.423}%
+\contentsline {subsection}{\tocsubsection {}{32.3}{Stage 8: assembly and the linear system}}{243}{subsection.32.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{243}{section*.424}%
+\contentsline {paragraph}{\tocparagraph {}{}{The assembly.}}{243}{section*.425}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{244}{section*.426}%
+\contentsline {paragraph}{\tocparagraph {}{}{The same reference direction as Part\nonbreakingspace \ref {part:matrix}.}}{244}{section*.427}%
+\contentsline {paragraph}{\tocparagraph {}{}{Drawing the result.}}{244}{section*.428}%
+\contentsline {section}{\tocsection {}{33}{Experiments}}{245}{section.33}%
+\contentsline {subsection}{\tocsubsection {}{33.1}{Where the experiments compare: inside the faces}}{246}{subsection.33.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{The exact vectors.}}{247}{section*.429}%
+\contentsline {paragraph}{\tocparagraph {}{}{The source vector.}}{247}{section*.430}%
+\contentsline {subsection}{\tocsubsection {}{33.2}{Folded sheets: exact bendings}}{247}{subsection.33.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why the Miura-ori is intrinsically flat.}}{248}{section*.431}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{249}{section*.432}%
+\contentsline {subsection}{\tocsubsection {}{33.3}{The sphere: convergence}}{249}{subsection.33.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{How to read the table.}}{250}{section*.433}%
+\contentsline {subsection}{\tocsubsection {}{33.4}{The cactus: how large is the choice?}}{250}{subsection.33.4}%
+\contentsline {paragraph}{\tocparagraph {}{}{The numbers.}}{251}{section*.434}%
+\contentsline {section}{\tocsection {}{34}{Part III with Complex Numbers}}{251}{section.34}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{251}{section*.436}%
+\contentsline {subsection}{\tocsubsection {}{34.1}{The dictionary}}{252}{subsection.34.1}%
+\contentsline {paragraph}{\tocparagraph {}{}{A column is a complex number.}}{252}{section*.437}%
+\contentsline {paragraph}{\tocparagraph {}{}{The quarter turn is the multiplication by $\mathrm i$.}}{252}{section*.438}%
+\contentsline {paragraph}{\tocparagraph {}{}{A rotation is the multiplication by a unit complex number.}}{252}{section*.439}%
+\contentsline {paragraph}{\tocparagraph {}{}{The transpose is the conjugate.}}{252}{section*.440}%
+\contentsline {paragraph}{\tocparagraph {}{}{The inner product is a real part.}}{252}{section*.441}%
+\contentsline {paragraph}{\tocparagraph {}{}{The continuous problem.}}{253}{section*.442}%
+\contentsline {subsection}{\tocsubsection {}{34.2}{The discrete system}}{253}{subsection.34.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{The element.}}{253}{section*.443}%
+\contentsline {paragraph}{\tocparagraph {}{}{The code.}}{253}{section*.444}%
+\contentsline {paragraph}{\tocparagraph {}{}{A check.}}{254}{section*.445}%
+\contentsline {section}{\tocsection {}{35}{Summary: Two Ways to Give a Vertex a Plane}}{254}{section.35}%
+\contentsline {paragraph}{\tocparagraph {}{}{The recipe, in the intrinsic way.}}{255}{section*.447}%
 \setcounter {tocdepth}{2}
-\contentsline {part}{\tocpart {}{}{Applications}}{254}{part.4}%
-\contentsline {section}{\tocsection {}{36}{The Logarithmic Map: a Decal, a Folded Sheet and an Atlas}}{255}{section.36}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{255}{section*.447}%
-\contentsline {subsection}{\tocsubsection {}{36.1}{The logarithmic map}}{255}{subsection.36.1}%
-\contentsline {subsection}{\tocsubsection {}{36.2}{The key fact: the angle can be read at the far end}}{256}{subsection.36.2}%
-\contentsline {paragraph}{\tocparagraph {}{}{Step 1: parallel transport along a geodesic keeps the angle to the geodesic.}}{256}{section*.448}%
-\contentsline {paragraph}{\tocparagraph {}{}{Step 2: the direction of the geodesic at $x$ is the gradient of the distance.}}{256}{section*.449}%
-\contentsline {paragraph}{\tocparagraph {}{}{Step 3: the angle as a complex number.}}{256}{section*.450}%
-\contentsline {subsection}{\tocsubsection {}{36.3}{The distance by the heat method: the recipe once more, for scalars}}{257}{subsection.36.3}%
-\contentsline {paragraph}{\tocparagraph {}{}{The idea.}}{257}{section*.451}%
-\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 1 to 4.}}{257}{section*.452}%
-\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 5 to 8.}}{257}{section*.453}%
-\contentsline {paragraph}{\tocparagraph {}{}{(b) The direction.}}{258}{section*.454}%
-\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 1 to 4.}}{258}{section*.455}%
-\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 5 to 8.}}{258}{section*.456}%
-\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{259}{section*.457}%
-\contentsline {subsection}{\tocsubsection {}{36.4}{The direction: the vector heat step}}{260}{subsection.36.4}%
-\contentsline {subsection}{\tocsubsection {}{36.5}{The angle at the vertices}}{261}{subsection.36.5}%
-\contentsline {subsection}{\tocsubsection {}{36.6}{A decal on the cactus}}{262}{subsection.36.6}%
-\contentsline {paragraph}{\tocparagraph {}{}{Why a smooth mesh.}}{262}{section*.459}%
-\contentsline {paragraph}{\tocparagraph {}{}{The whole cactus.}}{263}{section*.460}%
-\contentsline {paragraph}{\tocparagraph {}{}{An atlas of charts.}}{264}{section*.462}%
-\contentsline {subsection}{\tocsubsection {}{36.7}{Graph paper on the folded sheet: extrinsic against intrinsic}}{265}{subsection.36.7}%
-\contentsline {subsection}{\tocsubsection {}{36.8}{A picture over a whole surface}}{267}{subsection.36.8}%
-\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{267}{section*.465}%
-\contentsline {paragraph}{\tocparagraph {}{}{One factorization for every source.}}{267}{section*.466}%
-\contentsline {paragraph}{\tocparagraph {}{}{Where to put the sources.}}{268}{section*.467}%
-\contentsline {paragraph}{\tocparagraph {}{}{Pictures that are not cut.}}{268}{section*.468}%
-\contentsline {paragraph}{\tocparagraph {}{}{What remains.}}{269}{section*.471}%
-\contentsline {paragraph}{\tocparagraph {}{}{The folded sheet.}}{269}{section*.472}%
-\contentsline {paragraph}{\tocparagraph {}{}{What the application shows.}}{269}{section*.474}%
-\contentsline {section}{\tocsection {}{}{References}}{271}{section*.475}%
+\contentsline {part}{\tocpart {}{}{Applications}}{256}{part.4}%
+\contentsline {section}{\tocsection {}{36}{The Logarithmic Map: a Decal, a Folded Sheet and an Atlas}}{257}{section.36}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{257}{section*.448}%
+\contentsline {subsection}{\tocsubsection {}{36.1}{The logarithmic map}}{257}{subsection.36.1}%
+\contentsline {subsection}{\tocsubsection {}{36.2}{The key fact: the angle can be read at the far end}}{258}{subsection.36.2}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 1: parallel transport along a geodesic keeps the angle to the geodesic.}}{258}{section*.449}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 2: the direction of the geodesic at $x$ is the gradient of the distance.}}{258}{section*.450}%
+\contentsline {paragraph}{\tocparagraph {}{}{Step 3: the angle as a complex number.}}{258}{section*.451}%
+\contentsline {subsection}{\tocsubsection {}{36.3}{The distance by the heat method: the recipe once more, for scalars}}{259}{subsection.36.3}%
+\contentsline {paragraph}{\tocparagraph {}{}{The idea.}}{259}{section*.452}%
+\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 1 to 4.}}{259}{section*.453}%
+\contentsline {paragraph}{\tocparagraph {}{}{(a) The heat step, Stages 5 to 8.}}{259}{section*.454}%
+\contentsline {paragraph}{\tocparagraph {}{}{(b) The direction.}}{260}{section*.455}%
+\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 1 to 4.}}{260}{section*.456}%
+\contentsline {paragraph}{\tocparagraph {}{}{(c) The distance, Stages 5 to 8.}}{260}{section*.457}%
+\contentsline {paragraph}{\tocparagraph {}{}{In the code.}}{261}{section*.458}%
+\contentsline {subsection}{\tocsubsection {}{36.4}{The direction: the vector heat step}}{262}{subsection.36.4}%
+\contentsline {subsection}{\tocsubsection {}{36.5}{The angle at the vertices}}{263}{subsection.36.5}%
+\contentsline {subsection}{\tocsubsection {}{36.6}{A decal on the cactus}}{264}{subsection.36.6}%
+\contentsline {paragraph}{\tocparagraph {}{}{Why a smooth mesh.}}{264}{section*.460}%
+\contentsline {paragraph}{\tocparagraph {}{}{The whole cactus.}}{265}{section*.461}%
+\contentsline {paragraph}{\tocparagraph {}{}{An atlas of charts.}}{266}{section*.463}%
+\contentsline {subsection}{\tocsubsection {}{36.7}{Graph paper on the folded sheet: extrinsic against intrinsic}}{267}{subsection.36.7}%
+\contentsline {subsection}{\tocsubsection {}{36.8}{A picture over a whole surface}}{269}{subsection.36.8}%
+\contentsline {paragraph}{\tocparagraph {}{}{What we want.}}{269}{section*.466}%
+\contentsline {paragraph}{\tocparagraph {}{}{One factorization for every source.}}{269}{section*.467}%
+\contentsline {paragraph}{\tocparagraph {}{}{Where to put the sources.}}{270}{section*.468}%
+\contentsline {paragraph}{\tocparagraph {}{}{Pictures that are not cut.}}{270}{section*.469}%
+\contentsline {paragraph}{\tocparagraph {}{}{What remains.}}{271}{section*.472}%
+\contentsline {paragraph}{\tocparagraph {}{}{The folded sheet.}}{271}{section*.473}%
+\contentsline {paragraph}{\tocparagraph {}{}{What the application shows.}}{271}{section*.475}%
+\contentsline {section}{\tocsection {}{}{References}}{273}{section*.476}%
