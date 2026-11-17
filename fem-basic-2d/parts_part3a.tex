@@ -337,20 +337,109 @@ using $\mathcal J(\cos\varphi, -\sin\varphi) = (\sin\varphi, \cos\varphi)$. The 
 \end{equation*}
 the covariant derivative is the plain derivative of the two components. A chart with a frame in which $\theta = 0$ is called \emph{flat}.
 
-\paragraph{Parallel transport in a chart.} A field is parallel along a curve $\xi(s)$ of the chart when its covariant derivative along the curve vanishes, $D_{\xi'(s)}u = 0$. By~(\ref{eqn:r3_covariant}) with $a = \xi'(s)$, and since $\xi'\cdot\hat\nabla u = du/ds$ by the chain rule,
+\paragraph{Parallel transport in a chart.} We now carry a vector along a curve of the chart without turning it. This takes one differential equation and one integral; we set up the equation, solve it in five steps, and then look at what the integral means and at an example.
+
+\emph{Step 1: the curve and the unknown.} A curve of the chart is a path $s \mapsto \xi(s) = (\xi_1(s), \xi_2(s))$ in the flat plane, for $s$ from $0$ to some end value; its velocity in the chart is the column $\xi'(s) = (\xi_1'(s), \xi_2'(s))$, and on the surface the walker moves with the velocity $h\,\xi'(s)$, by~(\ref{eqn:r3_h}). The unknown is the column of coordinates of the field along the curve,
 \begin{equation*}
-0 = D_{\xi'}u = \frac{du}{ds} + \theta\big(h\xi'\big)\,\mathcal J\,u, \qquad\text{that is,}\qquad \frac{du}{ds} = -\,\theta\big(h\xi'\big)\,\mathcal J\,u .
+u(s) = u\big(\xi(s)\big) = \begin{pmatrix} u_1(s) \\ u_2(s) \end{pmatrix} ,
 \end{equation*}
-Let $\varphi(s) = \int_0^s \theta(h\xi'(\sigma))\,d\sigma$, so that $\varphi' = \theta(h\xi')$, and try $u(s) = R(-\varphi(s))\,u(0)$. By~(\ref{eqn:s3a_exp_deriv})~[\,$\frac{d}{ds}R(-\alpha) = -\alpha'\mathcal JR(-\alpha)$\,] with $\alpha = \varphi$,
+two functions of the single variable $s$. We are given its value $u(0)$ at the start, the vector we want to carry, and we look for $u(s)$ further along.
+
+\emph{Step 2: the condition, as a differential equation.} The field is \emph{parallel} along the curve when its covariant derivative along the curve vanishes at every $s$, $D_{\xi'(s)}u = 0$. Put $a = \xi'(s)$ in~(\ref{eqn:r3_covariant})~[\,$D_au = a\cdot\hat\nabla u + \theta(ha)\,\mathcal J u$\,]. Its first term is the rate of change of $u$ along the walk, by the chain rule~(\ref{eqn:s3a_chain})~[\,$f' = a_1\,\partial_1 f + a_2\,\partial_2 f = a\cdot\hat\nabla f$\,] with $a = \xi'(s)$:
 \begin{equation*}
-\frac{du}{ds} = \Big(\frac{d}{ds}\, R(-\varphi)\Big)u(0) = -\varphi'\,\mathcal J\, R(-\varphi)\,u(0) = -\,\theta\big(h\xi'\big)\,\mathcal J\,u(s) ,
+\xi'(s)\cdot\hat\nabla u = \xi_1'(s)\,\partial_1u + \xi_2'(s)\,\partial_2u = \frac{du}{ds} .
 \end{equation*}
-which is the equation, and $u(s) = u(0)$ at $s = 0$. A linear differential equation has only one solution with a given initial value, so
+Its second term contains the number $\theta(h\xi'(s))$, the rate at which the frame turns along the walk. We give it a short name,
+\begin{equation}
+\label{eqn:r3_turn_rate}
+\tau(s) = \theta\big(h\,\xi'(s)\big) = \theta_1\big(\xi(s)\big)\,\xi_1'(s) + \theta_2\big(\xi(s)\big)\,\xi_2'(s) ,
+\end{equation}
+by~(\ref{eqn:r3_Omega})~[\,$\theta(ha) = a_1\,\theta_1 + a_2\,\theta_2$\,] with $a = \xi'(s)$; the two numbers $\theta_1, \theta_2$ are evaluated at the point $\xi(s)$ where the walker is. The important thing about $\tau(s)$ is that it is \emph{known}: it depends on the chart, the frame and the curve, and not on the field. The condition $D_{\xi'}u = 0$ is therefore
+\begin{equation*}
+0 = \frac{du}{ds} + \tau(s)\,\mathcal J\,u(s), \qquad\text{that is,}\qquad \frac{du}{ds} = -\,\tau(s)\,\mathcal J\,u(s) .
+\end{equation*}
+This is a \emph{differential equation}: it gives the rate of change of the unknown $u$ in terms of $u$ itself. Written out in its two components, with $\mathcal J u = (-u_2, u_1)$,
+\begin{equation*}
+-\,\tau\,\mathcal J u = -\,\tau\begin{pmatrix} -u_2 \\ u_1 \end{pmatrix} = \begin{pmatrix} \tau\, u_2 \\ -\,\tau\, u_1 \end{pmatrix}, \qquad\text{so}\qquad
+\begin{aligned}
+u_1'(s) &= \phantom{-}\tau(s)\, u_2(s), \\
+u_2'(s) &= -\,\tau(s)\, u_1(s) .
+\end{aligned}
+\end{equation*}
+Two coupled equations: the rate of change of each component is set by the other. Each right-hand side is a known function times an unknown, so the equation is \emph{linear}: sums and multiples of solutions are solutions.
+
+\emph{Step 3: a guess, from the case of a constant rate.} Suppose first that the frame turns at a constant rate, $\tau(s) = \tau_0$. After a walk of length $s$ the frame has turned by the angle $\tau_0 s$, and a vector that does not turn, measured against the turned frame, appears turned by $-\tau_0 s$ (as in the paragraph \emph{What the two terms mean}). So we expect $u(s) = R(-\tau_0 s)\,u(0)$. When the rate changes along the walk, the angle the frame has turned between $0$ and $s$ is the sum of the small angles $\tau(\sigma)\,d\sigma$ of the small steps, which is the integral
+\begin{equation}
+\label{eqn:r3_turn_angle}
+\varphi(s) = \int_0^s \tau(\sigma)\,d\sigma = \int_0^s \Big(\theta_1\big(\xi(\sigma)\big)\,\xi_1'(\sigma) + \theta_2\big(\xi(\sigma)\big)\,\xi_2'(\sigma)\Big)\, d\sigma .
+\end{equation}
+The letter $\sigma$ is only the name of the variable of integration; it runs from $0$ to $s$ along the curve. Two facts about $\varphi$ are all we need. At the start, the integral over an empty interval is zero, $\varphi(0) = 0$. And by the fundamental theorem of calculus, the derivative of an integral with respect to its upper end is the integrand at that end, $\varphi'(s) = \tau(s)$. Our guess is
+\begin{equation*}
+u(s) = R\big(-\varphi(s)\big)\, u(0) .
+\end{equation*}
+
+\emph{Step 4: the guess solves the equation.} At the start, $u(0) = R(-\varphi(0))\,u(0) = R(0)\,u(0) = I\,u(0) = u(0)$, the given value. For the rate of change, $u(0)$ is a constant column, so only the matrix is differentiated. By~(\ref{eqn:s3a_exp_deriv})~[\,$\frac{d}{ds}R(-\alpha) = -\alpha'\mathcal JR(-\alpha)$\,] with $\alpha = \varphi$, and then $\varphi' = \tau$:
+\begin{align*}
+\frac{du}{ds} &= \Big(\frac{d}{ds}\, R\big(-\varphi(s)\big)\Big)\, u(0) && u(0) \text{ constant} \\
+&= \Big(-\varphi'(s)\,\mathcal J\, R\big(-\varphi(s)\big)\Big)\, u(0) && \text{(\ref{eqn:s3a_exp_deriv})} \\
+&= -\,\tau(s)\,\mathcal J\,\Big(R\big(-\varphi(s)\big)\, u(0)\Big) && \varphi' = \tau,\ \text{regroup} \\
+&= -\,\tau(s)\,\mathcal J\, u(s) && \text{the guess,}
+\end{align*}
+which is the equation of Step 2. In components, $R(-\varphi) = \cos\varphi\, I - \sin\varphi\,\mathcal J$ gives
+\begin{equation*}
+u_1(s) = \cos\varphi\; u_1(0) + \sin\varphi\; u_2(0), \qquad u_2(s) = -\sin\varphi\; u_1(0) + \cos\varphi\; u_2(0),
+\end{equation*}
+and one can check the two component equations directly: $u_1' = \varphi'\,(-\sin\varphi\; u_1(0) + \cos\varphi\; u_2(0)) = \tau\, u_2$, and $u_2' = \varphi'\,(-\cos\varphi\; u_1(0) - \sin\varphi\; u_2(0)) = -\,\tau\, u_1$.
+
+\emph{Step 5: it is the only solution.} Let $u(s)$ be \emph{any} solution with the given start $u(0)$, and undo the expected turning: define
+\begin{equation*}
+w(s) = R\big(\varphi(s)\big)\, u(s) .
+\end{equation*}
+Differentiate with the product rule; by~(\ref{eqn:s3a_exp_deriv})~[\,$\frac{d}{ds}R(\alpha) = \alpha'\mathcal JR(\alpha)$\,] with $\alpha = \varphi$, then $\varphi' = \tau$ and the equation for $u$:
+\begin{align*}
+\frac{dw}{ds} &= \Big(\frac{d}{ds}\, R(\varphi)\Big)\, u + R(\varphi)\, \frac{du}{ds} && \text{product rule} \\
+&= \tau\,\mathcal J\, R(\varphi)\, u + R(\varphi)\,\big(-\,\tau\,\mathcal J\, u\big) && \text{(\ref{eqn:s3a_exp_deriv}), equation} \\
+&= \tau\,\big(\mathcal J\, R(\varphi) - R(\varphi)\,\mathcal J\big)\, u && \text{factor } \tau \\
+&= \tau\,\big(\mathcal J\, R(\varphi) - \mathcal J\, R(\varphi)\big)\, u = 0 && \mathcal J R = R \mathcal J \text{ by (c).}
+\end{align*}
+A column whose derivative is zero at every $s$ is constant, so $w(s) = w(0) = R(\varphi(0))\,u(0) = R(0)\,u(0) = u(0)$. Multiply $R(\varphi)\,u(s) = u(0)$ on the left by $R(-\varphi)$, with $R(-\varphi)\,R(\varphi) = I$ by property (c): $u(s) = R(-\varphi(s))\,u(0)$. Every solution is the one of Step 3. Altogether,
 \begin{equation}
 \label{eqn:r3_transport}
-u(s) = R\Big(-\int_0^s \theta\Big)\; u(0), \qquad \int_0^s \theta = \int_0^s \big(\theta_1\, \xi_1'(\sigma) + \theta_2\, \xi_2'(\sigma)\big)\, d\sigma .
+\begin{gathered}
+u(s) = R\Big(-\int_0^s \theta\Big)\; u(0), \\
+\int_0^s \theta = \int_0^s \Big(\theta_1\big(\xi(\sigma)\big)\, \xi_1'(\sigma) + \theta_2\big(\xi(\sigma)\big)\, \xi_2'(\sigma)\Big)\, d\sigma .
+\end{gathered}
 \end{equation}
-In coordinates, parallel transport is a rotation by minus the integral of the connection form along the path: one rotation matrix per path. The frame turns forwards by $\int\theta$ relative to the parallel field, so the coordinates of the parallel field turn backwards by the same angle. The formula is this simple because rotations of the plane commute and add their angles (property (c)): the small rotations along the path can be multiplied in any order, and their angles simply add. The discrete method will replace each such integral, from a vertex into a face, by one angle $\rho_i^f$.
+In coordinates, parallel transport is a rotation by minus the integral of the connection form along the path: one rotation matrix per path. The frame turns forwards by $\int\theta$ relative to the parallel field, so the coordinates of the parallel field turn backwards by the same angle.
+
+\paragraph{The integral as a sum of small turns.} The integral in~(\ref{eqn:r3_transport}) can be read step by step, and this reading is the one the discrete method copies. Cut the walk from $0$ to $s$ into $N$ short steps of length $\Delta = s/N$, at the points $s_n = n\Delta$. Over one short step the derivative is nearly constant, so $u(s_{n+1}) \approx u(s_n) + \Delta\, u'(s_n)$, and with the equation of Step 2,
+\begin{align*}
+u(s_{n+1}) &\approx u(s_n) - \Delta\,\tau(s_n)\,\mathcal J\, u(s_n) && \text{equation of Step 2} \\
+&= \big(I - \tau(s_n)\Delta\;\mathcal J\big)\, u(s_n) && \text{factor } u(s_n) \\
+&\approx R\big(-\tau(s_n)\Delta\big)\, u(s_n) && \text{small angle,}
+\end{align*}
+by the small-angle form $R(\alpha) \approx I + \alpha\,\mathcal J$ after~(\ref{eqn:s3a_exp_deriv}). Each step is a small rotation, by minus the small angle the frame turns in that step. Chain the $N$ steps, and multiply the rotations with property (c)~[\,$R(\alpha)R(\beta) = R(\alpha + \beta)$\,]:
+\begin{align*}
+u(s) &\approx R\big(-\tau(s_{N-1})\Delta\big)\cdots R\big(-\tau(s_1)\Delta\big)\, R\big(-\tau(s_0)\Delta\big)\, u(0) && \text{chain} \\
+&= R\Big(-\sum_{n=0}^{N-1} \tau(s_n)\,\Delta\Big)\, u(0) && \text{property (c).}
+\end{align*}
+The sum is a Riemann sum of $\tau$, and as $N \to \infty$ it tends to the integral $\varphi(s)$, giving~(\ref{eqn:r3_transport}) again. The formula is this simple because rotations of the plane commute and add their angles: the small rotations along the path can be multiplied in any order, and their angles simply add. (For rotations of space, which do not commute, there would be no such formula; the product would depend on the order of the steps.) The discrete method will replace each such integral, from a vertex into a face, by one angle $\rho_i^f$.
+
+\paragraph{The integral does not depend on the speed of the walk.} With $d\xi_k = \xi_k'(\sigma)\,d\sigma$, the integral is often written $\int_\xi \theta = \int_\xi \big(\theta_1\, d\xi_1 + \theta_2\, d\xi_2\big)$, without the parameter. This is justified: walk the same path at another speed, $\tilde\xi(\tilde s) = \xi(s(\tilde s))$ with $s(\tilde s)$ increasing. By the chain rule $\tilde\xi_k' = \xi_k'\, \frac{ds}{d\tilde s}$, so the integrand gets the factor $\frac{ds}{d\tilde s}$, and the substitution $\sigma = s(\tilde\sigma)$, $d\sigma = \frac{ds}{d\tilde s}\,d\tilde\sigma$, removes it. Only the path matters, not how fast it is walked. Reversing the direction of the walk changes the sign of every $\xi_k'$ and so of the integral: going back undoes the rotation.
+
+\paragraph{Example: the polar chart of the plane.} Go back to the chart of the example \emph{a constant field in polar coordinates} above: the flat plane with $\xi = (r, \psi)$, $x(r, \psi) = (r\cos\psi,\ r\sin\psi,\ 0)$, and the polar frame $t = e_r$, $b = e_\psi$. (We write $\psi$ for the polar angle here, because $\varphi$ now names the turning angle~(\ref{eqn:r3_turn_angle}).) That example found
+\begin{equation*}
+\theta_1 = e_\psi\cdot\partial_r e_r = 0, \qquad \theta_2 = e_\psi\cdot\partial_\psi e_r = e_\psi\cdot e_\psi = 1 .
+\end{equation*}
+Along any path, $\tau = \theta_1\,r' + \theta_2\,\psi' = 0\cdot r' + 1\cdot\psi' = \psi'$, and the integral is
+\begin{equation*}
+\int_0^s \theta = \int_0^s \psi'(\sigma)\,d\sigma = \psi(s) - \psi(0) ,
+\end{equation*}
+the change of the polar angle along the walk, whatever the path between the two ends. Start at $\psi(0) = 0$ with the vector $e_x$, whose coordinates there are $u(0) = (e_r\cdot e_x,\ e_\psi\cdot e_x) = (1, 0)$. By~(\ref{eqn:r3_transport}), at a point with polar angle $\psi$,
+\begin{equation*}
+u = R(-\psi)\begin{pmatrix} 1 \\ 0 \end{pmatrix} = \begin{pmatrix} \cos\psi & \sin\psi \\ -\sin\psi & \cos\psi \end{pmatrix}\begin{pmatrix} 1 \\ 0 \end{pmatrix} = \begin{pmatrix} \cos\psi \\ -\sin\psi \end{pmatrix} ,
+\end{equation*}
+which are exactly the coordinates $(e_r\cdot e_x,\ e_\psi\cdot e_x)$ of the constant vector $e_x$ found in Example~\ref{ex:polar_frame}. On the flat plane, parallel transport keeps a vector constant, as it should, and the rotation $R(-\psi)$ only undoes the turning of the polar frame. Walk once around a circle about the origin: $\psi$ grows by $2\pi$, and $R(-2\pi) = I$, so the vector comes back unchanged. On a curved surface the integral around a closed loop is in general not a multiple of $2\pi$, and the vector comes back turned; Section~\ref{section:r3_curvature} computes by how much.
 
 \subsection{Changes of frame and the invariance of the energy}
 \label{section:r3_covariance}
